@@ -15,13 +15,19 @@ npm test           # tests Jest (logique métier)
 npm run typecheck
 ```
 
+## Données de démo
+
+En développement, « Plus › Charger des produits de démo » remplit l'inventaire.
+
 ## Structure
 
 ```
 app/                 Expo Router (onglets, scan en modale plein écran)
 src/theme/           tokens (couleurs clair/sombre, fraîcheur, typo, rayons), ThemeProvider
 src/components/ui/   Text, Button, Card, Chip, FreshnessBadge, ProductCard, BottomSheet, Stepper…
-src/domain/          logique métier pure et testée (fraîcheur, dates…)
+src/domain/          logique métier pure et testée (fraîcheur, dates, catégories, inventaire, quantités)
+src/db/              SQLite (expo-sqlite) + Drizzle : schéma, migrations versionnées, dépôts
+src/features/        écrans et hooks par fonctionnalité
 src/data/            données (démo à l'étape 1, recettes JSON plus tard)
 __tests__/           tests Jest
 docs/captures/       captures à chaque étape
@@ -30,7 +36,7 @@ docs/captures/       captures à chaque étape
 ## Avancement
 
 - [x] 1. Socle : Expo, design system, navigation, thème clair/sombre/auto
-- [ ] 2. Inventaire (SQLite + Drizzle, glisser consommé/jeté)
+- [x] 2. Inventaire (SQLite + Drizzle, glisser consommé/jeté, ajout manuel, fiche produit)
 - [ ] 3. Scan (caméra, Open Food Facts, OCR de la date)
 - [ ] 4. Comptes et foyer (Supabase)
 - [ ] 5. Accueil et notifications

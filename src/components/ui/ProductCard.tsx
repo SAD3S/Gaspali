@@ -1,4 +1,6 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+// Pressable de gesture-handler : un glissement (Swipeable) annule le toucher.
+import { Pressable } from 'react-native-gesture-handler';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius, type FreshnessState } from '@/theme/tokens';
 import { FreshnessBadge } from './FreshnessBadge';

@@ -1,6 +1,7 @@
 import { CalendarDays, ChartColumn, ChefHat, Info, Settings, type LucideIcon } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
-import { Card, Screen, SegmentedControl, Text } from '@/components/ui';
+import { Button, Card, Screen, SegmentedControl, Text, useSnackbar } from '@/components/ui';
+import { seedDemo } from '@/db/inventoryRepo';
 import { useTheme, type ThemePreference } from '@/theme/ThemeProvider';
 
 const ENTRIES: { label: string; Icon: LucideIcon }[] = [
@@ -13,6 +14,7 @@ const ENTRIES: { label: string; Icon: LucideIcon }[] = [
 
 export default function Plus() {
   const { colors, preference, setPreference } = useTheme();
+  const snackbar = useSnackbar();
   return (
     <Screen>
       <Text variant="title1" accessibilityRole="header">Plus</Text>
@@ -39,6 +41,17 @@ export default function Plus() {
           </View>
         ))}
       </Card>
+
+      {__DEV__ && (
+        <Button
+          label="Charger des produits de démo"
+          variant="outline"
+          onPress={() => {
+            seedDemo();
+            snackbar.show('8 produits de démo ajoutés');
+          }}
+        />
+      )}
     </Screen>
   );
 }

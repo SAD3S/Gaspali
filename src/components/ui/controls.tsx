@@ -41,16 +41,30 @@ export function SegmentedControl<T extends string>({
 }
 
 /** Quantité − / + */
-export function Stepper({ value, onChange, min = 0, label }: { value: number; onChange: (v: number) => void; min?: number; label: string }) {
+export function Stepper({
+  value,
+  onChange,
+  min = 0,
+  step = 1,
+  format = String,
+  label,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  step?: number;
+  format?: (v: number) => string;
+  label: string;
+}) {
   const { colors } = useTheme();
   const btn = [styles.stepBtn, { backgroundColor: colors.surface }];
   return (
     <View style={[styles.stepper, { backgroundColor: colors.surface2 }]}>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Diminuer ${label}`} onPress={() => onChange(Math.max(min, value - 1))} style={btn}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Diminuer ${label}`} onPress={() => onChange(Math.max(min, Math.round((value - step) * 100) / 100))} style={btn}>
         <Minus size={18} color={colors.text} />
       </Pressable>
-      <Text variant="bodyStrong" accessibilityLabel={`${label} : ${value}`} style={styles.stepValue}>{value}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Augmenter ${label}`} onPress={() => onChange(value + 1)} style={btn}>
+      <Text variant="bodyStrong" accessibilityLabel={`${label} : ${format(value)}`} style={styles.stepValue}>{format(value)}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Augmenter ${label}`} onPress={() => onChange(Math.round((value + step) * 100) / 100)} style={btn}>
         <Plus size={18} color={colors.text} />
       </Pressable>
     </View>

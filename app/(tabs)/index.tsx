@@ -2,9 +2,11 @@ import { router } from 'expo-router';
 import { Bell, Package, Refrigerator, Snowflake, type LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, ProductCard, Screen, Text } from '@/components/ui';
-import { demoItems, subtitleOf, type Location } from '@/data/demo';
 import { formatHeaderDate } from '@/domain/dates';
-import { computeFreshness, urgencyRank } from '@/domain/freshness';
+import type { Location } from '@/domain/categories';
+import { countByLocation, queryInventory } from '@/domain/inventory';
+import { itemSubtitle } from '@/features/inventory/format';
+import { useInventory } from '@/features/inventory/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius } from '@/theme/tokens';
 
@@ -17,12 +19,11 @@ const TILES: { loc: Location; label: string; Icon: LucideIcon }[] = [
 export default function Accueil() {
   const { colors } = useTheme();
   const today = new Date();
-  const withF = demoItems.map((i) => ({ item: i, f: computeFreshness(i.expiry, i.dateType, today) }));
-  const urgent = withF
-    .filter(({ f }) => f.state === 'urgent' || f.state === 'bientot')
-    .sort((a, b) => urgencyRank(a.f) - urgencyRank(b.f))
-    .slice(0, 3);
-  const hasAlerts = withF.some(({ f }) => f.state === 'urgent' || f.state === 'perime');
+  const items = useInventory();
+  const sorted = queryInventory(items, { today });
+  const urgent = sorted.filter(({ freshness: f }) => f.state === 'urgent' || f.state === 'bientot').slice(0, 3);
+  const counts = countByLocation(items);
+  const hasAlerts = sorted.some(({ freshness: f }) => f.state === 'urgent' || f.state === 'perime');
   const saved = 92;
 
   return (
@@ -49,9 +50,22 @@ export default function Accueil() {
             <Text variant="label" tone="primary" style={styles.bold}>Tout voir</Text>
           </Pressable>
         </View>
-        {urgent.map(({ item, f }) => (
-          <ProductCard key={item.id} variant="row" name={item.name} initials={item.initials} subtitle={subtitleOf(item)} state={f.state} badgeLabel={f.label} />
+        {urgent.map(({ item, freshness: f }) => (
+          <ProductCard
+            key={item.id}
+            variant="row"
+            name={item.name}
+            subtitle={itemSubtitle(item)}
+            state={f.state}
+            badgeLabel={f.label}
+            onPress={() => router.push({ pathname: '/produit/[id]', params: { id: item.id } })}
+          />
         ))}
+        {urgent.length === 0 && (
+          <Text variant="body" tone="secondary" style={{ paddingVertical: 8 }}>
+            {items.length === 0 ? 'Scanne tes courses pour commencer.' : 'Rien d’urgent, tout est frais !'}
+          </Text>
+        )}
       </Card>
 
       <View style={styles.tiles}>
@@ -59,12 +73,12 @@ export default function Accueil() {
           <Pressable
             key={loc}
             accessibilityRole="button"
-            accessibilityLabel={`${label} : ${demoItems.filter((i) => i.location === loc).length} produits`}
+            accessibilityLabel={`${label} : ${counts[loc]} produits`}
             onPress={() => router.navigate('/inventaire')}
             style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.border }]}
           >
             <Icon size={22} color={colors.primaryText} />
-            <Text variant="title2" style={styles.tileCount}>{demoItems.filter((i) => i.location === loc).length}</Text>
+            <Text variant="title2" style={styles.tileCount}>{counts[loc]}</Text>
             <Text variant="label" tone="secondary">{label}</Text>
           </Pressable>
         ))}

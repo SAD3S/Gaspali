@@ -1,54 +1,63 @@
-import { Search, SlidersHorizontal } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { Plus, Search, SlidersHorizontal, Check } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { Chip, ProductCard, Screen, Text } from '@/components/ui';
-import { demoItems, subtitleOf, type Location } from '@/data/demo';
-import { computeFreshness, urgencyRank } from '@/domain/freshness';
+import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { BottomSheet, Button, Chip, Text, useSnackbar } from '@/components/ui';
+import { setStatus } from '@/db/inventoryRepo';
+import { queryInventory, SORT_LABELS, type LocationFilter, type SortKey } from '@/domain/inventory';
+import { itemSubtitle } from '@/features/inventory/format';
+import { useInventory } from '@/features/inventory/hooks';
+import { SwipeableItem } from '@/features/inventory/SwipeableItem';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH, radius } from '@/theme/tokens';
 
-type Filter = 'tout' | Location;
-const FILTERS: { key: Filter; label: string }[] = [
+const FILTERS: { key: LocationFilter; label: string }[] = [
   { key: 'tout', label: 'Tout' },
   { key: 'frigo', label: 'Frigo' },
   { key: 'congelo', label: 'Congélo' },
   { key: 'placard', label: 'Placard' },
 ];
 
-const normalize = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-
 export default function Inventaire() {
   const { colors } = useTheme();
-  const [filter, setFilter] = useState<Filter>('tout');
+  const snackbar = useSnackbar();
+  const items = useInventory();
+  const [filter, setFilter] = useState<LocationFilter>('tout');
   const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<SortKey>('date');
+  const [sortOpen, setSortOpen] = useState(false);
 
-  const items = useMemo(() => {
-    const today = new Date();
-    const q = normalize(query.trim());
-    return demoItems
-      .filter((i) => filter === 'tout' || i.location === filter)
-      .filter((i) => !q || normalize(i.name).includes(q))
-      .map((i) => ({ item: i, f: computeFreshness(i.expiry, i.dateType, today) }))
-      .sort((a, b) => urgencyRank(a.f) - urgencyRank(b.f));
-  }, [filter, query]);
+  const list = useMemo(() => queryInventory(items, { location: filter, search: query, sort }), [items, filter, query, sort]);
 
-  return (
-    <Screen>
+  const header = (
+    <View style={styles.headerBlock}>
       <View style={styles.head}>
         <Text variant="title1" accessibilityRole="header">Inventaire</Text>
-        <Text variant="label" tone="secondary">{demoItems.length} produits</Text>
+        <Text variant="label" tone="secondary">{items.length} produit{items.length > 1 ? 's' : ''}</Text>
       </View>
 
-      <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Search size={20} color={colors.textSecondary} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Rechercher un produit"
-          placeholderTextColor={colors.textSecondary}
-          accessibilityLabel="Rechercher un produit"
-          style={[styles.input, { color: colors.text }]}
-        />
+      <View style={styles.searchRow}>
+        <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Search size={20} color={colors.textSecondary} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Rechercher un produit"
+            placeholderTextColor={colors.textSecondary}
+            accessibilityLabel="Rechercher un produit"
+            returnKeyType="search"
+            style={[styles.input, { color: colors.text }]}
+          />
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Ajouter un produit sans code-barres"
+          onPress={() => router.push('/ajout')}
+          style={[styles.squareBtn, { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft, height: 50, width: 50 }]}
+        >
+          <Plus size={22} color={colors.primaryText} />
+        </Pressable>
       </View>
 
       <View style={styles.filters}>
@@ -58,27 +67,97 @@ export default function Inventaire() {
       </View>
 
       <View style={styles.sortRow}>
-        <Text variant="overline" tone="secondary">Trié par date limite</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Changer le tri" style={[styles.sortBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text variant="overline" tone="secondary">Trié par {SORT_LABELS[sort]}</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Changer le tri, actuellement par ${SORT_LABELS[sort]}`}
+          onPress={() => setSortOpen(true)}
+          style={[styles.squareBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
           <SlidersHorizontal size={18} color={colors.text} />
         </Pressable>
       </View>
+    </View>
+  );
 
-      {items.map(({ item, f }) => (
-        <ProductCard key={item.id} name={item.name} initials={item.initials} subtitle={subtitleOf(item)} state={f.state} badgeLabel={f.label} />
-      ))}
-      {items.length === 0 && (
-        <Text variant="body" tone="secondary" style={{ textAlign: 'center', marginTop: 24 }}>Aucun produit ne correspond.</Text>
-      )}
-    </Screen>
+  return (
+    <SafeAreaView edges={['top']} style={[styles.flex, { backgroundColor: colors.background }]}>
+      <FlatList
+        data={list}
+        keyExtractor={(r) => r.item.id}
+        ListHeaderComponent={header}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        renderItem={({ item: { item, freshness } }) => (
+          <SwipeableItem
+            name={item.name}
+            subtitle={itemSubtitle(item)}
+            state={freshness.state}
+            badgeLabel={freshness.label}
+            onPress={() => router.push({ pathname: '/produit/[id]', params: { id: item.id } })}
+            onConsumed={() => snackbar.show(`${item.name} : consommé`, setStatus(item.id, 'consomme'))}
+            onDiscarded={() => snackbar.show(`${item.name} : jeté`, setStatus(item.id, 'jete'))}
+          />
+        )}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            {items.length === 0 ? (
+              <>
+                <Text variant="bodyStrong">Ton inventaire est vide</Text>
+                <Text variant="body" tone="secondary" style={styles.center}>Scanne tes courses ou ajoute un produit frais.</Text>
+                <Button label="Ajouter un produit" variant="soft" onPress={() => router.push('/ajout')} />
+              </>
+            ) : (
+              <Text variant="body" tone="secondary" style={styles.center}>Aucun produit ne correspond.</Text>
+            )}
+          </View>
+        }
+        ListFooterComponent={
+          list.length > 0 ? (
+            <Text variant="label" tone="secondary" style={[styles.center, { marginTop: 16 }]}>
+              Glisse une carte vers la droite si tu l’as consommée, vers la gauche si tu l’as jetée.
+            </Text>
+          ) : undefined
+        }
+      />
+
+      <BottomSheet visible={sortOpen} onClose={() => setSortOpen(false)}>
+        <Text variant="title2" style={{ marginBottom: 8 }}>Trier par</Text>
+        {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+          <Pressable
+            key={k}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: sort === k }}
+            onPress={() => {
+              setSort(k);
+              setSortOpen(false);
+            }}
+            style={styles.sortOption}
+          >
+            <Text variant="body" style={sort === k && { fontFamily: 'DMSans_700Bold' }}>
+              {SORT_LABELS[k].charAt(0).toUpperCase() + SORT_LABELS[k].slice(1)}
+            </Text>
+            {sort === k && <Check size={20} color={colors.primaryText} />}
+          </Pressable>
+        ))}
+      </BottomSheet>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  content: { padding: 20, paddingBottom: 140 },
+  headerBlock: { gap: 14, marginBottom: 14 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  search: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, minHeight: 50 },
+  searchRow: { flexDirection: 'row', gap: 10 },
+  search: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, minHeight: 50 },
   input: { flex: 1, fontFamily: 'DMSans_400Regular', fontSize: 16, minHeight: MIN_TOUCH },
   filters: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   sortRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sortBtn: { width: MIN_TOUCH, height: MIN_TOUCH, borderRadius: radius.button, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  squareBtn: { width: MIN_TOUCH, height: MIN_TOUCH, borderRadius: radius.button, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  empty: { alignItems: 'center', gap: 10, marginTop: 40 },
+  center: { textAlign: 'center' },
+  sortOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 52 },
 });

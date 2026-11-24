@@ -4,9 +4,11 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SnackbarProvider } from '@/components/ui';
+import { initDb } from '@/db/client';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -19,6 +21,8 @@ function RootStack() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="ajout" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="produit/[id]" />
       </Stack>
     </>
   );
@@ -33,17 +37,28 @@ export default function RootLayout() {
     DMSans_700Bold,
   });
 
-  useEffect(() => {
-    if (loaded || error) SplashScreen.hideAsync().catch(() => {});
-  }, [loaded, error]);
+  const [dbReady, setDbReady] = useState(false);
+  const [dbError, setDbError] = useState<Error | null>(null);
 
-  if (!loaded && !error) return null;
+  useEffect(() => {
+    initDb().then(() => setDbReady(true), setDbError);
+  }, []);
+
+  const ready = (loaded || !!error) && (dbReady || !!dbError);
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
+
+  if (dbError) throw dbError; // capturé par l'ErrorBoundary d'Expo Router (Sentry à l'étape 10)
+  if (!ready) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <RootStack />
+          <SnackbarProvider>
+            <RootStack />
+          </SnackbarProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

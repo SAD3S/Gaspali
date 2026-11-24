@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
-import { Calendar, Camera, X, Zap } from 'lucide-react-native';
+import { Leaf, X, Zap } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Chip, OptionTiles, ProductAvatar, SegmentedControl, Sheet, Stepper, Text } from '@/components/ui';
-import type { Location } from '@/data/demo';
-import { applyShortcut, DATE_SHORTCUTS, formatLongDate, type DateShortcut } from '@/domain/dates';
-import type { DateType } from '@/domain/freshness';
+import { Button, ProductAvatar, Sheet, Text, useSnackbar } from '@/components/ui';
+import { addItem } from '@/db/inventoryRepo';
+import { getCategory, type Location } from '@/domain/categories';
+import { defaultExpiry } from '@/domain/inventory';
+import { ItemForm, type ItemFormValue } from '@/features/inventory/ItemForm';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
@@ -15,11 +16,25 @@ export default function Scan() {
   const { colors } = useTheme();
   const [burst, setBurst] = useState(true);
   const [count, setCount] = useState(3);
-  const [dateType, setDateType] = useState<DateType>('DLC');
-  const [shortcut, setShortcut] = useState<DateShortcut>('+1sem');
-  const [qty, setQty] = useState(1);
-  const [loc, setLoc] = useState<Location>('frigo');
-  const expiry = applyShortcut(new Date(), shortcut);
+  const snackbar = useSnackbar();
+  // Produit simulé jusqu'à l'étape 3 (caméra + Open Food Facts).
+  const product = { name: 'Crème fraîche épaisse', category: 'laitier', quantity: 20, unit: 'cl' };
+  const initialForm = (): ItemFormValue => {
+    const c = getCategory(product.category);
+    return { dateType: c.dateType, expiresAt: defaultExpiry(product.category, c.location), quantity: 1, unit: 'pièce', location: c.location };
+  };
+  const [form, setForm] = useState<ItemFormValue>(initialForm);
+  const changeLocation = (location: Location) =>
+    setForm({ ...form, location, expiresAt: defaultExpiry(product.category, location) });
+
+  const add = () => {
+    addItem({ name: product.name, category: product.category, ...form });
+    snackbar.show(`${product.name} ajoutée`);
+    if (burst) {
+      setCount((c) => c + 1);
+      setForm(initialForm());
+    } else router.back();
+  };
   const onDark = '#FFFFFF';
   const glass = 'rgba(255,255,255,0.12)';
 
@@ -63,56 +78,17 @@ export default function Scan() {
             </View>
           </View>
 
-          <View style={styles.between}>
-            <Text variant="bodyStrong" style={{ fontSize: 16 }}>Date limite</Text>
-            <SegmentedControl<DateType>
-              accessibilityLabel="Type de date"
-              value={dateType}
-              onChange={setDateType}
-              options={[
-                { value: 'DLC', label: 'DLC', hint: 'à consommer jusqu’au' },
-                { value: 'DDM', label: 'DDM', hint: 'à consommer de préférence avant' },
-              ]}
-            />
-          </View>
+          <ItemForm value={form} onChange={setForm} onLocationChange={changeLocation} onReadDate={() => {}} showUnits={false} />
 
-          <View style={styles.wrap}>
-            {DATE_SHORTCUTS.map((s) => (
-              <Chip key={s.key} shape="button" label={s.label} selected={shortcut === s.key} onPress={() => setShortcut(s.key)} />
-            ))}
-            <Pressable accessibilityRole="button" accessibilityLabel="Choisir une date" style={[styles.iconBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-              <Calendar size={20} color={colors.text} />
-            </Pressable>
-          </View>
-
-          <View style={styles.between}>
-            <Text variant="body" style={styles.flex}>
-              {dateType === 'DLC' ? 'Jusqu’au ' : 'De préférence avant le '}
-              <Text variant="body" style={styles.bold}>{formatLongDate(expiry)}</Text>
-            </Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Lire la date sur l’emballage" style={[styles.readDate, { backgroundColor: colors.primarySoft }]}>
-              <Camera size={16} color={colors.primaryText} />
-              <Text variant="label" tone="primary" style={styles.bold}>Lire la date</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.between}>
-            <Text variant="bodyStrong" style={{ fontSize: 16 }}>Quantité</Text>
-            <Stepper label="quantité" value={qty} onChange={setQty} min={1} />
-          </View>
-
-          <OptionTiles<Location>
-            accessibilityLabel="Emplacement"
-            value={loc}
-            onChange={setLoc}
-            options={[
-              { value: 'frigo', label: 'Frigo' },
-              { value: 'congelo', label: 'Congélo' },
-              { value: 'placard', label: 'Placard' },
-            ]}
-          />
-
-          <Button size="lg" label="Ajouter et scanner le suivant" onPress={() => (burst ? setCount((c) => c + 1) : router.back())} />
+          <Button size="lg" label={burst ? 'Ajouter et scanner le suivant' : 'Ajouter'} onPress={add} />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.replace('/ajout')}
+            style={styles.noBarcode}
+          >
+            <Leaf size={18} color={colors.primaryText} />
+            <Text variant="label" tone="primary" style={styles.bold}>Produit sans code-barres</Text>
+          </Pressable>
         </ScrollView>
       </Sheet>
     </View>
@@ -129,9 +105,6 @@ const styles = StyleSheet.create({
   laser: { width: 180, height: 2 },
   sheet: { flex: 1 },
   row: { flexDirection: 'row', gap: 14, alignItems: 'center' },
-  between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  iconBtn: { width: MIN_TOUCH, height: MIN_TOUCH, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  readDate: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, minHeight: MIN_TOUCH, borderRadius: 14 },
+  noBarcode: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: MIN_TOUCH },
   bold: { fontFamily: 'DMSans_700Bold' },
 });
