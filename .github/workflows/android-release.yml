@@ -1,0 +1,104 @@
+name: Android – build & release
+
+# Un tag « v* » (ex. v0.1.0) construit l'APK et le publie dans une Release GitHub.
+# Lancement manuel possible (onglet Actions) : l'APK est alors seulement disponible en artefact.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Dépendances
+        run: npm ci
+
+      - name: Vérifications (types + tests)
+        run: |
+          npx tsc --noEmit
+          npm test -- --ci
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            echo "APP_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          else
+            echo "APP_VERSION=0.0.0-dev.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          fi
+          # versionCode Android : doit toujours augmenter pour installer par-dessus.
+          echo "APP_VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+
+      - name: Clé de signature (si configurée)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [[ -n "$KEYSTORE_BASE64" ]]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+            {
+              echo "GASPALLI_UPLOAD_STORE_FILE=$RUNNER_TEMP/upload.keystore"
+              echo "GASPALLI_UPLOAD_STORE_PASSWORD=$STORE_PASSWORD"
+              echo "GASPALLI_UPLOAD_KEY_ALIAS=$KEY_ALIAS"
+              echo "GASPALLI_UPLOAD_KEY_PASSWORD=${KEY_PASSWORD:-$STORE_PASSWORD}"
+            } >> "$GITHUB_ENV"
+            echo "Signature avec la clé du dépôt."
+          else
+            echo "::warning::Aucune clé configurée : APK signé avec la clé de debug standard (test uniquement)."
+          fi
+
+      - name: Projet natif (expo prebuild)
+        run: npx expo prebuild --platform android --no-install --clean
+
+      - name: Compilation APK
+        working-directory: android
+        # arm64-v8a : tous les téléphones Android récents ; compile ~4× plus vite que toutes les ABI.
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
+
+      - name: Nommer l'APK
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk "dist/gaspalli-${APP_VERSION}.apk"
+          ls -lh dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gaspalli-${{ env.APP_VERSION }}
+          path: dist/*.apk
+
+      - name: Release GitHub
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.apk
+          prerelease: ${{ startsWith(github.ref_name, 'v0.') }}
+          body_path: docs/release-notes.md
+          generate_release_notes: true

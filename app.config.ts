@@ -1,10 +1,15 @@
 import type { ExpoConfig } from 'expo/config';
 
+/** Version publiée : dérivée du tag Git en CI (v0.2.0 → 0.2.0). */
+const version = process.env.APP_VERSION ?? '0.1.0';
+/** Doit augmenter à chaque build Android pour pouvoir installer par-dessus. */
+const versionCode = Number(process.env.APP_VERSION_CODE ?? 1);
+
 const config: ExpoConfig = {
   name: 'Gaspalli',
   slug: 'gaspalli',
   scheme: 'gaspalli',
-  version: '0.1.0',
+  version,
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
@@ -15,6 +20,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'app.gaspalli',
+    versionCode,
     blockedPermissions: ['android.permission.RECORD_AUDIO'],
     adaptiveIcon: {
       foregroundImage: './assets/android-icon-foreground.png',
@@ -26,6 +32,7 @@ const config: ExpoConfig = {
   plugins: [
     'expo-router',
     'expo-font',
+    './plugins/withAndroidRelease',
     [
       'expo-camera',
       {

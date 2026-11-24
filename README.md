@@ -24,7 +24,19 @@ et met en cache le code-barres `3260000000012` (à saisir via « Saisir le code 
 
 - **Expo Go** : `npm start` puis scanner le QR code. Tout fonctionne sauf la lecture de la date (OCR ML Kit),
   qui demande l'app compilée.
-- **App compilée (Android)** : profils `development` / `preview` / `production` dans `eas.json`.
+- **APK Android (GitHub Actions)** : pousser un tag `vX.Y.Z` lance `.github/workflows/android-release.yml`,
+  qui vérifie (types + tests), compile l'APK et le publie dans une Release GitHub.
+  ```bash
+  git tag v0.2.0 && git push origin v0.2.0
+  ```
+  Signature : sans secrets, la clé de debug standard est utilisée (OK pour tester). Pour une vraie clé :
+  ```bash
+  keytool -genkeypair -v -keystore gaspalli-upload.keystore -alias gaspalli -keyalg RSA -keysize 2048 -validity 10000
+  base64 -w0 gaspalli-upload.keystore   # → secret ANDROID_KEYSTORE_BASE64
+  ```
+  puis les secrets `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (`gaspalli`) et `ANDROID_KEY_PASSWORD`
+  (Settings › Secrets and variables › Actions). ⚠️ Changer de clé impose de désinstaller l'app une fois.
+- **EAS (optionnel)** : profils `development` / `preview` / `production` dans `eas.json`.
   Les dossiers natifs `android/` et `ios/` sont générés (`npx expo prebuild`) et ne sont pas versionnés.
 
 ## Structure
