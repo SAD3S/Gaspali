@@ -3,7 +3,7 @@
 const FRACTIONS: Record<string, string> = { '0.25': '¼', '0.5': '½', '0.75': '¾' };
 
 /** Unités comptables qui prennent un « s » au pluriel. */
-const PLURALIZABLE = new Set(['pièce', 'pot', 'tranche', 'filet', 'sachet', 'paquet', 'boîte', 'bouteille', 'portion', 'bouquet']);
+const PLURALIZABLE = new Set(['pièce', 'pot', 'tranche', 'filet', 'sachet', 'paquet', 'boîte', 'bouteille', 'portion', 'bouquet', 'gousse', 'botte', 'cube']);
 
 /** Arrondi au quart le plus proche. */
 export function roundQuarter(n: number): number {

@@ -10,10 +10,12 @@ export interface AppSettings {
   notificationPromptDone: boolean;
   /** Ingrédients de base considérés comme toujours disponibles (sel, huile…). */
   basics: string[];
+  /** Produit habituel terminé → ajouté automatiquement aux courses. */
+  autoRestock: boolean;
 }
 
 const KEY = 'gaspalli.settings';
-const DEFAULTS: AppSettings = { notifications: DEFAULT_NOTIFICATION_SETTINGS, notificationPromptDone: false, basics: DEFAULT_BASICS };
+const DEFAULTS: AppSettings = { notifications: DEFAULT_NOTIFICATION_SETTINGS, notificationPromptDone: false, basics: DEFAULT_BASICS, autoRestock: true };
 
 let current: AppSettings = DEFAULTS;
 let loaded = false;

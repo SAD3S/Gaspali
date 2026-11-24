@@ -8,11 +8,11 @@ import { useMembers } from '@/features/account/hooks';
 import { useSyncStatus } from '@/sync/engine';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const ENTRIES: { label: string; Icon: LucideIcon; href?: '/reglages' | '/recettes' | '/preferences'; soon?: string }[] = [
+const ENTRIES: { label: string; Icon: LucideIcon; href?: '/reglages' | '/recettes' | '/preferences' | '/planning' | '/statistiques'; soon?: string }[] = [
   { label: 'Recettes', Icon: ChefHat, href: '/recettes' },
   { label: 'Préférences alimentaires', Icon: Salad, href: '/preferences' },
-  { label: 'Planning des repas', Icon: CalendarDays, soon: 'Étape 8' },
-  { label: 'Statistiques', Icon: ChartColumn, soon: 'Étape 8' },
+  { label: 'Planning des repas', Icon: CalendarDays, href: '/planning' },
+  { label: 'Statistiques', Icon: ChartColumn, href: '/statistiques' },
   { label: 'Réglages', Icon: Settings, href: '/reglages' },
   { label: 'À propos', Icon: Info, soon: 'Étape 10' },
 ];

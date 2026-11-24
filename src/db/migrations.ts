@@ -122,4 +122,15 @@ CREATE TABLE shopping_items (
   recipe_id TEXT,
   added_by TEXT
 );`,
+
+  // v4 — planning des repas (étape 8)
+  `CREATE TABLE meal_plan (
+  ${sync},
+  date TEXT NOT NULL,
+  slot TEXT NOT NULL,
+  recipe_id TEXT NOT NULL,
+  servings INTEGER NOT NULL,
+  done INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX meal_plan_date_idx ON meal_plan (date);`,
 ];

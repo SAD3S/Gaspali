@@ -8,6 +8,7 @@ import { setStatus } from '@/db/inventoryRepo';
 import { queryInventory, SORT_LABELS, type LocationFilter, type SortKey } from '@/domain/inventory';
 import { itemSubtitle } from '@/features/inventory/format';
 import { useInventory } from '@/features/inventory/hooks';
+import { useReservations } from '@/features/recipes/hooks';
 import { SwipeableItem } from '@/features/inventory/SwipeableItem';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH, radius } from '@/theme/tokens';
@@ -23,6 +24,7 @@ export default function Inventaire() {
   const { colors } = useTheme();
   const snackbar = useSnackbar();
   const items = useInventory();
+  const reservations = useReservations();
   const { lieu } = useLocalSearchParams<{ lieu?: string }>();
   const [filter, setFilter] = useState<LocationFilter>('tout');
   // Tuiles Frigo / Congélo / Placard de l'accueil : ouvre l'inventaire déjà filtré.
@@ -97,7 +99,7 @@ export default function Inventaire() {
         renderItem={({ item: { item, freshness } }) => (
           <SwipeableItem
             name={item.name}
-            subtitle={itemSubtitle(item)}
+            subtitle={itemSubtitle(item, reservations.get(item.id))}
             state={freshness.state}
             badgeLabel={freshness.label}
             onPress={() => router.push({ pathname: '/produit/[id]', params: { id: item.id } })}

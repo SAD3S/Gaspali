@@ -1,19 +1,21 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Check, ChevronLeft, PackageOpen, Snowflake, Trash2 } from 'lucide-react-native';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, PackageOpen, Snowflake, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheet, Button, Card, FreshnessBadge, ProductAvatar, Stepper, Text, useSnackbar } from '@/components/ui';
 import { consumePart, markOpened, moveTo, setStatus, updateItem } from '@/db/inventoryRepo';
 import type { EventRow } from '@/db/schema';
-import { getCategory, LOCATION_LABELS, type Location } from '@/domain/categories';
+import { getCategory, type Location } from '@/domain/categories';
 import { formatLongDate, relativeDayLabel, daysBetween } from '@/domain/dates';
 import { computeFreshness } from '@/domain/freshness';
 import { formatDuration, freezerExtension, remainingOptions } from '@/domain/inventory';
 import { formatQuantity, roundQuarter, stepFor } from '@/domain/quantity';
+import { roundForDisplay } from '@/domain/units';
 import { ItemForm } from '@/features/inventory/ItemForm';
 import { useItem, useItemHistory } from '@/features/inventory/hooks';
 import { useAuthorName } from '@/features/account/hooks';
+import { useReservations } from '@/features/recipes/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
@@ -33,6 +35,7 @@ export default function Produit() {
   const item = useItem(id);
   const history = useItemHistory(id);
   const authorName = useAuthorName();
+  const reservation = useReservations().get(id);
   const [partialOpen, setPartialOpen] = useState(false);
   const [remaining, setRemaining] = useState(0);
   const [freezeAsk, setFreezeAsk] = useState<null | { days: number }>(null);
@@ -91,6 +94,18 @@ export default function Produit() {
         </View>
         {f.state === 'a_verifier' && (
           <Text variant="label" tone="secondary">La date de durabilité minimale est passée : le produit est souvent encore bon. Vérifie l’aspect et l’odeur.</Text>
+        )}
+
+        {inStock && reservation && (
+          <Pressable accessibilityRole="button" onPress={() => router.push('/planning')}>
+            <Card style={styles.reserved}>
+              <CalendarDays size={20} color={colors.primaryText} />
+              <Text variant="body" style={styles.flex}>
+                {reservation.quantity < item.quantity - 0.0001 ? `${formatQuantity(roundForDisplay(reservation.quantity, item.unit), item.unit)} réservé${reservation.quantity > 1 ? 's' : ''}` : 'Réservé'} pour {reservation.meals.join(', ')}
+              </Text>
+              <ChevronRight size={18} color={colors.textSecondary} />
+            </Card>
+          </Pressable>
         )}
 
         {inStock && (
@@ -201,6 +216,7 @@ export default function Produit() {
 }
 
 const styles = StyleSheet.create({
+  reserved: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   flex: { flex: 1 },
   top: { paddingHorizontal: 16, paddingVertical: 8 },
   round: { width: MIN_TOUCH, height: MIN_TOUCH, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

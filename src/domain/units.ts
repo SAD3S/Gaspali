@@ -21,3 +21,9 @@ export function roundForDisplay(q: number, unit: string | null): number {
   if (unit === 'cl') return Math.round(q);
   return Math.round(q * 4) / 4;
 }
+
+/** Quantité à acheter : les unités « au compte » sont arrondies à l'unité supérieure (3½ gousses → 4). */
+export function roundForShopping(q: number, unit: string | null): number {
+  if (unit && COUNT.has(unit)) return Math.max(1, Math.ceil(q - 0.001));
+  return roundForDisplay(q, unit);
+}

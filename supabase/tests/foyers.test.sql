@@ -216,6 +216,28 @@ do $$ begin
 end $$;
 reset role;
 
+-- 6 quater. Planning des repas (migration 4)
+select pg_temp.as_user(:alice);
+do $$ declare res jsonb; hid uuid := (select id from t_h); begin
+  res := public.sync_push('meal_plan', jsonb_build_array(
+    jsonb_build_object('id', 'f0000000-0000-4000-8000-000000000060', 'household_id', hid,
+      'fields', '{"created_at": 1, "updated_at": 1, "date": "2026-11-26", "slot": "soir", "recipe_id": "gratin-poulet-epinards", "servings": 4, "done": false}'::jsonb, 'ts', '{}'::jsonb),
+    jsonb_build_object('id', 'f0000000-0000-4000-8000-000000000061', 'household_id', hid,
+      'fields', '{"created_at": 1, "updated_at": 1, "date": "26/11", "slot": "soir", "recipe_id": "x", "servings": 4, "done": false}'::jsonb, 'ts', '{}'::jsonb)));
+  assert (res ->> 'applied')::int = 1 and res -> 'rejected' = '["f0000000-0000-4000-8000-000000000061"]'::jsonb, 'planning : ' || res::text;
+  begin
+    perform public.sync_push('pas_une_table', '[]');
+    raise exception 'aurait dû échouer';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+reset role;
+select pg_temp.as_user(:bob);
+do $$ begin
+  assert (select recipe_id from public.meal_plan) = 'gratin-poulet-epinards', 'Bob voit le planning du foyer';
+end $$;
+reset role;
+
 -- 7. Code régénéré par l'admin ; départs
 select pg_temp.as_user(:alice);
 do $$ declare old text; neu text; begin

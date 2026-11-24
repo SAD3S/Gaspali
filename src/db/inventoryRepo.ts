@@ -1,10 +1,12 @@
 import { and, desc, eq, gte, isNull } from 'drizzle-orm';
 import { addDays } from '@/domain/dates';
 import type { DateType } from '@/domain/freshness';
-import type { Location } from '@/domain/categories';
+import { getCategory, type Location } from '@/domain/categories';
 import { consumePartially, freezerExtension, openItem, type Item, type ItemStatus } from '@/domain/inventory';
+import { maybeRestock } from '@/features/shopping/restock';
 import { ownership, trackInsert, trackPatch } from '@/sync/outbox';
 import { db } from './client';
+import { removeShopping } from './shoppingRepo';
 import { newId } from './ids';
 import { events, inventoryItems, products, type EventType, type InventoryRow } from './schema';
 
@@ -129,9 +131,11 @@ export function setStatus(id: string, status: Exclude<ItemStatus, 'en_stock'>): 
   if (!before) return () => {};
   updateItem(id, { status });
   const eventId = logEvent(before, status === 'consomme' ? 'consomme' : 'jete', before.quantity);
+  const restocked = maybeRestock(before);
   return () => {
     updateItem(id, { status: before.status });
     cancelEvent(eventId);
+    if (restocked) removeShopping(restocked);
   };
 }
 
@@ -199,6 +203,31 @@ export function seedDemo(): void {
   rows.forEach(addItem);
   const biscottes = db.select().from(inventoryItems).where(eq(inventoryItems.name, 'Biscottes complètes')).get();
   if (biscottes) updateItem(biscottes.id, { openedAt: d(-3) });
+  // Historique des 5 derniers mois, pour que l'écran Statistiques ait quelque chose à montrer.
+  if (!db.select().from(events).where(eq(events.detail, 'demo')).get()) {
+    const { householdId, userId } = ownership();
+    const history: [number, string, string, number, number][] = [
+      // [mois en arrière, catégorie, type, nombre, valeur unitaire]
+      [5, 'legumes', 'jete', 4, 2], [5, 'laitier', 'consomme', 6, 1.8], [5, 'viande', 'jete', 1, 5.5],
+      [4, 'legumes', 'jete', 3, 2], [4, 'laitier', 'consomme', 8, 1.8], [4, 'fruits', 'jete', 2, 2.2],
+      [3, 'legumes', 'jete', 2, 2], [3, 'fromage', 'consomme', 9, 3.5], [3, 'traiteur', 'jete', 2, 4],
+      [2, 'legumes', 'jete', 2, 2], [2, 'laitier', 'consomme', 11, 1.8], [2, 'boulangerie', 'jete', 1, 1.5],
+      [1, 'fruits', 'jete', 1, 2.2], [1, 'viande', 'consomme', 12, 5], [1, 'legumes', 'jete', 1, 2],
+      [0, 'laitier', 'consomme', 7, 1.8], [0, 'legumes', 'jete', 1, 2],
+    ];
+    for (const [back, category, type, count, value] of history) {
+      for (let i = 0; i < count; i++) {
+        const at = new Date(t.getFullYear(), t.getMonth() - back, Math.min(2 + i * 2, back === 0 ? Math.max(1, t.getDate() - 1) : 27), 19);
+        const values = {
+          id: newId(), householdId, createdAt: at, updatedAt: at, deletedAt: null, itemId: newId(),
+          type: type as 'consomme' | 'jete', productName: getCategory(category).label, category,
+          quantity: 1, unit: 'pièce', value, detail: 'demo', authorId: userId,
+        };
+        db.insert(events).values(values).run();
+        trackInsert('events', values);
+      }
+    }
+  }
   // Produit en cache, pour essayer « Saisir le code » sans réseau : 3260000000012.
   if (!db.select().from(products).where(eq(products.barcode, '3260000000012')).get()) {
     const values = {

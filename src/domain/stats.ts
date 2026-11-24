@@ -81,3 +81,58 @@ export function periodStats(events: StatEvent[], from: Date, to: Date = new Date
 export function formatEuros(v: number): string {
   return `${v.toFixed(2).replace('.', ',')} €`;
 }
+
+const MONTHS_SHORT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+
+export interface MonthStats extends PeriodStats {
+  /** « nov. » (avec l'année si ce n'est pas l'année en cours) */
+  label: string;
+  start: Date;
+  savedValue: number;
+}
+
+/** Les `count` derniers mois, du plus ancien au plus récent (mois en cours inclus). */
+export function monthlyStats(events: StatEvent[], count = 6, now: Date = new Date()): MonthStats[] {
+  const out: MonthStats[] = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+    const base = periodStats(events, start, end);
+    let savedValue = 0;
+    for (const e of events) {
+      if (e.type === 'consomme' && !e.deletedAt && e.createdAt >= start && e.createdAt < end) savedValue += eventValue(e);
+    }
+    const label = MONTHS_SHORT[start.getMonth()]! + (start.getFullYear() !== now.getFullYear() ? ` ${String(start.getFullYear()).slice(2)}` : '');
+    out.push({ ...base, label, start, savedValue: Math.round(savedValue * 100) / 100 });
+  }
+  return out;
+}
+
+export interface CategoryWaste {
+  category: string;
+  count: number;
+  value: number;
+}
+
+/** Catégories les plus jetées sur une période (par nombre, puis par valeur). */
+export function topWastedCategories(events: StatEvent[], from: Date, limit = 5): CategoryWaste[] {
+  const map = new Map<string, CategoryWaste>();
+  for (const e of events) {
+    if (e.type !== 'jete' || e.deletedAt || e.createdAt < from) continue;
+    const c = map.get(e.category) ?? { category: e.category, count: 0, value: 0 };
+    c.count++;
+    c.value = Math.round((c.value + eventValue(e)) * 100) / 100;
+    map.set(e.category, c);
+  }
+  return [...map.values()].sort((a, b) => b.count - a.count || b.value - a.value).slice(0, limit);
+}
+
+/** Graduations « rondes » d'un axe qui part de 0 (1, 2 ou 5 × 10ⁿ), au moins jusqu'à `max`. */
+export function niceTicks(max: number, target = 4): number[] {
+  if (max <= 0) return [0, 1];
+  const raw = max / target;
+  const pow = 10 ** Math.floor(Math.log10(raw));
+  const step = Math.max(1, [1, 2, 5, 10].map((m) => m * pow).find((s) => s >= raw) ?? 10 * pow);
+  const top = Math.ceil(max / step) * step;
+  return Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step);
+}

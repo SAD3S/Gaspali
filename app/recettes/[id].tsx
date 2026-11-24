@@ -1,13 +1,16 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Check, ChevronLeft, Clock, FolderPlus, Heart, Pencil, ShoppingBasket } from 'lucide-react-native';
+import { CalendarDays, CalendarPlus, Check, ChevronLeft, Clock, FolderPlus, Heart, Pencil, ShoppingBasket } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheet, Button, Card, Chip, Stepper, Text, useSnackbar } from '@/components/ui';
 import { ALLERGEN_LABELS } from '@/data/allergens';
+import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { consumePart } from '@/db/inventoryRepo';
+import { addMeal, updateMeal } from '@/db/mealPlanRepo';
 import { setFavorite, setInFolder } from '@/db/recipesRepo';
-import { addShopping } from '@/db/shoppingRepo';
+import { addShopping, shoppingQuery } from '@/db/shoppingRepo';
+import { mealPhrase, subtractShoppingList } from '@/domain/planner';
 import {
   cookProposals,
   DIET_LABELS,
@@ -18,17 +21,19 @@ import {
   type CookProposal,
 } from '@/domain/recipeEngine';
 import { formatNumber, formatQuantity, stepFor } from '@/domain/quantity';
-import { roundForDisplay } from '@/domain/units';
+import { roundForShopping } from '@/domain/units';
 import { useInventory } from '@/features/inventory/hooks';
 import { IngredientChecks } from '@/features/recipes/IngredientChecks';
 import { KIND_LABELS, RecipeVisual } from '@/features/recipes/RecipeCard';
-import { useHouseholdPrefs, useRecipe, useRecipeOrganization } from '@/features/recipes/hooks';
+import { useMembers } from '@/features/account/hooks';
+import { SlotPicker } from '@/features/planning/pickers';
+import { useHouseholdPrefs, usePlan, useRecipe, useRecipeOrganization } from '@/features/recipes/hooks';
 import { useSettings } from '@/features/settings/settings';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
 export default function RecetteFiche() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, plan: planId, portions } = useLocalSearchParams<{ id: string; plan?: string; portions?: string }>();
   const { colors } = useTheme();
   const snackbar = useSnackbar();
   const recipe = useRecipe(id);
@@ -36,7 +41,13 @@ export default function RecetteFiche() {
   const { basics } = useSettings();
   const { members } = useHouseholdPrefs();
   const org = useRecipeOrganization();
-  const [servings, setServings] = useState<number | null>(null);
+  const plan = usePlan();
+  const householdSize = useMembers().length;
+  const { data: shopping } = useLiveQuery(shoppingQuery());
+  // Ouverte depuis le planning : portions du repas prévu, et le repas passe en « cuisiné ».
+  const meal = planId ? plan.find((e) => e.id === planId) : undefined;
+  const [servings, setServings] = useState<number | null>(portions ? Number(portions) || null : null);
+  const [scheduling, setScheduling] = useState(false);
   const [cooking, setCooking] = useState<CookProposal[] | null>(null);
   const [foldersOpen, setFoldersOpen] = useState(false);
 
@@ -60,7 +71,7 @@ export default function RecetteFiche() {
   const favorite = org.favorites.has(recipe.id);
   const householdAllergens = new Set(members.flatMap((m) => m.allergens));
   const allergenConflicts = recipeAllergens(recipe).filter((a) => householdAllergens.has(a));
-  const missing = missingIngredients(evaluation, n);
+  const missing = subtractShoppingList(missingIngredients(evaluation, n), shopping ?? []);
   const basicsSet = new Set(basics);
 
   return (
@@ -104,6 +115,15 @@ export default function RecetteFiche() {
           ))}
         </View>
 
+        {meal && (
+          <View style={[styles.planned, { backgroundColor: colors.primarySoft }]}>
+            <CalendarDays size={18} color={colors.primaryText} />
+            <Text variant="label" tone="primary" style={styles.bold}>
+              Prévu {mealPhrase(meal.date, meal.slot)} · {meal.servings} pers.{meal.done ? ' · cuisiné' : ''}
+            </Text>
+          </View>
+        )}
+
         {allergenConflicts.length > 0 && (
           <Card style={{ borderColor: colors.urgent, gap: 4 }}>
             <Text variant="bodyStrong" tone="urgent">Contient un allergène déclaré</Text>
@@ -142,8 +162,11 @@ export default function RecetteFiche() {
             icon={<Check size={20} color={colors.onPrimary} />}
             onPress={() => {
               const p = cookProposals(evaluation, n, basicsSet);
-              if (!p.length) snackbar.show('Aucun produit de l’inventaire n’est utilisé par cette recette.');
-              else setCooking(p);
+              if (p.length) setCooking(p);
+              else if (meal && !meal.done) {
+                updateMeal(meal.id, { done: true });
+                snackbar.show('Repas marqué comme cuisiné', () => updateMeal(meal.id, { done: false }));
+              } else snackbar.show('Aucun produit de l’inventaire n’est utilisé par cette recette.');
             }}
           />
           {missing.length > 0 && (
@@ -152,9 +175,17 @@ export default function RecetteFiche() {
               variant="soft"
               icon={<ShoppingBasket size={18} color={colors.primaryText} />}
               onPress={() => {
-                const added = addShopping(missing.map((m) => ({ name: m.label, quantity: m.quantity != null ? roundForDisplay(m.quantity, m.unit) : null, unit: m.unit, ingredientId: m.ingredientId, recipeId: recipe.id })));
-                snackbar.show(added ? `${added} article${added > 1 ? 's' : ''} ajouté${added > 1 ? 's' : ''} à la liste de courses` : 'Déjà dans ta liste de courses');
+                const added = addShopping(missing.map((m) => ({ name: m.label, quantity: m.quantity != null ? roundForShopping(m.quantity, m.unit) : null, unit: m.unit, ingredientId: m.ingredientId, recipeId: recipe.id }))).length;
+                snackbar.show(added ? `${added} article${added > 1 ? 's' : ''} ajouté${added > 1 ? 's' : ''} à la liste de courses` : 'Quantités complétées dans ta liste de courses');
               }}
+            />
+          )}
+          {!meal && (
+            <Button
+              label="Ajouter au planning"
+              variant="outline"
+              icon={<CalendarPlus size={18} color={colors.text} />}
+              onPress={() => setScheduling(true)}
             />
           )}
         </View>
@@ -166,8 +197,26 @@ export default function RecetteFiche() {
         onClose={() => setCooking(null)}
         onConfirm={(final) => {
           const undos = final.filter((p) => p.remaining < p.item.quantity).map((p) => consumePart(p.item.id, p.remaining));
+          if (meal && !meal.done) {
+            updateMeal(meal.id, { done: true });
+            undos.push(() => updateMeal(meal.id, { done: false }));
+          }
           setCooking(null);
-          snackbar.show(`Inventaire mis à jour · ${undos.length} produit${undos.length > 1 ? 's' : ''}`, () => undos.reverse().forEach((u) => u()));
+          const used = final.filter((p) => p.remaining < p.item.quantity).length;
+          snackbar.show(`Inventaire mis à jour · ${used} produit${used > 1 ? 's' : ''}`, () => undos.reverse().forEach((u) => u()));
+        }}
+      />
+
+      <SlotPicker
+        visible={scheduling}
+        title="Quand veux-tu la cuisiner ?"
+        entries={plan}
+        onClose={() => setScheduling(false)}
+        onPick={(date, slot) => {
+          const people = servings ?? Math.max(2, householdSize);
+          addMeal(date, slot, recipe.id, people);
+          setScheduling(false);
+          snackbar.show(`Ajouté au planning : ${mealPhrase(date, slot)}`);
         }}
       />
 
@@ -235,5 +284,6 @@ const styles = StyleSheet.create({
   step: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   stepNum: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   cookRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  planned: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   bold: { fontFamily: 'DMSans_700Bold' },
 });

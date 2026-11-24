@@ -46,7 +46,7 @@ function Row({ label, hint, value, onChange, disabled }: { label: string; hint: 
 export default function Reglages() {
   const { colors, preference, setPreference } = useTheme();
   const snackbar = useSnackbar();
-  const { notifications: n, basics } = useSettings();
+  const { notifications: n, basics, autoRestock } = useSettings();
   const items = useInventory();
   const [permission, setPermission] = useState<PermissionState>('undetermined');
 
@@ -101,6 +101,16 @@ export default function Reglages() {
             );
           })}
         </View>
+      </Card>
+
+      <Text variant="overline" tone="secondary">Courses</Text>
+      <Card>
+        <Row
+          label="Produits habituels"
+          hint="Quand un produit acheté régulièrement est terminé, il est ajouté à la liste de courses."
+          value={autoRestock}
+          onChange={(v) => updateSettings({ autoRestock: v })}
+        />
       </Card>
 
       <Text variant="overline" tone="secondary">Notifications</Text>

@@ -13,6 +13,7 @@ import { AuthProvider } from '@/features/account/AuthProvider';
 import { SyncManager } from '@/features/account/SyncManager';
 import { NotificationManager } from '@/features/notifications/NotificationManager';
 import { loadSettings } from '@/features/settings/settings';
+import { RestockNotifier } from '@/features/shopping/RestockNotifier';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -64,6 +65,7 @@ export default function RootLayout() {
             <SnackbarProvider>
               <SyncManager />
               <NotificationManager />
+              <RestockNotifier />
               <RootStack />
             </SnackbarProvider>
           </AuthProvider>

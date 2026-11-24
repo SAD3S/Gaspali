@@ -17,8 +17,9 @@ npm run typecheck
 
 ## Données de démo
 
-En développement, « Plus › Charger des produits de démo » remplit l'inventaire
-et met en cache le code-barres `3260000000012` (à saisir via « Saisir le code » sur l'écran de scan).
+En développement, « Plus › Charger des produits de démo » remplit l'inventaire, ajoute 5 mois d'historique
+(pour l'écran Statistiques) et met en cache le code-barres `3260000000012` (à saisir via « Saisir le code »
+sur l'écran de scan).
 
 ## Tester sur téléphone
 
@@ -64,7 +65,7 @@ docs/captures/       captures à chaque étape
 - [x] 4. Comptes et foyer (Supabase : auth, RLS, invitations, synchro hors ligne champ par champ)
 - [x] 5. Accueil et notifications (alertes, stats du mois, rappel quotidien + veille de DLC, 1 notification/jour max)
 - [x] 6. Recettes (52 recettes, moteur anti-gaspi, recettes perso avec tags et dossiers, favoris, préférences alimentaires, « J'ai cuisiné ça »)
-- [ ] 7. IA recettes
-- [ ] 8. Courses, planning, statistiques
+- [x] 7. IA recettes (Edge Function Supabase + API Claude, quota et cache, revalidation des allergènes)
+- [x] 8. Courses (rangement dans l'inventaire, produits habituels), planning des repas (semaine anti-gaspi, réservations, manquants), statistiques
 - [ ] 9. Scan du ticket
 - [ ] 10. Publication

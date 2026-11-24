@@ -2,8 +2,10 @@ import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useMemo } from 'react';
 import { BUILTIN_RECIPES } from '@/data/recipes';
 import { LOCAL_USER, parseProfile, profilesQuery } from '@/db/dietaryRepo';
+import { mealPlanQuery } from '@/db/mealPlanRepo';
 import { foldersQuery, linksQuery, personalRecipesQuery, rowToRecipe } from '@/db/recipesRepo';
-import { suggestRecipes, type MemberPrefs, type Recipe, type Suggestion } from '@/domain/recipeEngine';
+import { availableAfterReservations, computeReservations, type PlanEntry, type Reservation } from '@/domain/planner';
+import { suggestRecipes, type EngineContext, type MemberPrefs, type Recipe, type Suggestion } from '@/domain/recipeEngine';
 import { useAuth } from '@/features/account/AuthProvider';
 import { useMembers } from '@/features/account/hooks';
 import { useInventory } from '@/features/inventory/hooks';
@@ -77,14 +79,43 @@ export function useHouseholdPrefs(): { members: MemberPrefs[]; mine: (MemberPref
   }, [data, members, session, active]);
 }
 
-/** Suggestions classées par le moteur anti-gaspi. */
-export function useSuggestions(): Suggestion[] {
+export function useRecipesById(): Map<string, Recipe> {
   const recipes = useAllRecipes();
+  return useMemo(() => new Map(recipes.map((r) => [r.id, r])), [recipes]);
+}
+
+/** Contexte du moteur : stock, ingrédients de base et préférences du foyer. */
+export function useEngineContext(): EngineContext {
   const items = useInventory();
   const { basics } = useSettings();
   const { members } = useHouseholdPrefs();
+  return useMemo(() => ({ items, basics: new Set(basics), members }), [items, basics, members]);
+}
+
+/** Repas planifiés (toutes dates). */
+export function usePlan(): PlanEntry[] {
+  const { data } = useLiveQuery(mealPlanQuery());
   return useMemo(
-    () => suggestRecipes(recipes, { items, basics: new Set(basics), members }),
-    [recipes, items, basics, members],
+    () => (data ?? []).map((r) => ({ id: r.id, date: r.date, slot: r.slot, recipeId: r.recipeId, servings: r.servings, done: r.done })),
+    [data],
+  );
+}
+
+/** Produits réservés par les repas à venir (id d'article → quantité et repas). */
+export function useReservations(): Map<string, Reservation> {
+  const plan = usePlan();
+  const byId = useRecipesById();
+  const ctx = useEngineContext();
+  return useMemo(() => computeReservations(plan, byId, ctx), [plan, byId, ctx]);
+}
+
+/** Suggestions classées par le moteur anti-gaspi (sur le stock non réservé par le planning). */
+export function useSuggestions(): Suggestion[] {
+  const recipes = useAllRecipes();
+  const ctx = useEngineContext();
+  const reservations = useReservations();
+  return useMemo(
+    () => suggestRecipes(recipes, { ...ctx, items: availableAfterReservations(ctx.items, reservations) }),
+    [recipes, ctx, reservations],
   );
 }

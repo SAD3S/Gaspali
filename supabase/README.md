@@ -11,7 +11,8 @@ L'app fonctionne sans serveur (mode local). Pour activer comptes, foyers et sync
 
 Au choix :
 - **SQL Editor** : colle et exécute, dans l'ordre, les fichiers de `migrations/`
-  (`…_foyers_et_inventaire.sql`, `…_recettes_preferences_courses.sql`, puis `…_recettes_ia.sql`) ;
+  (`…_foyers_et_inventaire.sql`, `…_recettes_preferences_courses.sql`, `…_recettes_ia.sql`, puis
+  `…_planning_repas.sql`) ;
 - **CLI** : `supabase link --project-ref <ref>` puis `supabase db push`.
 
 Le schéma crée : profils, foyers, membres (rôles admin / membre), inventaire, produits, historique,

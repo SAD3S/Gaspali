@@ -15,6 +15,9 @@ export interface Palette {
   primarySoft: string;
   urgent: string;
   navBar: string;
+  /** Graphiques : produits sauvés / jetés (paire vérifiée pour le daltonisme, cf. statistiques). */
+  chartSaved: string;
+  chartWasted: string;
   /** Vue caméra (identique dans les deux thèmes). */
   camera: string;
 }
@@ -33,6 +36,8 @@ export const palettes: Record<ColorScheme, Palette> = {
     primarySoft: '#DDEFE3',
     urgent: '#E8573A',
     navBar: '#FFFFFF',
+    chartSaved: '#1F7A4D',
+    chartWasted: '#E97E50',
     camera: '#1A231F',
   },
   dark: {
@@ -48,6 +53,8 @@ export const palettes: Record<ColorScheme, Palette> = {
     primarySoft: '#1D3A2B',
     urgent: '#FF7A5C',
     navBar: '#141D19',
+    chartSaved: '#34A872',
+    chartWasted: '#E0703F',
     camera: '#1A231F',
   },
 };

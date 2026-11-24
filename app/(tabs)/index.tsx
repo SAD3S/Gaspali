@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Bell, BellRing, Package, Refrigerator, Snowflake, type LucideIcon } from 'lucide-react-native';
+import { Bell, BellRing, CalendarDays, ChevronRight, Package, Refrigerator, Snowflake, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, ProductCard, Screen, Text, useSnackbar } from '@/components/ui';
@@ -7,13 +7,15 @@ import type { Location } from '@/domain/categories';
 import { formatHeaderDate } from '@/domain/dates';
 import { countByLocation, queryInventory } from '@/domain/inventory';
 import { formatTime, joinNames } from '@/domain/notifications';
+import { dayKey } from '@/domain/planner';
 import { formatEuros } from '@/domain/stats';
 import { itemSubtitle } from '@/features/inventory/format';
 import { useInventory, useMonthStats } from '@/features/inventory/hooks';
-import { useSuggestions } from '@/features/recipes/hooks';
+import { usePlan, useRecipesById, useReservations, useSuggestions } from '@/features/recipes/hooks';
 import { suggestionSummary } from '@/domain/recipeEngine';
 import { updateSettings, useSettings } from '@/features/settings/settings';
 import { getPermission, notificationsSupported, requestPermission, type PermissionState } from '@/services/notifications';
+import { RecipeVisual } from '@/features/recipes/RecipeCard';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius } from '@/theme/tokens';
 
@@ -65,14 +67,66 @@ function NotificationPrompt({ hasItems }: { hasItems: boolean }) {
   );
 }
 
+/** Repas planifié pour ce midi ou ce soir, sinon un accès au planning. */
+function MenuCard() {
+  const { colors } = useTheme();
+  const plan = usePlan();
+  const byId = useRecipesById();
+  const now = new Date();
+  const today = dayKey(now);
+  // Le midi reste affiché jusqu'à 15 h, ensuite on montre le soir.
+  const meal = plan
+    .filter((e) => e.date === today && !e.done && byId.has(e.recipeId) && (e.slot === 'soir' || now.getHours() < 15))
+    .sort((a, b) => (a.slot === b.slot ? 0 : a.slot === 'midi' ? -1 : 1))[0];
+  const recipe = meal ? byId.get(meal.recipeId) : undefined;
+
+  if (!meal || !recipe) {
+    return (
+      <Pressable accessibilityRole="button" onPress={() => router.push('/planning')}>
+        <Card style={styles.menuRow}>
+          <View style={[styles.promptIcon, { backgroundColor: colors.primarySoft }]}>
+            <CalendarDays size={22} color={colors.primaryText} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text variant="bodyStrong">Planning des repas</Text>
+            <Text variant="label" tone="secondary">Planifie ta semaine avec ce qui est dans ton frigo</Text>
+          </View>
+          <ChevronRight size={20} color={colors.textSecondary} />
+        </Card>
+      </Pressable>
+    );
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Au menu ${meal.slot === 'midi' ? 'ce midi' : 'ce soir'} : ${recipe.title}, ${meal.servings} personnes`}
+      onPress={() => router.push({ pathname: '/recettes/[id]', params: { id: recipe.id, plan: meal.id, portions: String(meal.servings) } })}
+    >
+      <Card style={styles.menuRow}>
+        <RecipeVisual recipe={recipe} size={52} rounded={14} />
+        <View style={{ flex: 1 }}>
+          <Text variant="overline" tone="secondary">Au menu {meal.slot === 'midi' ? 'ce midi' : 'ce soir'}</Text>
+          <Text variant="bodyStrong" numberOfLines={1}>{recipe.title}</Text>
+          <Text variant="label" tone="secondary">{meal.servings} pers. · {recipe.minutes} min</Text>
+        </View>
+        <ChevronRight size={20} color={colors.textSecondary} />
+      </Card>
+    </Pressable>
+  );
+}
+
 export default function Accueil() {
   const { colors } = useTheme();
   const today = new Date();
   const items = useInventory();
   const stats = useMonthStats();
   const suggestions = useSuggestions();
+  const reservations = useReservations();
   // Recette du jour : la mieux classée, si elle sauve au moins un produit qui périme bientôt.
-  const idea = suggestions.find((sg) => sg.urgentUsed + sg.soonUsed > 0) ?? null;
+  // Une recette déjà au planning n'est pas reproposée.
+  const plan = usePlan();
+  const planned = new Set(plan.filter((e) => !e.done && e.date >= dayKey(today)).map((e) => e.recipeId));
+  const idea = suggestions.find((sg) => sg.urgentUsed + sg.soonUsed > 0 && !planned.has(sg.recipe.id)) ?? null;
   const sorted = queryInventory(items, { today });
   const urgent = sorted.filter(({ freshness: f }) => f.state === 'urgent' || f.state === 'bientot').slice(0, 3);
   const veryUrgent = sorted.filter(({ freshness: f }) => f.state === 'urgent');
@@ -109,7 +163,7 @@ export default function Accueil() {
             key={item.id}
             variant="row"
             name={item.name}
-            subtitle={itemSubtitle(item)}
+            subtitle={itemSubtitle(item, reservations.get(item.id))}
             state={f.state}
             badgeLabel={f.label}
             onPress={() => router.push({ pathname: '/produit/[id]', params: { id: item.id } })}
@@ -139,6 +193,8 @@ export default function Accueil() {
           </Pressable>
         ))}
       </View>
+
+      <MenuCard />
 
       <Card tone="primary" style={{ gap: 6 }}>
         <Text variant="overline" tone="onPrimary" style={{ opacity: 0.85 }}>Idée anti-gaspi</Text>
@@ -220,4 +276,5 @@ const styles = StyleSheet.create({
   promptHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   promptIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   promptActions: { flexDirection: 'row', gap: 10 },
+  menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
 });

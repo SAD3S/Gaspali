@@ -130,6 +130,18 @@ export const shoppingItems = sqliteTable('shopping_items', {
   addedBy: text('added_by'),
 });
 
+/** Planning des repas (partagé par le foyer). */
+export const mealPlan = sqliteTable('meal_plan', {
+  ...syncColumns,
+  /** « 2026-11-24 » (jour local) */
+  date: text('date').notNull(),
+  slot: text('slot', { enum: ['midi', 'soir'] }).notNull(),
+  recipeId: text('recipe_id').notNull(),
+  servings: integer('servings').notNull(),
+  done: integer('done', { mode: 'boolean' }).notNull(),
+}, (t) => [index('meal_plan_date_idx').on(t.date)]);
+
+export type MealPlanRow = typeof mealPlan.$inferSelect;
 export type RecipeRow = typeof recipes.$inferSelect;
 export type FolderRow = typeof recipeFolders.$inferSelect;
 export type RecipeLinkRow = typeof recipeLinks.$inferSelect;

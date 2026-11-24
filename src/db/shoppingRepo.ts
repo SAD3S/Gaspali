@@ -27,12 +27,13 @@ export interface ShoppingInput {
 
 /**
  * Ajoute des articles. Un article non coché du même ingrédient (ou du même nom) est complété
- * plutôt que dupliqué ; les quantités s'additionnent si l'unité est la même. Renvoie le nombre d'ajouts.
+ * plutôt que dupliqué ; les quantités s'additionnent si l'unité est la même.
+ * Renvoie les identifiants des articles réellement créés.
  */
-export function addShopping(list: ShoppingInput[]): number {
+export function addShopping(list: ShoppingInput[]): string[] {
   const open = db.select().from(shoppingItems).where(and(isNull(shoppingItems.deletedAt), eq(shoppingItems.checked, false))).all();
   const { householdId, userId } = ownership();
-  let added = 0;
+  const added: string[] = [];
   for (const it of list) {
     const now = new Date();
     const same = open.find((o) =>
@@ -56,7 +57,7 @@ export function addShopping(list: ShoppingInput[]): number {
     db.insert(shoppingItems).values(row).run();
     trackInsert('shopping_items', row);
     open.push(row);
-    added++;
+    added.push(row.id);
   }
   return added;
 }

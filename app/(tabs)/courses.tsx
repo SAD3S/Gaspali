@@ -1,11 +1,15 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
-import { Check, Plus, ShoppingCart, X } from 'lucide-react-native';
+import { Archive, Check, Plus, ShoppingCart, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Card, Screen, Text, useSnackbar } from '@/components/ui';
+import { addItem } from '@/db/inventoryRepo';
+import type { ShoppingRow } from '@/db/schema';
 import { addShopping, clearChecked, removeShopping, setChecked, shoppingQuery } from '@/db/shoppingRepo';
+import { LOCATION_LABELS } from '@/domain/categories';
+import { categoryOf, defaultForm, StoreSheet } from '@/features/shopping/StoreSheet';
 import { resolveIngredient } from '@/domain/ingredientMatch';
-import { formatNumber } from '@/domain/quantity';
+import { formatQuantity } from '@/domain/quantity';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
@@ -15,6 +19,7 @@ export default function Courses() {
   const snackbar = useSnackbar();
   const { data } = useLiveQuery(shoppingQuery());
   const [text, setText] = useState('');
+  const [storing, setStoring] = useState<ShoppingRow | null>(null);
 
   const groups = useMemo(() => {
     const rows = data ?? [];
@@ -86,9 +91,14 @@ export default function Courses() {
                   </View>
                   <Text variant="body" style={[styles.flex, r.checked && { textDecorationLine: 'line-through', color: colors.textSecondary }]}>
                     {r.name}
-                    {r.quantity != null ? <Text variant="label" tone="secondary">{`  ${formatNumber(r.quantity)}${r.unit ? ` ${r.unit}` : ''}`}</Text> : null}
+                    {r.quantity != null ? <Text variant="label" tone="secondary">{`  ${formatQuantity(r.quantity, r.unit ?? '')}`}</Text> : null}
                   </Text>
                 </Pressable>
+                {r.checked && (
+                  <Pressable accessibilityRole="button" accessibilityLabel={`Ranger ${r.name} dans l’inventaire`} onPress={() => setStoring(r)} style={styles.remove}>
+                    <Archive size={18} color={colors.primaryText} />
+                  </Pressable>
+                )}
                 <Pressable accessibilityRole="button" accessibilityLabel={`Retirer ${r.name}`} onPress={() => removeShopping(r.id)} style={styles.remove}>
                   <X size={18} color={colors.textSecondary} />
                 </Pressable>
@@ -99,12 +109,39 @@ export default function Courses() {
       ))}
 
       {checkedCount > 0 && (
-        <Button
-          label={`Retirer les ${checkedCount} article${checkedCount > 1 ? 's' : ''} coché${checkedCount > 1 ? 's' : ''}`}
-          variant="outline"
-          onPress={() => snackbar.show(`${clearChecked()} article(s) retiré(s)`)}
-        />
+        <View style={{ gap: 10 }}>
+          <Text variant="label" tone="secondary">Articles achetés : touche la boîte pour les ranger un par un avec leur date, ou range tout d’un coup avec des dates estimées.</Text>
+          <Button
+            label={`Tout ranger dans l’inventaire (${checkedCount})`}
+            onPress={() => {
+              const done = (data ?? []).filter((r) => r.checked);
+              for (const r of done) {
+                const category = categoryOf(r);
+                addItem({ name: r.name, category, ...defaultForm(category, r.quantity, r.unit), expiryEstimated: true });
+                removeShopping(r.id);
+              }
+              snackbar.show(`${done.length} produit${done.length > 1 ? 's' : ''} rangé${done.length > 1 ? 's' : ''} (dates estimées)`);
+            }}
+          />
+          <Button
+            label={`Retirer les ${checkedCount} article${checkedCount > 1 ? 's' : ''} coché${checkedCount > 1 ? 's' : ''}`}
+            variant="outline"
+            onPress={() => snackbar.show(`${clearChecked()} article(s) retiré(s)`)}
+          />
+        </View>
       )}
+
+      <StoreSheet
+        key={storing?.id ?? 'aucun'}
+        row={storing}
+        onClose={() => setStoring(null)}
+        onStore={(row, category, form, touched) => {
+          addItem({ name: row.name, category, ...form, expiryEstimated: !touched });
+          removeShopping(row.id);
+          setStoring(null);
+          snackbar.show(`Rangé au ${LOCATION_LABELS[form.location].toLowerCase()} : ${row.name}`);
+        }}
+      />
     </Screen>
   );
 }
