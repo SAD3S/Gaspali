@@ -43,6 +43,22 @@ function applySigning(gradle) {
   return withUse;
 }
 
+const MLKIT_DEPENDENCIES = 'com.google.mlkit.vision.DEPENDENCIES';
+
+/**
+ * expo-camera déclare déjà `barcode_ui` : on fusionne les valeurs (liste séparée par des virgules)
+ * et on remplace la déclaration de la bibliothèque (`tools:replace`).
+ * @param {import('expo/config-plugins').AndroidConfig.Manifest.AndroidManifest} manifest
+ */
+function applyMlkitDependencies(manifest) {
+  AndroidConfig.Manifest.ensureToolsAvailable(manifest);
+  const app = AndroidConfig.Manifest.getMainApplicationOrThrow(manifest);
+  AndroidConfig.Manifest.addMetaDataItemToMainApplication(app, MLKIT_DEPENDENCIES, 'barcode_ui,ocr');
+  const item = (app['meta-data'] ?? []).find((m) => m.$['android:name'] === MLKIT_DEPENDENCIES);
+  if (item) /** @type {Record<string, string>} */ (item.$)['tools:replace'] = 'android:value';
+  return manifest;
+}
+
 /** @type {import('expo/config-plugins').ConfigPlugin} */
 const withAndroidRelease = (config) => {
   config = withAppBuildGradle(config, (c) => {
@@ -50,8 +66,7 @@ const withAndroidRelease = (config) => {
     return c;
   });
   config = withAndroidManifest(config, (c) => {
-    const app = AndroidConfig.Manifest.getMainApplicationOrThrow(c.modResults);
-    AndroidConfig.Manifest.addMetaDataItemToMainApplication(app, 'com.google.mlkit.vision.DEPENDENCIES', 'ocr');
+    c.modResults = applyMlkitDependencies(c.modResults);
     return c;
   });
   return config;
@@ -59,3 +74,4 @@ const withAndroidRelease = (config) => {
 
 module.exports = withAndroidRelease;
 module.exports.applySigning = applySigning;
+module.exports.applyMlkitDependencies = applyMlkitDependencies;

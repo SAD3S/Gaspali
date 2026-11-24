@@ -1,5 +1,9 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { applySigning } = require('../plugins/withAndroidRelease') as { applySigning: (g: string) => string };
+const { applySigning, applyMlkitDependencies } = require('../plugins/withAndroidRelease') as {
+  applySigning: (g: string) => string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  applyMlkitDependencies: (m: any) => any;
+};
 
 const GRADLE = `android {
     signingConfigs {
@@ -34,5 +38,16 @@ describe('plugin withAndroidRelease', () => {
   });
   it('est idempotent', () => {
     expect(applySigning(out)).toBe(out);
+  });
+});
+
+describe('métadonnées ML Kit', () => {
+  it('fusionne avec barcode_ui (expo-camera) et remplace la valeur de la bibliothèque', () => {
+    const manifest = { manifest: { $: {}, application: [{ $: { 'android:name': '.MainApplication' }, 'meta-data': [] }] } };
+    const out = applyMlkitDependencies(manifest);
+    expect(out.manifest.$['xmlns:tools']).toBe('http://schemas.android.com/tools');
+    expect(out.manifest.application[0]['meta-data']).toEqual([
+      { $: { 'android:name': 'com.google.mlkit.vision.DEPENDENCIES', 'android:value': 'barcode_ui,ocr', 'tools:replace': 'android:value' } },
+    ]);
   });
 });
