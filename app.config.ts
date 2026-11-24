@@ -36,6 +36,7 @@ const config: ExpoConfig = {
     './plugins/withAndroidRelease',
     'expo-apple-authentication',
     'expo-web-browser',
+    ['expo-notifications', { icon: './assets/notification-icon.png', color: '#1F7A4D' }],
     [
       'expo-camera',
       {

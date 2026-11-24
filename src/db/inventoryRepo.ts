@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull } from 'drizzle-orm';
 import { addDays } from '@/domain/dates';
 import type { DateType } from '@/domain/freshness';
 import type { Location } from '@/domain/categories';
@@ -168,6 +168,10 @@ export function moveTo(id: string, location: Location, extendForFreezer: boolean
 
 export function historyQuery(itemId: string) {
   return db.select().from(events).where(and(eq(events.itemId, itemId), isNull(events.deletedAt))).orderBy(desc(events.createdAt));
+}
+
+export function eventsSinceQuery(from: Date) {
+  return db.select().from(events).where(and(gte(events.createdAt, from), isNull(events.deletedAt)));
 }
 
 export function inStockQuery() {

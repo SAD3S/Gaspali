@@ -1,12 +1,17 @@
 import { router } from 'expo-router';
-import { Bell, Package, Refrigerator, Snowflake, type LucideIcon } from 'lucide-react-native';
+import { Bell, BellRing, Package, Refrigerator, Snowflake, type LucideIcon } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Button, Card, ProductCard, Screen, Text } from '@/components/ui';
-import { formatHeaderDate } from '@/domain/dates';
+import { Button, Card, ProductCard, Screen, Text, useSnackbar } from '@/components/ui';
 import type { Location } from '@/domain/categories';
+import { formatHeaderDate } from '@/domain/dates';
 import { countByLocation, queryInventory } from '@/domain/inventory';
+import { formatTime, joinNames } from '@/domain/notifications';
+import { formatEuros } from '@/domain/stats';
 import { itemSubtitle } from '@/features/inventory/format';
-import { useInventory } from '@/features/inventory/hooks';
+import { useInventory, useMonthStats } from '@/features/inventory/hooks';
+import { updateSettings, useSettings } from '@/features/settings/settings';
+import { getPermission, notificationsSupported, requestPermission, type PermissionState } from '@/services/notifications';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius } from '@/theme/tokens';
 
@@ -16,15 +21,58 @@ const TILES: { loc: Location; label: string; Icon: LucideIcon }[] = [
   { loc: 'placard', label: 'Placard', Icon: Package },
 ];
 
+/** Proposition d'activer les rappels, au bon moment (dès qu'il y a des produits), une seule fois. */
+function NotificationPrompt({ hasItems }: { hasItems: boolean }) {
+  const { colors } = useTheme();
+  const snackbar = useSnackbar();
+  const settings = useSettings();
+  const [permission, setPermission] = useState<PermissionState | null>(null);
+
+  useEffect(() => {
+    if (notificationsSupported) getPermission().then(setPermission).catch(() => {});
+  }, []);
+
+  if (!notificationsSupported || !settings.loaded || settings.notificationPromptDone || !hasItems || permission !== 'undetermined') return null;
+  const { hour, minute } = settings.notifications;
+
+  return (
+    <Card style={{ gap: 10 }}>
+      <View style={styles.promptHead}>
+        <View style={[styles.promptIcon, { backgroundColor: colors.primarySoft }]}>
+          <BellRing size={22} color={colors.primaryText} />
+        </View>
+        <Text variant="bodyStrong" style={{ flex: 1 }}>Ne laisse plus rien périmer</Text>
+      </View>
+      <Text variant="body" tone="secondary">
+        Un seul rappel par jour, à {formatTime(hour, minute)}, et seulement s’il y a des produits à finir.
+      </Text>
+      <View style={styles.promptActions}>
+        <Button
+          label="Activer les rappels"
+          style={{ flex: 1 }}
+          onPress={async () => {
+            const p = await requestPermission();
+            setPermission(p);
+            updateSettings({ notificationPromptDone: true });
+            if (p === 'granted') snackbar.show(`Rappels activés à ${formatTime(hour, minute)}`);
+          }}
+        />
+        <Button label="Plus tard" variant="outline" onPress={() => updateSettings({ notificationPromptDone: true })} />
+      </View>
+    </Card>
+  );
+}
+
 export default function Accueil() {
   const { colors } = useTheme();
   const today = new Date();
   const items = useInventory();
+  const stats = useMonthStats();
   const sorted = queryInventory(items, { today });
   const urgent = sorted.filter(({ freshness: f }) => f.state === 'urgent' || f.state === 'bientot').slice(0, 3);
+  const veryUrgent = sorted.filter(({ freshness: f }) => f.state === 'urgent');
   const counts = countByLocation(items);
-  const hasAlerts = sorted.some(({ freshness: f }) => f.state === 'urgent' || f.state === 'perime');
-  const saved = 92;
+  const alerts = sorted.filter(({ freshness: f }) => f.state === 'urgent' || f.state === 'perime').length;
 
   return (
     <Screen>
@@ -35,11 +83,12 @@ export default function Accueil() {
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={hasAlerts ? 'Notifications, nouvelles alertes' : 'Notifications'}
+          accessibilityLabel={alerts ? `Alertes : ${alerts} produit${alerts > 1 ? 's' : ''} à traiter` : 'Alertes'}
+          onPress={() => router.push('/alertes')}
           style={[styles.bell, { backgroundColor: colors.surface, borderColor: colors.border }]}
         >
           <Bell size={22} color={colors.text} />
-          {hasAlerts && <View style={[styles.dot, { backgroundColor: colors.urgent, borderColor: colors.surface }]} />}
+          {alerts > 0 && <View style={[styles.dot, { backgroundColor: colors.urgent, borderColor: colors.surface }]} />}
         </Pressable>
       </View>
 
@@ -68,13 +117,15 @@ export default function Accueil() {
         )}
       </Card>
 
+      <NotificationPrompt hasItems={items.length > 0} />
+
       <View style={styles.tiles}>
         {TILES.map(({ loc, label, Icon }) => (
           <Pressable
             key={loc}
             accessibilityRole="button"
-            accessibilityLabel={`${label} : ${counts[loc]} produits`}
-            onPress={() => router.navigate('/inventaire')}
+            accessibilityLabel={`${label} : ${counts[loc]} produit${counts[loc] > 1 ? 's' : ''}`}
+            onPress={() => router.navigate({ pathname: '/inventaire', params: { lieu: loc } })}
             style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.border }]}
           >
             <Icon size={22} color={colors.primaryText} />
@@ -84,26 +135,53 @@ export default function Accueil() {
         ))}
       </View>
 
+      {/* Étape 6 : la carte proposera une recette du moteur de suggestion. */}
       <Card tone="primary" style={{ gap: 6 }}>
         <Text variant="overline" tone="onPrimary" style={{ opacity: 0.85 }}>Idée anti-gaspi</Text>
-        <Text variant="title2" tone="onPrimary">Gratin poulet-épinards</Text>
-        <Text variant="body" tone="onPrimary">35 min · utilise 3 de tes produits urgents</Text>
-        <Button label="Voir la recette" variant="onPrimary" style={styles.recipeBtn} />
+        {veryUrgent.length > 0 ? (
+          <>
+            <Text variant="title2" tone="onPrimary">À cuisiner en priorité</Text>
+            <Text variant="body" tone="onPrimary">
+              {joinNames(veryUrgent.map((r) => r.item.name))} : pense à {veryUrgent.length > 1 ? 'les ' : 'l’'}utiliser dans ton prochain repas.
+            </Text>
+            <Button label="Voir les alertes" variant="onPrimary" style={styles.recipeBtn} onPress={() => router.push('/alertes')} />
+          </>
+        ) : (
+          <>
+            <Text variant="title2" tone="onPrimary">Tout est sous contrôle</Text>
+            <Text variant="body" tone="onPrimary">Aucun produit à finir en urgence. Bravo !</Text>
+          </>
+        )}
       </Card>
 
       <Card style={{ gap: 10 }}>
         <View style={styles.cardHead}>
           <Text variant="bodyStrong">Ce mois-ci</Text>
-          <Text variant="label" tone="secondary">4,80 € jetés</Text>
+          {stats.savedPct !== null && (
+            <Text variant="label" tone="secondary" accessibilityLabel={`${stats.wastedEstimated ? 'environ ' : ''}${formatEuros(stats.wastedValue)} jetés`}>
+              {stats.wastedEstimated ? '≈ ' : ''}{formatEuros(stats.wastedValue)} jetés
+            </Text>
+          )}
         </View>
-        <View
-          accessibilityRole="progressbar"
-          accessibilityValue={{ min: 0, max: 100, now: saved }}
-          style={[styles.track, { backgroundColor: colors.surface2 }]}
-        >
-          <View style={[styles.fill, { width: `${saved}%`, backgroundColor: colors.primary }]} />
-        </View>
-        <Text variant="label" tone="secondary">{saved} % de tes produits sauvés</Text>
+        {stats.savedPct === null ? (
+          <Text variant="label" tone="secondary">
+            Pas encore de données : glisse tes produits consommés ou jetés dans l’inventaire pour suivre tes progrès.
+          </Text>
+        ) : (
+          <>
+            <View
+              accessibilityRole="progressbar"
+              accessibilityLabel="Produits sauvés ce mois-ci"
+              accessibilityValue={{ min: 0, max: 100, now: stats.savedPct }}
+              style={[styles.track, { backgroundColor: colors.surface2 }]}
+            >
+              <View style={[styles.fill, { width: `${stats.savedPct}%`, backgroundColor: colors.primary }]} />
+            </View>
+            <Text variant="label" tone="secondary">
+              {stats.savedPct} % de tes produits sauvés ({stats.consumed} consommé{stats.consumed > 1 ? 's' : ''}, {stats.discarded} jeté{stats.discarded > 1 ? 's' : ''})
+            </Text>
+          </>
+        )}
       </Card>
     </Screen>
   );
@@ -121,4 +199,7 @@ const styles = StyleSheet.create({
   recipeBtn: { alignSelf: 'flex-start', marginTop: 8 },
   track: { height: 8, borderRadius: 4, overflow: 'hidden' },
   fill: { height: 8, borderRadius: 4 },
+  promptHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  promptIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  promptActions: { flexDirection: 'row', gap: 10 },
 });

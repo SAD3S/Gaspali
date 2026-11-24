@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Plus, Search, SlidersHorizontal, Check } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheet, Button, Chip, Text, useSnackbar } from '@/components/ui';
@@ -23,7 +23,12 @@ export default function Inventaire() {
   const { colors } = useTheme();
   const snackbar = useSnackbar();
   const items = useInventory();
+  const { lieu } = useLocalSearchParams<{ lieu?: string }>();
   const [filter, setFilter] = useState<LocationFilter>('tout');
+  // Tuiles Frigo / Congélo / Placard de l'accueil : ouvre l'inventaire déjà filtré.
+  useEffect(() => {
+    if (lieu === 'frigo' || lieu === 'congelo' || lieu === 'placard' || lieu === 'tout') setFilter(lieu);
+  }, [lieu]);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('date');
   const [sortOpen, setSortOpen] = useState(false);

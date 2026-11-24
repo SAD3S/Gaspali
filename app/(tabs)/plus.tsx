@@ -1,19 +1,19 @@
 import { router } from 'expo-router';
 import { CalendarDays, ChartColumn, ChefHat, ChevronRight, Info, Settings, Users, type LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Button, Card, Screen, SegmentedControl, Text, useSnackbar } from '@/components/ui';
+import { Button, Card, Screen, Text, useSnackbar } from '@/components/ui';
 import { seedDemo } from '@/db/inventoryRepo';
 import { useAuth } from '@/features/account/AuthProvider';
 import { useMembers } from '@/features/account/hooks';
 import { useSyncStatus } from '@/sync/engine';
-import { useTheme, type ThemePreference } from '@/theme/ThemeProvider';
+import { useTheme } from '@/theme/ThemeProvider';
 
-const ENTRIES: { label: string; Icon: LucideIcon }[] = [
-  { label: 'Recettes', Icon: ChefHat },
-  { label: 'Planning des repas', Icon: CalendarDays },
-  { label: 'Statistiques', Icon: ChartColumn },
-  { label: 'Réglages', Icon: Settings },
-  { label: 'À propos', Icon: Info },
+const ENTRIES: { label: string; Icon: LucideIcon; href?: '/reglages'; soon?: string }[] = [
+  { label: 'Recettes', Icon: ChefHat, soon: 'Étape 6' },
+  { label: 'Planning des repas', Icon: CalendarDays, soon: 'Étape 8' },
+  { label: 'Statistiques', Icon: ChartColumn, soon: 'Étape 8' },
+  { label: 'Réglages', Icon: Settings, href: '/reglages' },
+  { label: 'À propos', Icon: Info, soon: 'Étape 10' },
 ];
 
 /** Résumé du compte : foyer, membres, état de la synchro. */
@@ -50,7 +50,7 @@ function AccountCard() {
 }
 
 export default function Plus() {
-  const { colors, preference, setPreference } = useTheme();
+  const { colors } = useTheme();
   const snackbar = useSnackbar();
   return (
     <Screen>
@@ -58,26 +58,21 @@ export default function Plus() {
 
       <AccountCard />
 
-      <Card style={{ gap: 12 }}>
-        <Text variant="bodyStrong">Thème</Text>
-        <SegmentedControl<ThemePreference>
-          accessibilityLabel="Thème de l'application"
-          value={preference}
-          onChange={setPreference}
-          options={[
-            { value: 'system', label: 'Auto' },
-            { value: 'light', label: 'Clair' },
-            { value: 'dark', label: 'Sombre' },
-          ]}
-        />
-      </Card>
-
       <Card style={{ paddingVertical: 6 }}>
-        {ENTRIES.map(({ label, Icon }, i) => (
-          <View key={label} style={[styles.row, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>
-            <Icon size={22} color={colors.primaryText} />
-            <Text variant="body">{label}</Text>
-          </View>
+        {ENTRIES.map(({ label, Icon, href, soon }, i) => (
+          <Pressable
+            key={label}
+            accessibilityRole="button"
+            accessibilityLabel={soon ? `${label}, bientôt disponible` : label}
+            accessibilityState={{ disabled: !href }}
+            disabled={!href}
+            onPress={() => href && router.push(href)}
+            style={[styles.row, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}
+          >
+            <Icon size={22} color={href ? colors.primaryText : colors.textSecondary} />
+            <Text variant="body" style={{ flex: 1 }} color={href ? colors.text : colors.textSecondary}>{label}</Text>
+            {href ? <ChevronRight size={20} color={colors.textSecondary} /> : <Text variant="label" tone="secondary">Bientôt</Text>}
+          </Pressable>
         ))}
       </Card>
 

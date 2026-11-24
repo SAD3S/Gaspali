@@ -11,6 +11,8 @@ import { SnackbarProvider } from '@/components/ui';
 import { initDb } from '@/db/client';
 import { AuthProvider } from '@/features/account/AuthProvider';
 import { SyncManager } from '@/features/account/SyncManager';
+import { NotificationManager } from '@/features/notifications/NotificationManager';
+import { loadSettings } from '@/features/settings/settings';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -43,7 +45,7 @@ export default function RootLayout() {
   const [dbError, setDbError] = useState<Error | null>(null);
 
   useEffect(() => {
-    initDb().then(() => setDbReady(true), setDbError);
+    Promise.all([initDb(), loadSettings()]).then(() => setDbReady(true), setDbError);
   }, []);
 
   const ready = (loaded || !!error) && (dbReady || !!dbError);
@@ -61,6 +63,7 @@ export default function RootLayout() {
           <AuthProvider>
             <SnackbarProvider>
               <SyncManager />
+              <NotificationManager />
               <RootStack />
             </SnackbarProvider>
           </AuthProvider>
