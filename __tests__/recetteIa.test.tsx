@@ -30,7 +30,7 @@ const recipe = {
   title: 'Poêlée de légumes express',
   minutes: 20,
   servings: 2,
-  kind: 'plat',
+  kind: 'plat' as const,
   tags: ['rapide', 'ia'],
   ingredients: [
     { ingredientId: 'courgette', quantity: 1, unit: 'pièce' },
