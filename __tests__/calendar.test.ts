@@ -1,4 +1,4 @@
-import { monthGrid } from '@/components/ui/CalendarSheet';
+import { monthGrid } from '@/domain/dates';
 
 describe('monthGrid', () => {
   it('commence le lundi et complète les semaines', () => {

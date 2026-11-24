@@ -70,3 +70,14 @@ export function applyShortcut(today: Date, s: DateShortcut): Date {
     case '+1mois': return addMonths(today, 1);
   }
 }
+
+/** Grille du mois (semaines commençant le lundi), cases vides = null. */
+export function monthGrid(year: number, month: number): (Date | null)[] {
+  const first = new Date(year, month, 1);
+  const offset = (first.getDay() + 6) % 7;
+  const days = new Date(year, month + 1, 0).getDate();
+  const cells: (Date | null)[] = Array.from({ length: offset }, () => null);
+  for (let d = 1; d <= days; d++) cells.push(new Date(year, month, d));
+  while (cells.length % 7) cells.push(null);
+  return cells;
+}

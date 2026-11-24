@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { startOfDay } from '@/domain/dates';
+import { monthGrid, startOfDay } from '@/domain/dates';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 import { BottomSheet } from './BottomSheet';
@@ -11,17 +11,6 @@ import { Text } from './Text';
 const MOIS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const JOURS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 const JOURS_LONG = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
-
-/** Grille du mois (semaines commençant le lundi), cases vides = null. */
-export function monthGrid(year: number, month: number): (Date | null)[] {
-  const first = new Date(year, month, 1);
-  const offset = (first.getDay() + 6) % 7;
-  const days = new Date(year, month + 1, 0).getDate();
-  const cells: (Date | null)[] = Array.from({ length: offset }, () => null);
-  for (let d = 1; d <= days; d++) cells.push(new Date(year, month, d));
-  while (cells.length % 7) cells.push(null);
-  return cells;
-}
 
 interface Props {
   visible: boolean;
