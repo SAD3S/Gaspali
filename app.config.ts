@@ -11,7 +11,11 @@ const config: ExpoConfig = {
   ios: { bundleIdentifier: 'app.gaspalli', supportsTablet: false },
   android: {
     package: 'app.gaspalli',
-    adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#1F7A4D' },
+    adaptiveIcon: {
+      foregroundImage: './assets/android-icon-foreground.png',
+      backgroundImage: './assets/android-icon-background.png',
+      monochromeImage: './assets/android-icon-monochrome.png',
+    },
   },
   web: { bundler: 'metro', favicon: './assets/favicon.png' },
   plugins: [
