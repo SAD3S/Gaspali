@@ -393,11 +393,12 @@ grant execute on function
   public.leave_household(uuid),
   public.remove_member(uuid, uuid),
   public.sync_push(text, jsonb),
+  -- Utilisées par les politiques RLS, donc évaluées avec les droits de l'appelant.
   public.is_household_member(uuid),
-  public.is_household_admin(uuid),
-  public.gen_invite_code(),
-  public.bump_server_seq()
+  public.is_household_admin(uuid)
 to authenticated;
+-- gen_invite_code() n'est appelée que par des fonctions « security definer » ;
+-- bump_server_seq() est une fonction de trigger : ni l'une ni l'autre n'est exposée.
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Realtime : les autres membres sont prévenus des changements.
