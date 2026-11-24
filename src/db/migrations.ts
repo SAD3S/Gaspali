@@ -133,4 +133,15 @@ CREATE TABLE shopping_items (
   done INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX meal_plan_date_idx ON meal_plan (date);`,
+
+  // v5 — correspondances apprises des tickets de caisse (étape 9)
+  `CREATE TABLE receipt_aliases (
+  ${sync},
+  key TEXT NOT NULL,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  location TEXT,
+  unit TEXT
+);
+CREATE INDEX receipt_aliases_key_idx ON receipt_aliases (key);`,
 ];

@@ -23,8 +23,8 @@ sur l'écran de scan).
 
 ## Tester sur téléphone
 
-- **Expo Go** : `npm start` puis scanner le QR code. Tout fonctionne sauf la lecture de la date (OCR ML Kit),
-  qui demande l'app compilée.
+- **Expo Go** : `npm start` puis scanner le QR code. Tout fonctionne sauf la lecture de la date et du ticket
+  de caisse (OCR ML Kit, module natif), qui demandent l'app compilée ; le ticket peut alors être saisi en texte.
 - **APK Android (GitHub Actions)** : pousser un tag `vX.Y.Z` lance `.github/workflows/android-release.yml`,
   qui vérifie (types + tests), compile l'APK et le publie dans une Release GitHub.
   ```bash
@@ -50,6 +50,7 @@ src/domain/          logique métier pure et testée (fraîcheur, dates, catégo
 src/db/              SQLite (expo-sqlite) + Drizzle : schéma, migrations versionnées, dépôts
 src/features/        écrans et hooks par fonctionnalité
 src/services/        Open Food Facts, OCR (ML Kit), Supabase
+modules/gaspalli-ocr module Expo local : OCR ligne par ligne avec positions (tickets de caisse)
 src/sync/            file d'attente locale, moteur de synchro, application des lignes reçues
 supabase/            migrations SQL (RLS, foyers, sync_push), tests SQL, guide de mise en place
 src/data/            données (démo à l'étape 1, recettes JSON plus tard)
@@ -67,5 +68,5 @@ docs/captures/       captures à chaque étape
 - [x] 6. Recettes (52 recettes, moteur anti-gaspi, recettes perso avec tags et dossiers, favoris, préférences alimentaires, « J'ai cuisiné ça »)
 - [x] 7. IA recettes (Edge Function Supabase + API Claude, quota et cache, revalidation des allergènes)
 - [x] 8. Courses (rangement dans l'inventaire, produits habituels), planning des repas (semaine anti-gaspi, réservations, manquants), statistiques
-- [ ] 9. Scan du ticket
+- [x] 9. Scan du ticket (OCR avec positions des lignes, abréviations, remises, pesées, apprentissage par foyer, prix pour les statistiques)
 - [ ] 10. Publication

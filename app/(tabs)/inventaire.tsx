@@ -101,7 +101,7 @@ export default function Inventaire() {
             name={item.name}
             subtitle={itemSubtitle(item, reservations.get(item.id))}
             state={freshness.state}
-            badgeLabel={freshness.label}
+            badgeLabel={item.row.expiryEstimated ? `≈ ${freshness.label}` : freshness.label}
             onPress={() => router.push({ pathname: '/produit/[id]', params: { id: item.id } })}
             onConsumed={() => snackbar.show(`${item.name} : consommé`, setStatus(item.id, 'consomme'))}
             onDiscarded={() => snackbar.show(`${item.name} : jeté`, setStatus(item.id, 'jete'))}

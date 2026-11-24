@@ -238,6 +238,28 @@ do $$ begin
 end $$;
 reset role;
 
+-- 6 quinquies. Correspondances de tickets de caisse (étape 9)
+select pg_temp.as_user(:alice);
+do $$ declare res jsonb; hid uuid := (select id from t_h); begin
+  res := public.sync_push('receipt_aliases', jsonb_build_array(
+    jsonb_build_object('id', 'f0000000-0000-4000-8000-000000000070', 'household_id', hid,
+      'fields', '{"created_at": 1, "updated_at": 1, "key": "blc poulet", "name": "Blanc de poulet", "category": "viande", "location": "frigo", "unit": "filet"}'::jsonb, 'ts', '{}'::jsonb),
+    jsonb_build_object('id', 'f0000000-0000-4000-8000-000000000071', 'household_id', hid,
+      'fields', '{"created_at": 1, "updated_at": 1, "key": "x", "name": "X", "category": "autre", "location": "cave"}'::jsonb, 'ts', '{}'::jsonb)));
+  assert (res ->> 'applied')::int = 1 and res -> 'rejected' = '["f0000000-0000-4000-8000-000000000071"]'::jsonb, 'alias : ' || res::text;
+end $$;
+reset role;
+select pg_temp.as_user(:bob);
+do $$ begin
+  assert (select name from public.receipt_aliases where key = 'blc poulet') = 'Blanc de poulet', 'Bob profite de ce qu’Alice a appris';
+end $$;
+reset role;
+select pg_temp.as_user(:carol);
+do $$ begin
+  assert (select count(*) from public.receipt_aliases) = 0, 'Carol ne voit pas les correspondances du foyer';
+end $$;
+reset role;
+
 -- 7. Code régénéré par l'admin ; départs
 select pg_temp.as_user(:alice);
 do $$ declare old text; neu text; begin

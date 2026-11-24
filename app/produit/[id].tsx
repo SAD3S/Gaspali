@@ -92,6 +92,24 @@ export default function Produit() {
           {item.openedAt && <FreshnessBadge state="bientot" label="Entamé" showDot={false} />}
           {item.row.expiryEstimated && <FreshnessBadge state="a_verifier" label="Date estimée" showDot={false} />}
         </View>
+        {inStock && item.row.expiryEstimated && (
+          <View style={styles.estimatedRow}>
+            <Text variant="label" tone="secondary" style={styles.flex}>
+              Date estimée selon le type de produit. Vérifie-la sur l’emballage.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                updateItem(item.id, { expiryEstimated: false });
+                snackbar.show('Date confirmée');
+              }}
+              style={[styles.confirmDate, { borderColor: colors.border, backgroundColor: colors.surface }]}
+            >
+              <Check size={16} color={colors.primaryText} />
+              <Text variant="label" tone="primary" style={{ fontFamily: 'DMSans_700Bold' }}>C’est la bonne date</Text>
+            </Pressable>
+          </View>
+        )}
         {f.state === 'a_verifier' && (
           <Text variant="label" tone="secondary">La date de durabilité minimale est passée : le produit est souvent encore bon. Vérifie l’aspect et l’odeur.</Text>
         )}
@@ -216,6 +234,8 @@ export default function Produit() {
 }
 
 const styles = StyleSheet.create({
+  estimatedRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  confirmDate: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, minHeight: 40 },
   reserved: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   flex: { flex: 1 },
   top: { paddingHorizontal: 16, paddingVertical: 8 },

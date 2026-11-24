@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
-import { Keyboard, Leaf, X, Zap, ZapOff } from 'lucide-react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Image as ImageIcon, Keyboard, Leaf, Type, X, Zap, ZapOff } from 'lucide-react-native';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,11 +16,13 @@ import type { ItemFormValue } from '@/features/inventory/ItemForm';
 import { ConfirmSheet, type SheetProduct } from '@/features/scan/ConfirmSheet';
 import { DateResultSheet } from '@/features/scan/DateResultSheet';
 import { ManualCodeSheet } from '@/features/scan/ManualCodeSheet';
+import { pickReceiptPhoto } from '@/services/photos';
 import { ocrAvailable, recognizeText } from '@/services/textRecognition';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
 type Mode = 'scanning' | 'loading' | 'confirm' | 'date' | 'reading';
+type Tab = 'code' | 'ticket';
 
 const SCAN_GREEN = '#4CC38A';
 const ON_DARK = '#FFFFFF';
@@ -39,6 +41,8 @@ export default function Scan() {
   const snackbar = useSnackbar();
   const [permission, requestPermission] = useCameraPermissions();
   const camera = useRef<CameraView>(null);
+  const { onglet } = useLocalSearchParams<{ onglet?: string }>();
+  const [tab, setTab] = useState<Tab>(onglet === 'ticket' ? 'ticket' : 'code');
 
   const [mode, setMode] = useState<Mode>('scanning');
   const [burst, setBurst] = useState(true);
@@ -165,9 +169,28 @@ export default function Scan() {
     setMode('confirm');
   };
 
+  /** Photo du ticket → écran de revue (la lecture se fait là-bas). */
+  const openTicket = (photo: string | null) => {
+    if (photo) router.replace({ pathname: '/ticket', params: { photo } });
+  };
+
+  const captureTicket = async () => {
+    if (!camera.current) return;
+    setMode('reading');
+    try {
+      const photo = await camera.current.takePictureAsync({ quality: 0.85 });
+      openTicket(photo?.uri ?? null);
+    } catch {
+      snackbar.show('La photo n’a pas pu être prise. Réessaie.', undefined, 'top');
+    } finally {
+      setMode('scanning');
+    }
+  };
+
   const cameraReady = permission?.granted && Platform.OS !== 'web';
   const showSheet = mode === 'confirm' && target;
-  const frame = mode === 'date' || mode === 'reading' ? styles.frameDate : styles.frame;
+  const ticket = tab === 'ticket';
+  const frame = ticket ? styles.frameTicket : mode === 'date' || mode === 'reading' ? styles.frameDate : styles.frame;
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.camera }]}>
@@ -178,7 +201,7 @@ export default function Scan() {
           facing="back"
           enableTorch={torch}
           barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }}
-          onBarcodeScanned={mode === 'scanning' ? onBarcodeScanned : undefined}
+          onBarcodeScanned={mode === 'scanning' && !ticket ? onBarcodeScanned : undefined}
           accessibilityLabel="Vue caméra"
         />
       )}
@@ -188,6 +211,9 @@ export default function Scan() {
           <Pressable accessibilityRole="button" accessibilityLabel="Fermer" onPress={() => router.back()} style={[styles.round, { backgroundColor: GLASS }]}>
             <X size={22} color={ON_DARK} />
           </Pressable>
+          {ticket ? (
+            <View style={styles.flex} />
+          ) : (
           <View style={[styles.burst, { backgroundColor: GLASS }]}>
             <Switch
               value={burst}
@@ -201,6 +227,7 @@ export default function Scan() {
               Mode rafale{burst && added > 0 ? ` · ${added}` : ''}
             </Text>
           </View>
+          )}
           <Pressable
             accessibilityRole="switch"
             accessibilityState={{ checked: torch }}
@@ -212,28 +239,83 @@ export default function Scan() {
           </Pressable>
         </View>
 
+        {mode === 'scanning' && (
+          <View style={styles.tabs} accessibilityRole="tablist">
+            {(['code', 'ticket'] as const).map((t) => (
+              <Pressable
+                key={t}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: tab === t }}
+                onPress={() => setTab(t)}
+                style={[styles.tab, { backgroundColor: tab === t ? ON_DARK : GLASS }]}
+              >
+                <Text variant="label" color={tab === t ? '#0B1F15' : ON_DARK} style={styles.bold}>
+                  {t === 'code' ? 'Code-barres' : 'Ticket'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+
         <View style={[styles.frameWrap, !showSheet && styles.flex]} pointerEvents="none">
           <View style={[frame, { borderColor: SCAN_GREEN }]}>
             {mode === 'loading' || mode === 'reading' ? (
               <ActivityIndicator color={SCAN_GREEN} size="large" />
-            ) : mode !== 'date' ? (
+            ) : mode !== 'date' && !ticket ? (
               <View style={[styles.laser, { backgroundColor: SCAN_GREEN }]} />
             ) : null}
           </View>
           {!showSheet && (
             <Text variant="bodyStrong" color={ON_DARK} style={styles.hint} accessibilityLiveRegion="polite">
-              {mode === 'loading'
-                ? 'Recherche du produit…'
-                : mode === 'date'
-                  ? 'Cadre la date imprimée sur l’emballage'
-                  : mode === 'reading'
-                    ? 'Lecture de la date…'
-                    : 'Vise le code-barres'}
+              {ticket
+                ? mode === 'reading'
+                  ? 'Photo du ticket…'
+                  : 'Pose le ticket à plat, bien éclairé, en entier dans le cadre'
+                : mode === 'loading'
+                  ? 'Recherche du produit…'
+                  : mode === 'date'
+                    ? 'Cadre la date imprimée sur l’emballage'
+                    : mode === 'reading'
+                      ? 'Lecture de la date…'
+                      : 'Vise le code-barres'}
             </Text>
           )}
         </View>
 
-        {!showSheet && mode === 'scanning' && (
+        {ticket && mode === 'scanning' && (
+          <View style={styles.bottomPanel}>
+            {cameraReady ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="Prendre le ticket en photo" onPress={captureTicket} style={styles.shutter}>
+                <View style={styles.shutterInner} />
+              </Pressable>
+            ) : (
+              <View style={styles.permission}>
+                <Text variant="body" color={ON_DARK} style={styles.center}>
+                  {Platform.OS === 'web'
+                    ? 'La photo du ticket se prend sur téléphone. Tu peux choisir une image ou saisir le texte.'
+                    : 'Gaspalli a besoin de la caméra pour scanner tes produits et tickets.'}
+                </Text>
+                {Platform.OS !== 'web' && permission?.canAskAgain !== false && (
+                  <Button label="Autoriser la caméra" onPress={requestPermission} />
+                )}
+              </View>
+            )}
+            <View style={styles.altRow}>
+              <Pressable accessibilityRole="button" onPress={() => pickReceiptPhoto('galerie').then(openTicket).catch(() => {})} style={[styles.alt, { backgroundColor: GLASS }]}>
+                <ImageIcon size={18} color={ON_DARK} />
+                <Text variant="label" color={ON_DARK} style={styles.bold}>Choisir une photo</Text>
+              </Pressable>
+              {!cameraReady && (
+                <Pressable accessibilityRole="button" onPress={() => router.replace({ pathname: '/ticket', params: { mode: 'texte' } })} style={[styles.alt, { backgroundColor: GLASS }]}>
+                  <Type size={18} color={ON_DARK} />
+                  <Text variant="label" color={ON_DARK} style={styles.bold}>Saisir le texte</Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        )}
+
+        {!ticket && !showSheet && mode === 'scanning' && (
           <View style={styles.bottomPanel}>
             {!cameraReady && (
               <View style={styles.permission}>
@@ -326,6 +408,9 @@ const styles = StyleSheet.create({
   burst: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingRight: 14, paddingLeft: 4, minHeight: MIN_TOUCH },
   frameWrap: { alignItems: 'center', justifyContent: 'center', gap: 18, paddingTop: 24 },
   frame: { width: 240, height: 130, borderWidth: 3, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  frameTicket: { width: 250, height: 340, borderWidth: 3, borderRadius: 18, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
+  tabs: { flexDirection: 'row', alignSelf: 'center', gap: 6, marginTop: 14 },
+  tab: { minHeight: 38, paddingHorizontal: 18, borderRadius: 999, justifyContent: 'center' },
   frameDate: { width: 300, height: 110, borderWidth: 3, borderRadius: 16, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
   laser: { width: 180, height: 2 },
   hint: { textAlign: 'center', textShadowColor: 'rgba(0,0,0,0.6)', textShadowRadius: 6 },

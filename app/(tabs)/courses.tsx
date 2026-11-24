@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
-import { Archive, Check, Plus, ShoppingCart, X } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { Archive, Check, Plus, ReceiptText, ShoppingCart, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Card, Screen, Text, useSnackbar } from '@/components/ui';
@@ -129,6 +130,16 @@ export default function Courses() {
             onPress={() => snackbar.show(`${clearChecked()} article(s) retiré(s)`)}
           />
         </View>
+      )}
+
+      {total > 0 && (
+        <Button
+          label="Scanner le ticket de caisse"
+          variant="soft"
+          icon={<ReceiptText size={18} color={colors.primaryText} />}
+          accessibilityHint="Ajoute tes achats à l’inventaire avec leurs prix, et les retire de la liste"
+          onPress={() => router.push({ pathname: '/scan', params: { onglet: 'ticket' } })}
+        />
       )}
 
       <StoreSheet

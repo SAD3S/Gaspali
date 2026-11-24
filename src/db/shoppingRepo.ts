@@ -79,3 +79,21 @@ export function clearChecked(): number {
   done.forEach((d) => removeShopping(d.id));
   return done.length;
 }
+
+/**
+ * Produits achetés (ticket de caisse) : retire de la liste les articles correspondants
+ * (même ingrédient, ou même nom). Renvoie le nombre d'articles retirés.
+ */
+export function removeBought(bought: { name: string; ingredientId: string | null }[]): number {
+  const open = db.select().from(shoppingItems).where(isNull(shoppingItems.deletedAt)).all();
+  const ids = new Set(bought.map((b) => b.ingredientId).filter(Boolean));
+  const names = new Set(bought.map((b) => normalizeText(b.name)));
+  let removed = 0;
+  for (const row of open) {
+    if ((row.ingredientId && ids.has(row.ingredientId)) || names.has(normalizeText(row.name))) {
+      removeShopping(row.id);
+      removed++;
+    }
+  }
+  return removed;
+}

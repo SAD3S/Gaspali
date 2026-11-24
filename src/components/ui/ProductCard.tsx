@@ -26,7 +26,7 @@ export function ProductCard({ name, subtitle, state, badgeLabel, initials, image
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${name}, ${subtitle}, ${badgeLabel}`}
+      accessibilityLabel={`${name}, ${subtitle}, ${badgeLabel.replace(/^≈ /, 'date estimée, ')}`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,

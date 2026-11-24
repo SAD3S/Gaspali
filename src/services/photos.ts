@@ -26,3 +26,17 @@ export async function pickRecipePhoto(source: 'galerie' | 'camera'): Promise<str
   await new File(asset.uri).copy(dest);
   return dest.uri;
 }
+
+/** Photo de ticket de caisse : galerie ou appareil photo du téléphone, sans recadrage. */
+export async function pickReceiptPhoto(source: 'galerie' | 'camera'): Promise<string | null> {
+  const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.9 };
+  let result: ImagePicker.ImagePickerResult;
+  if (source === 'camera') {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) return null;
+    result = await ImagePicker.launchCameraAsync(options);
+  } else {
+    result = await ImagePicker.launchImageLibraryAsync(options);
+  }
+  return result.canceled ? null : (result.assets[0]?.uri ?? null);
+}

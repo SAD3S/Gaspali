@@ -141,7 +141,19 @@ export const mealPlan = sqliteTable('meal_plan', {
   done: integer('done', { mode: 'boolean' }).notNull(),
 }, (t) => [index('meal_plan_date_idx').on(t.date)]);
 
+/** Correspondances apprises « libellé de ticket → produit », par foyer (étape 9). */
+export const receiptAliases = sqliteTable('receipt_aliases', {
+  ...syncColumns,
+  /** Libellé normalisé (cf. `aliasKey`). */
+  key: text('key').notNull(),
+  name: text('name').notNull(),
+  category: text('category').notNull(),
+  location: text('location', { enum: ['frigo', 'congelo', 'placard'] }),
+  unit: text('unit'),
+}, (t) => [index('receipt_aliases_key_idx').on(t.key)]);
+
 export type MealPlanRow = typeof mealPlan.$inferSelect;
+export type ReceiptAliasRow = typeof receiptAliases.$inferSelect;
 export type RecipeRow = typeof recipes.$inferSelect;
 export type FolderRow = typeof recipeFolders.$inferSelect;
 export type RecipeLinkRow = typeof recipeLinks.$inferSelect;

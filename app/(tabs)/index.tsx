@@ -165,7 +165,7 @@ export default function Accueil() {
             name={item.name}
             subtitle={itemSubtitle(item, reservations.get(item.id))}
             state={f.state}
-            badgeLabel={f.label}
+            badgeLabel={item.row.expiryEstimated ? `≈ ${f.label}` : f.label}
             onPress={() => router.push({ pathname: '/produit/[id]', params: { id: item.id } })}
           />
         ))}
