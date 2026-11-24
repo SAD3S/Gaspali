@@ -1,4 +1,4 @@
-import { integer, real, sqliteTable, text, index } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 /**
  * Colonnes communes, prêtes pour la synchro Supabase (étape 4) :
@@ -68,3 +68,35 @@ export type ProductRow = typeof products.$inferSelect;
 export type InventoryRow = typeof inventoryItems.$inferSelect;
 export type NewInventoryRow = typeof inventoryItems.$inferInsert;
 export type EventRow = typeof events.$inferSelect;
+
+/**
+ * File des modifications locales à envoyer au serveur (synchro hors ligne).
+ * Une ligne = un ensemble de champs modifiés d'une ligne, avec l'horodatage de chaque champ.
+ */
+export const outbox = sqliteTable('outbox', {
+  seq: integer('seq').primaryKey({ autoIncrement: true }),
+  tableName: text('table_name').notNull(),
+  rowId: text('row_id').notNull(),
+  householdId: text('household_id').notNull(),
+  /** JSON : { colonne_serveur: valeur } */
+  fields: text('fields').notNull(),
+  /** JSON : { colonne_serveur: horodatage ms } */
+  ts: text('ts').notNull(),
+}, (t) => [index('outbox_row_idx').on(t.tableName, t.rowId)]);
+
+/** Curseurs de synchronisation et autres états (clé / valeur). */
+export const syncState = sqliteTable('sync_state', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+});
+
+/** Cache des membres du foyer (noms pour « ajouté par Léa »). */
+export const members = sqliteTable('members', {
+  householdId: text('household_id').notNull(),
+  userId: text('user_id').notNull(),
+  displayName: text('display_name').notNull(),
+  role: text('role', { enum: ['admin', 'membre'] }).notNull(),
+}, (t) => [primaryKey({ columns: [t.householdId, t.userId] })]);
+
+export type OutboxRow = typeof outbox.$inferSelect;
+export type MemberRow = typeof members.$inferSelect;

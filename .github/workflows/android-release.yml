@@ -27,6 +27,10 @@ jobs:
     timeout-minutes: 60
     env:
       EXPO_NO_TELEMETRY: '1'
+      # Projet Supabase (variables du dépôt : Settings › Secrets and variables › Actions › Variables).
+      # Vides → l'APK fonctionne en mode local, sans compte ni partage.
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@v5
 

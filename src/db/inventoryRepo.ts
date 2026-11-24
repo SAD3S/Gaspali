@@ -3,9 +3,12 @@ import { addDays } from '@/domain/dates';
 import type { DateType } from '@/domain/freshness';
 import type { Location } from '@/domain/categories';
 import { consumePartially, freezerExtension, openItem, type Item, type ItemStatus } from '@/domain/inventory';
+import { ownership, trackInsert, trackPatch } from '@/sync/outbox';
 import { db } from './client';
 import { newId } from './ids';
 import { events, inventoryItems, products, type EventType, type InventoryRow } from './schema';
+
+// Toute écriture passe par ces fonctions : la modification est aussi mise en file pour la synchro.
 
 export function rowToItem(r: InventoryRow): Item & { row: InventoryRow } {
   return {
@@ -32,12 +35,12 @@ function valueOf(r: InventoryRow, quantity: number): number | null {
 
 function logEvent(r: InventoryRow, type: EventType, quantity: number | null, detail?: string): string {
   const now = new Date();
-  const id = newId();
-  db.insert(events).values({
-    id,
+  const values = {
+    id: newId(),
     householdId: r.householdId,
     createdAt: now,
     updatedAt: now,
+    deletedAt: null,
     itemId: r.id,
     type,
     productName: r.name,
@@ -46,8 +49,18 @@ function logEvent(r: InventoryRow, type: EventType, quantity: number | null, det
     unit: r.unit,
     value: quantity != null ? valueOf(r, quantity) : null,
     detail: detail ?? null,
-  }).run();
-  return id;
+    authorId: ownership().userId,
+  };
+  db.insert(events).values(values).run();
+  trackInsert('events', values);
+  return values.id;
+}
+
+/** Annule un événement (suppression douce, pour qu'elle se synchronise aussi). */
+function cancelEvent(id: string): void {
+  const now = new Date();
+  db.update(events).set({ deletedAt: now, updatedAt: now }).where(eq(events.id, id)).run();
+  trackPatch('events', id, { deletedAt: now, updatedAt: now });
 }
 
 export function getItem(id: string): InventoryRow | undefined {
@@ -72,8 +85,13 @@ export interface NewItemInput {
 export function addItem(input: NewItemInput): string {
   const now = new Date();
   const id = newId();
-  db.insert(inventoryItems).values({
+  const { householdId, userId } = ownership();
+  const values = {
     id,
+    householdId,
+    addedBy: userId,
+    deletedAt: null,
+    openedAt: null,
     createdAt: now,
     updatedAt: now,
     name: input.name.trim(),
@@ -88,28 +106,32 @@ export function addItem(input: NewItemInput): string {
     imageUrl: input.imageUrl ?? null,
     productId: input.productId ?? null,
     price: input.price ?? null,
-    status: 'en_stock',
-  }).run();
+    status: 'en_stock' as const,
+  };
+  db.insert(inventoryItems).values(values).run();
+  trackInsert('inventory_items', values);
   const row = getItem(id);
   if (row) logEvent(row, 'ajout', row.quantity);
   return id;
 }
 
-export type ItemPatch = Partial<Pick<InventoryRow, 'name' | 'category' | 'quantity' | 'unit' | 'location' | 'dateType' | 'expiresAt' | 'expiryEstimated' | 'openedAt' | 'price'>>;
+export type ItemPatch = Partial<Pick<InventoryRow, 'name' | 'category' | 'quantity' | 'unit' | 'location' | 'dateType' | 'expiresAt' | 'expiryEstimated' | 'openedAt' | 'price' | 'status'>>;
 
 export function updateItem(id: string, patch: ItemPatch): void {
-  db.update(inventoryItems).set({ ...patch, updatedAt: new Date() }).where(eq(inventoryItems.id, id)).run();
+  const full = { ...patch, updatedAt: new Date() };
+  db.update(inventoryItems).set(full).where(eq(inventoryItems.id, id)).run();
+  trackPatch('inventory_items', id, full);
 }
 
 /** Passe en consommé / jeté. Renvoie une fonction d'annulation. */
 export function setStatus(id: string, status: Exclude<ItemStatus, 'en_stock'>): () => void {
   const before = getItem(id);
   if (!before) return () => {};
-  db.update(inventoryItems).set({ status, updatedAt: new Date() }).where(eq(inventoryItems.id, id)).run();
+  updateItem(id, { status });
   const eventId = logEvent(before, status === 'consomme' ? 'consomme' : 'jete', before.quantity);
   return () => {
-    db.update(inventoryItems).set({ status: before.status, updatedAt: new Date() }).where(eq(inventoryItems.id, id)).run();
-    db.delete(events).where(eq(events.id, eventId)).run();
+    updateItem(id, { status: before.status });
+    cancelEvent(eventId);
   };
 }
 
@@ -124,7 +146,7 @@ export function consumePart(id: string, remaining: number): () => void {
   const eventId = logEvent(before, 'partiel', r.consumed);
   return () => {
     updateItem(id, { quantity: before.quantity, openedAt: before.openedAt, expiresAt: before.expiresAt });
-    db.delete(events).where(eq(events.id, eventId)).run();
+    cancelEvent(eventId);
   };
 }
 
@@ -175,9 +197,12 @@ export function seedDemo(): void {
   if (biscottes) updateItem(biscottes.id, { openedAt: d(-3) });
   // Produit en cache, pour essayer « Saisir le code » sans réseau : 3260000000012.
   if (!db.select().from(products).where(eq(products.barcode, '3260000000012')).get()) {
-    db.insert(products).values({
-      id: newId(), createdAt: t, updatedAt: t, barcode: '3260000000012', name: 'Crème fraîche épaisse', brand: 'Démo',
-      category: 'laitier', defaultQuantity: 20, defaultUnit: 'cl', nutriscore: 'D', allergens: '["milk"]', source: 'off',
-    }).run();
+    const values = {
+      id: newId(), householdId: ownership().householdId, createdAt: t, updatedAt: t, deletedAt: null,
+      barcode: '3260000000012', name: 'Crème fraîche épaisse', brand: 'Démo', category: 'laitier', imageUrl: null,
+      defaultQuantity: 20, defaultUnit: 'cl', nutriscore: 'D', allergens: '["milk"]', source: 'off' as const,
+    };
+    db.insert(products).values(values).run();
+    trackInsert('products', values);
   }
 }

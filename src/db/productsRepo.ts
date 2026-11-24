@@ -2,6 +2,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import type { CategoryId } from '@/domain/categories';
 import type { ScannedProduct } from '@/domain/offProduct';
 import { fetchOffProduct } from '@/services/openFoodFacts';
+import { ownership, trackInsert, trackPatch } from '@/sync/outbox';
 import { db } from './client';
 import { newId } from './ids';
 import { products, type ProductRow } from './schema';
@@ -46,11 +47,13 @@ function upsert(p: ScannedProduct, source: 'off' | 'manuel'): string {
   const existing = findByBarcode(p.barcode);
   if (existing) {
     db.update(products).set(values).where(eq(products.id, existing.id)).run();
+    trackPatch('products', existing.id, values);
     return existing.id;
   }
-  const id = newId();
-  db.insert(products).values({ id, createdAt: now, ...values }).run();
-  return id;
+  const row = { id: newId(), householdId: ownership().householdId, createdAt: now, deletedAt: null, ...values };
+  db.insert(products).values(row).run();
+  trackInsert('products', row);
+  return row.id;
 }
 
 /** Produit inconnu saisi à la main : on mémorise le code-barres pour la prochaine fois. */

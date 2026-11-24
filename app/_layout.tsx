@@ -9,6 +9,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SnackbarProvider } from '@/components/ui';
 import { initDb } from '@/db/client';
+import { AuthProvider } from '@/features/account/AuthProvider';
+import { SyncManager } from '@/features/account/SyncManager';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -56,9 +58,12 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <SnackbarProvider>
-            <RootStack />
-          </SnackbarProvider>
+          <AuthProvider>
+            <SnackbarProvider>
+              <SyncManager />
+              <RootStack />
+            </SnackbarProvider>
+          </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -48,7 +48,9 @@ src/components/ui/   Text, Button, Card, Chip, FreshnessBadge, ProductCard, Bott
 src/domain/          logique métier pure et testée (fraîcheur, dates, catégories, inventaire, quantités)
 src/db/              SQLite (expo-sqlite) + Drizzle : schéma, migrations versionnées, dépôts
 src/features/        écrans et hooks par fonctionnalité
-src/services/        Open Food Facts, OCR (ML Kit)
+src/services/        Open Food Facts, OCR (ML Kit), Supabase
+src/sync/            file d'attente locale, moteur de synchro, application des lignes reçues
+supabase/            migrations SQL (RLS, foyers, sync_push), tests SQL, guide de mise en place
 src/data/            données (démo à l'étape 1, recettes JSON plus tard)
 __tests__/           tests Jest
 docs/captures/       captures à chaque étape
@@ -59,7 +61,7 @@ docs/captures/       captures à chaque étape
 - [x] 1. Socle : Expo, design system, navigation, thème clair/sombre/auto
 - [x] 2. Inventaire (SQLite + Drizzle, glisser consommé/jeté, ajout manuel, fiche produit)
 - [x] 3. Scan (caméra, Open Food Facts + cache, produit inconnu, mode rafale, OCR de la date)
-- [ ] 4. Comptes et foyer (Supabase)
+- [x] 4. Comptes et foyer (Supabase : auth, RLS, invitations, synchro hors ligne champ par champ)
 - [ ] 5. Accueil et notifications
 - [ ] 6. Recettes (dont recettes perso avec tags et dossiers)
 - [ ] 7. IA recettes

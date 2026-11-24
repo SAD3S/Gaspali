@@ -55,4 +55,26 @@ CREATE TABLE events (
   author_id TEXT
 );
 CREATE INDEX events_item_idx ON events (item_id);`,
+
+  // v2 — synchronisation (étape 4)
+  `CREATE TABLE outbox (
+  seq INTEGER PRIMARY KEY AUTOINCREMENT,
+  table_name TEXT NOT NULL,
+  row_id TEXT NOT NULL,
+  household_id TEXT NOT NULL,
+  fields TEXT NOT NULL,
+  ts TEXT NOT NULL
+);
+CREATE INDEX outbox_row_idx ON outbox (table_name, row_id);
+CREATE TABLE sync_state (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);
+CREATE TABLE members (
+  household_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  PRIMARY KEY (household_id, user_id)
+);
+CREATE INDEX items_household_idx ON inventory_items (household_id);
+CREATE INDEX events_household_idx ON events (household_id);
+CREATE INDEX products_household_idx ON products (household_id);`,
 ];

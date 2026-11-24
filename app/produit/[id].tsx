@@ -13,6 +13,7 @@ import { formatDuration, freezerExtension, remainingOptions } from '@/domain/inv
 import { formatQuantity, roundQuarter, stepFor } from '@/domain/quantity';
 import { ItemForm } from '@/features/inventory/ItemForm';
 import { useItem, useItemHistory } from '@/features/inventory/hooks';
+import { useAuthorName } from '@/features/account/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
@@ -31,6 +32,7 @@ export default function Produit() {
   const snackbar = useSnackbar();
   const item = useItem(id);
   const history = useItemHistory(id);
+  const authorName = useAuthorName();
   const [partialOpen, setPartialOpen] = useState(false);
   const [remaining, setRemaining] = useState(0);
   const [freezeAsk, setFreezeAsk] = useState<null | { days: number }>(null);
@@ -141,7 +143,7 @@ export default function Produit() {
                 <Text variant="body" style={styles.flex}>
                   {EVENT_LABELS[e.type]}
                   {e.quantity != null && e.type !== 'ajout' ? ` · ${formatQuantity(e.quantity, e.unit ?? '')}` : ''}
-                  {/* L'auteur (« par Léa ») arrive avec les foyers, étape 4. */}
+                  {authorName(e.authorId) ? ` par ${authorName(e.authorId)}` : ''}
                 </Text>
                 <Text variant="label" tone="secondary">{days === 0 ? 'Aujourd’hui' : relativeDayLabel(days)}</Text>
               </View>

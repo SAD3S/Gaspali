@@ -16,6 +16,7 @@ const config: ExpoConfig = {
   ios: {
     bundleIdentifier: 'app.gaspalli',
     supportsTablet: false,
+    usesAppleSignIn: true,
     infoPlist: { NSCameraUsageDescription: 'Gaspalli utilise la caméra pour scanner tes produits et tickets.' },
   },
   android: {
@@ -33,6 +34,8 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-font',
     './plugins/withAndroidRelease',
+    'expo-apple-authentication',
+    'expo-web-browser',
     [
       'expo-camera',
       {
