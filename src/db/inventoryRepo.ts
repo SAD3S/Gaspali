@@ -5,7 +5,7 @@ import type { Location } from '@/domain/categories';
 import { consumePartially, freezerExtension, openItem, type Item, type ItemStatus } from '@/domain/inventory';
 import { db } from './client';
 import { newId } from './ids';
-import { events, inventoryItems, type EventType, type InventoryRow } from './schema';
+import { events, inventoryItems, products, type EventType, type InventoryRow } from './schema';
 
 export function rowToItem(r: InventoryRow): Item & { row: InventoryRow } {
   return {
@@ -173,4 +173,11 @@ export function seedDemo(): void {
   rows.forEach(addItem);
   const biscottes = db.select().from(inventoryItems).where(eq(inventoryItems.name, 'Biscottes complètes')).get();
   if (biscottes) updateItem(biscottes.id, { openedAt: d(-3) });
+  // Produit en cache, pour essayer « Saisir le code » sans réseau : 3260000000012.
+  if (!db.select().from(products).where(eq(products.barcode, '3260000000012')).get()) {
+    db.insert(products).values({
+      id: newId(), createdAt: t, updatedAt: t, barcode: '3260000000012', name: 'Crème fraîche épaisse', brand: 'Démo',
+      category: 'laitier', defaultQuantity: 20, defaultUnit: 'cl', nutriscore: 'D', allergens: '["milk"]', source: 'off',
+    }).run();
+  }
 }

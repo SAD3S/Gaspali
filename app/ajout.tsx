@@ -55,7 +55,7 @@ export default function Ajout() {
   const save = (another: boolean) => {
     if (!draft || !draft.name.trim()) return;
     addItem({ name: draft.name, category: draft.category, ...draft.form, expiryEstimated: draft.estimated });
-    snackbar.show(`${draft.name} ajouté au ${LOCATION_LABELS[draft.form.location].toLowerCase()}`);
+    snackbar.show(`Ajouté au ${LOCATION_LABELS[draft.form.location].toLowerCase()} : ${draft.name}`);
     if (another) {
       setDraft(null);
       setQuery('');

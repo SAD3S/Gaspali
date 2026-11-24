@@ -17,7 +17,15 @@ npm run typecheck
 
 ## Données de démo
 
-En développement, « Plus › Charger des produits de démo » remplit l'inventaire.
+En développement, « Plus › Charger des produits de démo » remplit l'inventaire
+et met en cache le code-barres `3260000000012` (à saisir via « Saisir le code » sur l'écran de scan).
+
+## Tester sur téléphone
+
+- **Expo Go** : `npm start` puis scanner le QR code. Tout fonctionne sauf la lecture de la date (OCR ML Kit),
+  qui demande l'app compilée.
+- **App compilée (Android)** : profils `development` / `preview` / `production` dans `eas.json`.
+  Les dossiers natifs `android/` et `ios/` sont générés (`npx expo prebuild`) et ne sont pas versionnés.
 
 ## Structure
 
@@ -28,6 +36,7 @@ src/components/ui/   Text, Button, Card, Chip, FreshnessBadge, ProductCard, Bott
 src/domain/          logique métier pure et testée (fraîcheur, dates, catégories, inventaire, quantités)
 src/db/              SQLite (expo-sqlite) + Drizzle : schéma, migrations versionnées, dépôts
 src/features/        écrans et hooks par fonctionnalité
+src/services/        Open Food Facts, OCR (ML Kit)
 src/data/            données (démo à l'étape 1, recettes JSON plus tard)
 __tests__/           tests Jest
 docs/captures/       captures à chaque étape
@@ -37,7 +46,7 @@ docs/captures/       captures à chaque étape
 
 - [x] 1. Socle : Expo, design system, navigation, thème clair/sombre/auto
 - [x] 2. Inventaire (SQLite + Drizzle, glisser consommé/jeté, ajout manuel, fiche produit)
-- [ ] 3. Scan (caméra, Open Food Facts, OCR de la date)
+- [x] 3. Scan (caméra, Open Food Facts + cache, produit inconnu, mode rafale, OCR de la date)
 - [ ] 4. Comptes et foyer (Supabase)
 - [ ] 5. Accueil et notifications
 - [ ] 6. Recettes (dont recettes perso avec tags et dossiers)

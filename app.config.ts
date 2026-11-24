@@ -8,9 +8,14 @@ const config: ExpoConfig = {
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
-  ios: { bundleIdentifier: 'app.gaspalli', supportsTablet: false },
+  ios: {
+    bundleIdentifier: 'app.gaspalli',
+    supportsTablet: false,
+    infoPlist: { NSCameraUsageDescription: 'Gaspalli utilise la caméra pour scanner tes produits et tickets.' },
+  },
   android: {
     package: 'app.gaspalli',
+    blockedPermissions: ['android.permission.RECORD_AUDIO'],
     adaptiveIcon: {
       foregroundImage: './assets/android-icon-foreground.png',
       backgroundImage: './assets/android-icon-background.png',
@@ -21,6 +26,14 @@ const config: ExpoConfig = {
   plugins: [
     'expo-router',
     'expo-font',
+    [
+      'expo-camera',
+      {
+        cameraPermission: 'Gaspalli utilise la caméra pour scanner tes produits et tickets.',
+        microphonePermission: false,
+        recordAudioAndroid: false,
+      },
+    ],
     [
       'expo-splash-screen',
       {
