@@ -1,0 +1,1481 @@
+[
+ {
+  "id": "poulet",
+  "name": "poulet",
+  "synonyms": [
+   "blanc de poulet",
+   "filet de poulet",
+   "escalope de poulet",
+   "cuisse de poulet",
+   "aiguillette de poulet",
+   "haut de cuisse",
+   "poulet roti"
+  ],
+  "allergens": [],
+  "diet": "viande",
+  "exclude": [
+   "bouillon",
+   "nugget"
+  ]
+ },
+ {
+  "id": "dinde",
+  "name": "dinde",
+  "synonyms": [
+   "escalope de dinde",
+   "filet de dinde",
+   "blanc de dinde"
+  ],
+  "allergens": [],
+  "diet": "viande",
+  "exclude": [
+   "jambon"
+  ]
+ },
+ {
+  "id": "boeuf_hache",
+  "name": "bœuf haché",
+  "synonyms": [
+   "viande hachee",
+   "steak hache",
+   "hache de boeuf",
+   "hache"
+  ],
+  "allergens": [],
+  "diet": "viande",
+  "exclude": []
+ },
+ {
+  "id": "boeuf",
+  "name": "bœuf",
+  "synonyms": [
+   "rumsteck",
+   "bavette",
+   "entrecote",
+   "faux filet",
+   "steak",
+   "pave de boeuf",
+   "boeuf bourguignon"
+  ],
+  "allergens": [],
+  "diet": "viande",
+  "exclude": [
+   "hache",
+   "bouillon"
+  ]
+ },
+ {
+  "id": "porc",
+  "name": "porc",
+  "synonyms": [
+   "cote de porc",
+   "filet mignon",
+   "echine",
+   "roti de porc",
+   "escalope de porc"
+  ],
+  "allergens": [],
+  "diet": "viande",
+  "exclude": []
+ },
+ {
+  "id": "lardons",
+  "name": "lardons",
+  "synonyms": [
+   "allumettes",
+   "poitrine fumee",
+   "lardon"
+  ],
+  "allergens": [],
+  "diet": "viande",
+  "exclude": []
+ },
+ {
+  "id": "jambon",
+  "name": "jambon blanc",
+  "synonyms": [
+   "jambon cuit",
+   "jambon de paris",
+   "jambon superieur",
+   "jambon"
+  ],
+  "allergens": [],
+  "diet": "viande",
+  "exclude": [
+   "cru",
+   "sec",
+   "serrano",
+   "parme",
+   "bayonne",
+   "dinde",
+   "poulet"
+  ]
+ },
+ {
+  "id": "jambon_cru",
+  "name": "jambon cru",
+  "synonyms": [
+   "jambon sec",
+   "jambon serrano",
+   "jambon de parme",
+   "jambon de bayonne",
+   "prosciutto"
+  ],
+  "allergens": [],
+  "diet": "viande",
+  "exclude": []
+ },
+ {
+  "id": "saucisse",
+  "name": "saucisse",
+  "synonyms": [
+   "saucisses",
+   "chipolata",
+   "saucisse de toulouse",
+   "merguez",
+   "saucisse de strasbourg",
+   "knack"
+  ],
+  "allergens": [],
+  "diet": "viande",
+  "exclude": []
+ },
+ {
+  "id": "chorizo",
+  "name": "chorizo",
+  "synonyms": [],
+  "allergens": [],
+  "diet": "viande",
+  "exclude": []
+ },
+ {
+  "id": "saumon",
+  "name": "saumon",
+  "synonyms": [
+   "pave de saumon",
+   "filet de saumon",
+   "dos de saumon"
+  ],
+  "allergens": [
+   "poisson"
+  ],
+  "diet": "poisson",
+  "exclude": [
+   "fume"
+  ]
+ },
+ {
+  "id": "saumon_fume",
+  "name": "saumon fumé",
+  "synonyms": [
+   "saumon fume",
+   "truite fumee"
+  ],
+  "allergens": [
+   "poisson"
+  ],
+  "diet": "poisson",
+  "exclude": []
+ },
+ {
+  "id": "cabillaud",
+  "name": "poisson blanc",
+  "synonyms": [
+   "cabillaud",
+   "dos de cabillaud",
+   "colin",
+   "merlu",
+   "lieu",
+   "filet de poisson",
+   "poisson blanc",
+   "pane"
+  ],
+  "allergens": [
+   "poisson"
+  ],
+  "diet": "poisson",
+  "exclude": [
+   "pane",
+   "fume"
+  ]
+ },
+ {
+  "id": "thon",
+  "name": "thon",
+  "synonyms": [
+   "thon au naturel",
+   "miettes de thon",
+   "thon en boite",
+   "thon albacore"
+  ],
+  "allergens": [
+   "poisson"
+  ],
+  "diet": "poisson",
+  "exclude": []
+ },
+ {
+  "id": "sardines",
+  "name": "sardines",
+  "synonyms": [
+   "sardine"
+  ],
+  "allergens": [
+   "poisson"
+  ],
+  "diet": "poisson",
+  "exclude": []
+ },
+ {
+  "id": "crevettes",
+  "name": "crevettes",
+  "synonyms": [
+   "crevette",
+   "gambas",
+   "crevettes roses"
+  ],
+  "allergens": [
+   "crustaces"
+  ],
+  "diet": "poisson",
+  "exclude": []
+ },
+ {
+  "id": "moules",
+  "name": "moules",
+  "synonyms": [
+   "moule",
+   "moules de bouchot"
+  ],
+  "allergens": [
+   "mollusques"
+  ],
+  "diet": "poisson",
+  "exclude": []
+ },
+ {
+  "id": "oeufs",
+  "name": "œufs",
+  "synonyms": [
+   "oeuf",
+   "oeufs frais",
+   "oeufs plein air",
+   "oeufs bio"
+  ],
+  "allergens": [
+   "oeufs"
+  ],
+  "diet": "animal",
+  "exclude": [
+   "chocolat",
+   "paques"
+  ]
+ },
+ {
+  "id": "lait",
+  "name": "lait",
+  "synonyms": [
+   "lait demi ecreme",
+   "lait entier",
+   "lait ecreme"
+  ],
+  "allergens": [
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": [
+   "coco",
+   "amande",
+   "avoine",
+   "soja",
+   "riz",
+   "chocolat",
+   "concentre"
+  ]
+ },
+ {
+  "id": "beurre",
+  "name": "beurre",
+  "synonyms": [
+   "beurre doux",
+   "beurre demi sel",
+   "beurre sale"
+  ],
+  "allergens": [
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": [
+   "cacahuete",
+   "arachide"
+  ]
+ },
+ {
+  "id": "creme",
+  "name": "crème fraîche",
+  "synonyms": [
+   "creme fraiche",
+   "creme epaisse",
+   "creme liquide",
+   "creme entiere",
+   "creme legere",
+   "creme"
+  ],
+  "allergens": [
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": [
+   "dessert",
+   "glacee",
+   "glace",
+   "chocolat",
+   "vanille",
+   "caramel",
+   "brulee",
+   "patissiere",
+   "marron",
+   "coco",
+   "soja",
+   "avoine"
+  ]
+ },
+ {
+  "id": "yaourt",
+  "name": "yaourt nature",
+  "synonyms": [
+   "yaourt",
+   "yaourts",
+   "yogourt",
+   "yaourt grec",
+   "fromage blanc"
+  ],
+  "allergens": [
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": [
+   "aromatise",
+   "fruits",
+   "vanille",
+   "chocolat",
+   "boire"
+  ]
+ },
+ {
+  "id": "fromage_rape",
+  "name": "fromage râpé",
+  "synonyms": [
+   "emmental rape",
+   "gruyere rape",
+   "fromage rape",
+   "rape"
+  ],
+  "allergens": [
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": []
+ },
+ {
+  "id": "emmental",
+  "name": "emmental",
+  "synonyms": [
+   "gruyere",
+   "comte",
+   "beaufort"
+  ],
+  "allergens": [
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": []
+ },
+ {
+  "id": "parmesan",
+  "name": "parmesan",
+  "synonyms": [
+   "parmigiano",
+   "grana padano"
+  ],
+  "allergens": [
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": []
+ },
+ {
+  "id": "mozzarella",
+  "name": "mozzarella",
+  "synonyms": [
+   "burrata",
+   "mozzarella di bufala"
+  ],
+  "allergens": [
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": []
+ },
+ {
+  "id": "chevre",
+  "name": "fromage de chèvre",
+  "synonyms": [
+   "chevre",
+   "buche de chevre",
+   "crottin"
+  ],
+  "allergens": [
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": []
+ },
+ {
+  "id": "feta",
+  "name": "feta",
+  "synonyms": [],
+  "allergens": [
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": []
+ },
+ {
+  "id": "mascarpone",
+  "name": "mascarpone",
+  "synonyms": [
+   "ricotta"
+  ],
+  "allergens": [
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": []
+ },
+ {
+  "id": "tomate",
+  "name": "tomates",
+  "synonyms": [
+   "tomate",
+   "tomates cerises",
+   "tomates grappe",
+   "tomate coeur de boeuf"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "concassee",
+   "coulis",
+   "puree",
+   "sauce",
+   "concentre",
+   "pelee",
+   "sechee",
+   "ketchup"
+  ]
+ },
+ {
+  "id": "courgette",
+  "name": "courgettes",
+  "synonyms": [
+   "courgette"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "aubergine",
+  "name": "aubergines",
+  "synonyms": [
+   "aubergine"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "poivron",
+  "name": "poivrons",
+  "synonyms": [
+   "poivron rouge",
+   "poivron vert",
+   "poivron jaune"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "carotte",
+  "name": "carottes",
+  "synonyms": [
+   "carotte",
+   "carottes rapees"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "gateau",
+   "cake"
+  ]
+ },
+ {
+  "id": "oignon",
+  "name": "oignons",
+  "synonyms": [
+   "oignon",
+   "oignon jaune",
+   "oignon rouge",
+   "oignon blanc",
+   "oignons nouveaux"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "frit",
+   "soupe"
+  ]
+ },
+ {
+  "id": "echalote",
+  "name": "échalotes",
+  "synonyms": [
+   "echalote"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "ail",
+  "name": "ail",
+  "synonyms": [
+   "gousse d ail",
+   "tete d ail",
+   "ail rose"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "ours",
+   "semoule"
+  ]
+ },
+ {
+  "id": "pomme_de_terre",
+  "name": "pommes de terre",
+  "synonyms": [
+   "pomme de terre",
+   "patate",
+   "patates",
+   "grenaille",
+   "charlotte"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "douce",
+   "chips",
+   "puree",
+   "frite"
+  ]
+ },
+ {
+  "id": "patate_douce",
+  "name": "patate douce",
+  "synonyms": [
+   "patates douces"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "epinards",
+  "name": "épinards",
+  "synonyms": [
+   "epinard",
+   "pousses d epinards",
+   "epinards frais",
+   "epinards en branches"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "salade",
+  "name": "salade",
+  "synonyms": [
+   "laitue",
+   "batavia",
+   "mache",
+   "roquette",
+   "mesclun",
+   "feuille de chene",
+   "romaine",
+   "iceberg"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "composee",
+   "fruits",
+   "taboule",
+   "cesar"
+  ]
+ },
+ {
+  "id": "concombre",
+  "name": "concombre",
+  "synonyms": [],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "champignons",
+  "name": "champignons",
+  "synonyms": [
+   "champignon",
+   "champignons de paris",
+   "pleurotes",
+   "girolles",
+   "cepes"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "brocoli",
+  "name": "brocoli",
+  "synonyms": [
+   "brocolis"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "chou_fleur",
+  "name": "chou-fleur",
+  "synonyms": [
+   "chou fleur"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "poireau",
+  "name": "poireaux",
+  "synonyms": [
+   "poireau"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "haricots_verts",
+  "name": "haricots verts",
+  "synonyms": [
+   "haricot vert",
+   "haricots beurre"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "petits_pois",
+  "name": "petits pois",
+  "synonyms": [
+   "petit pois",
+   "petits pois carottes"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "mais",
+  "name": "maïs",
+  "synonyms": [
+   "mais doux",
+   "grains de mais"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "avocat",
+  "name": "avocat",
+  "synonyms": [
+   "avocats"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "potiron",
+  "name": "potiron",
+  "synonyms": [
+   "courge",
+   "butternut",
+   "potimarron",
+   "citrouille"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "celeri",
+  "name": "céleri",
+  "synonyms": [
+   "celeri branche",
+   "celeri rave"
+  ],
+  "allergens": [
+   "celeri"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "gingembre",
+  "name": "gingembre",
+  "synonyms": [
+   "gingembre frais"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "persil",
+  "name": "persil",
+  "synonyms": [
+   "persil plat",
+   "persil frise"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "basilic",
+  "name": "basilic",
+  "synonyms": [],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "coriandre",
+  "name": "coriandre",
+  "synonyms": [],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "ciboulette",
+  "name": "ciboulette",
+  "synonyms": [],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "menthe",
+  "name": "menthe",
+  "synonyms": [
+   "menthe fraiche"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "herbes",
+  "name": "herbes fraîches",
+  "synonyms": [
+   "herbes fraiches",
+   "aneth",
+   "estragon",
+   "cerfeuil"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "pomme",
+  "name": "pommes",
+  "synonyms": [
+   "pomme",
+   "golden",
+   "gala",
+   "granny",
+   "pink lady"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "terre",
+   "compote",
+   "jus",
+   "chips"
+  ]
+ },
+ {
+  "id": "banane",
+  "name": "bananes",
+  "synonyms": [
+   "banane"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "poire",
+  "name": "poires",
+  "synonyms": [
+   "poire"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "fruits_rouges",
+  "name": "fruits rouges",
+  "synonyms": [
+   "fraises",
+   "fraise",
+   "framboises",
+   "framboise",
+   "myrtilles",
+   "myrtille",
+   "cerises",
+   "cerise",
+   "mures"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "confiture",
+   "yaourt",
+   "jus",
+   "sirop"
+  ]
+ },
+ {
+  "id": "orange",
+  "name": "oranges",
+  "synonyms": [
+   "orange",
+   "clementines",
+   "clementine",
+   "mandarine"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "jus"
+  ]
+ },
+ {
+  "id": "citron",
+  "name": "citron",
+  "synonyms": [
+   "citrons",
+   "citron vert",
+   "citron jaune"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "jus",
+   "tarte"
+  ]
+ },
+ {
+  "id": "kiwi",
+  "name": "kiwis",
+  "synonyms": [
+   "kiwi"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "pates",
+  "name": "pâtes",
+  "synonyms": [
+   "pates",
+   "spaghetti",
+   "penne",
+   "tagliatelles",
+   "coquillettes",
+   "fusilli",
+   "macaroni",
+   "farfalle",
+   "linguine",
+   "rigatoni",
+   "lasagnes"
+  ],
+  "allergens": [
+   "gluten"
+  ],
+  "diet": "vegetal",
+  "exclude": [
+   "feuilletee",
+   "brisee",
+   "sablee",
+   "pizza",
+   "tartiner"
+  ]
+ },
+ {
+  "id": "riz",
+  "name": "riz",
+  "synonyms": [
+   "riz basmati",
+   "riz thai",
+   "riz long",
+   "riz rond",
+   "riz arborio",
+   "riz complet"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "galette",
+   "lait",
+   "gateau"
+  ]
+ },
+ {
+  "id": "semoule",
+  "name": "semoule",
+  "synonyms": [
+   "couscous",
+   "semoule fine",
+   "semoule moyenne",
+   "boulgour"
+  ],
+  "allergens": [
+   "gluten"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "lentilles",
+  "name": "lentilles",
+  "synonyms": [
+   "lentilles vertes",
+   "lentilles corail",
+   "lentilles blondes",
+   "lentille"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "pois_chiches",
+  "name": "pois chiches",
+  "synonyms": [
+   "pois chiche",
+   "pois-chiches"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "houmous"
+  ]
+ },
+ {
+  "id": "haricots_rouges",
+  "name": "haricots rouges",
+  "synonyms": [
+   "haricots blancs",
+   "haricots secs",
+   "flageolets"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "quinoa",
+  "name": "quinoa",
+  "synonyms": [],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "pain",
+  "name": "pain",
+  "synonyms": [
+   "baguette",
+   "pain de campagne",
+   "pain complet",
+   "pain rassis",
+   "tradition",
+   "pain aux cereales"
+  ],
+  "allergens": [
+   "gluten"
+  ],
+  "diet": "vegetal",
+  "exclude": [
+   "mie",
+   "epices",
+   "chocolat",
+   "raisins"
+  ]
+ },
+ {
+  "id": "pain_mie",
+  "name": "pain de mie",
+  "synonyms": [
+   "pain de mie",
+   "pain burger",
+   "pain hamburger"
+  ],
+  "allergens": [
+   "gluten",
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": []
+ },
+ {
+  "id": "tortillas",
+  "name": "tortillas",
+  "synonyms": [
+   "wraps",
+   "wrap",
+   "galettes de ble",
+   "fajitas"
+  ],
+  "allergens": [
+   "gluten"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "pate_brisee",
+  "name": "pâte brisée",
+  "synonyms": [
+   "pate brisee",
+   "pate sablee",
+   "pate a tarte"
+  ],
+  "allergens": [
+   "gluten",
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": []
+ },
+ {
+  "id": "pate_feuilletee",
+  "name": "pâte feuilletée",
+  "synonyms": [
+   "pate feuilletee"
+  ],
+  "allergens": [
+   "gluten",
+   "lait"
+  ],
+  "diet": "animal",
+  "exclude": []
+ },
+ {
+  "id": "pate_pizza",
+  "name": "pâte à pizza",
+  "synonyms": [
+   "pate a pizza"
+  ],
+  "allergens": [
+   "gluten"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "chapelure",
+  "name": "chapelure",
+  "synonyms": [],
+  "allergens": [
+   "gluten"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "tomates_concassees",
+  "name": "tomates concassées",
+  "synonyms": [
+   "coulis de tomate",
+   "puree de tomate",
+   "tomates pelees",
+   "sauce tomate",
+   "passata",
+   "tomates concassees"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "ketchup"
+  ]
+ },
+ {
+  "id": "concentre_tomate",
+  "name": "concentré de tomate",
+  "synonyms": [
+   "double concentre"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "lait_coco",
+  "name": "lait de coco",
+  "synonyms": [
+   "creme de coco",
+   "lait coco"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "bouillon",
+  "name": "bouillon",
+  "synonyms": [
+   "bouillon cube",
+   "bouillon de volaille",
+   "bouillon de legumes",
+   "bouillon de boeuf",
+   "fond de veau",
+   "cube"
+  ],
+  "allergens": [
+   "celeri"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "sauce_soja",
+  "name": "sauce soja",
+  "synonyms": [
+   "soja sale",
+   "tamari"
+  ],
+  "allergens": [
+   "soja",
+   "gluten"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "moutarde",
+  "name": "moutarde",
+  "synonyms": [
+   "moutarde de dijon",
+   "moutarde a l ancienne"
+  ],
+  "allergens": [
+   "moutarde"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "pesto",
+  "name": "pesto",
+  "synonyms": [
+   "pesto alla genovese",
+   "pesto vert"
+  ],
+  "allergens": [
+   "lait",
+   "fruits_coque"
+  ],
+  "diet": "animal",
+  "exclude": []
+ },
+ {
+  "id": "olives",
+  "name": "olives",
+  "synonyms": [
+   "olive",
+   "olives noires",
+   "olives vertes"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "curry",
+  "name": "curry",
+  "synonyms": [
+   "curry en poudre",
+   "pate de curry",
+   "garam masala"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "cumin",
+  "name": "cumin",
+  "synonyms": [
+   "ras el hanout",
+   "paprika",
+   "piment",
+   "epices"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "vin_blanc",
+  "name": "vin blanc",
+  "synonyms": [
+   "vin blanc sec"
+  ],
+  "allergens": [
+   "sulfites"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "noix",
+  "name": "noix",
+  "synonyms": [
+   "noisettes",
+   "amandes",
+   "noix de cajou",
+   "cerneaux"
+  ],
+  "allergens": [
+   "fruits_coque"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "sesame",
+  "name": "graines de sésame",
+  "synonyms": [
+   "sesame"
+  ],
+  "allergens": [
+   "sesame"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "chocolat",
+  "name": "chocolat",
+  "synonyms": [
+   "chocolat noir",
+   "chocolat au lait",
+   "pepites de chocolat",
+   "chocolat patissier"
+  ],
+  "allergens": [
+   "lait",
+   "soja"
+  ],
+  "diet": "animal",
+  "exclude": [
+   "pate a tartiner",
+   "lait chocolate",
+   "creme"
+  ]
+ },
+ {
+  "id": "levure",
+  "name": "levure chimique",
+  "synonyms": [
+   "levure",
+   "poudre a lever"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "flocons_avoine",
+  "name": "flocons d’avoine",
+  "synonyms": [
+   "flocons d avoine",
+   "avoine",
+   "porridge"
+  ],
+  "allergens": [
+   "gluten"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "miel",
+  "name": "miel",
+  "synonyms": [],
+  "allergens": [],
+  "diet": "animal",
+  "exclude": []
+ },
+ {
+  "id": "cannelle",
+  "name": "cannelle",
+  "synonyms": [],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "sucre_vanille",
+  "name": "sucre vanillé",
+  "synonyms": [
+   "vanille",
+   "sucre vanille",
+   "extrait de vanille"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "sel",
+  "name": "sel",
+  "synonyms": [
+   "fleur de sel",
+   "gros sel"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "poivre",
+  "name": "poivre",
+  "synonyms": [],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "huile",
+  "name": "huile",
+  "synonyms": [
+   "huile de tournesol",
+   "huile neutre",
+   "huile de colza"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "huile_olive",
+  "name": "huile d’olive",
+  "synonyms": [
+   "huile d olive"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "farine",
+  "name": "farine",
+  "synonyms": [
+   "farine de ble",
+   "farine t45",
+   "farine t55"
+  ],
+  "allergens": [
+   "gluten"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "sucre",
+  "name": "sucre",
+  "synonyms": [
+   "sucre en poudre",
+   "sucre roux",
+   "cassonade"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": [
+   "vanille",
+   "glace"
+  ]
+ },
+ {
+  "id": "eau",
+  "name": "eau",
+  "synonyms": [],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "vinaigre",
+  "name": "vinaigre",
+  "synonyms": [
+   "vinaigre de vin",
+   "vinaigre balsamique",
+   "vinaigre de cidre"
+  ],
+  "allergens": [
+   "sulfites"
+  ],
+  "diet": "vegetal",
+  "exclude": []
+ },
+ {
+  "id": "herbes_provence",
+  "name": "herbes de Provence",
+  "synonyms": [
+   "thym",
+   "laurier",
+   "romarin",
+   "origan"
+  ],
+  "allergens": [],
+  "diet": "vegetal",
+  "exclude": []
+ }
+]

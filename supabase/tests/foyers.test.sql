@@ -25,7 +25,7 @@ end $$;
 -- 1. Alice crée un foyer
 select pg_temp.as_user(:alice);
 create temp table t_h as select * from public.create_household('Chez nous', 'Alice');
-grant select on t_h to authenticated;
+grant select on t_h to authenticated, service_role;
 do $$ declare h record; begin
   select * into h from t_h;
   assert h.invite_code ~ '^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$', 'format du code : ' || h.invite_code;
@@ -177,6 +177,42 @@ select pg_temp.as_user(:carol);
 do $$ begin
   assert (select count(*) from public.recipes) + (select count(*) from public.dietary_profiles) + (select count(*) from public.shopping_items) = 0,
     'Carol ne voit rien du foyer';
+end $$;
+reset role;
+
+-- 6 ter. Recettes IA : quota, cache, droits (migration 3)
+set role service_role;
+do $$ declare hid uuid := (select id from t_h); r record; i int; begin
+  -- 3 générations autorisées par jour
+  for i in 1..3 loop
+    select * into r from public.ai_reserve_generation(hid, 'a0000000-0000-4000-8000-000000000001', 'cle-' || i, 3);
+    assert r.reservation is not null and r.used = i, 'réservation ' || i;
+    perform public.ai_complete_generation(r.reservation, jsonb_build_object('title', 'Recette ' || i), 'claude-opus-5-5', 1000, 500, 1);
+  end loop;
+  select * into r from public.ai_reserve_generation(hid, 'a0000000-0000-4000-8000-000000000001', 'cle-4', 3);
+  assert r.reservation is null and r.cached is null and r.used = 3, 'quota atteint';
+  -- Même demande qu'avant : réponse en cache, même quota atteint
+  select * into r from public.ai_reserve_generation(hid, 'a0000000-0000-4000-8000-000000000001', 'cle-2', 3);
+  assert r.reservation is null and r.cached ->> 'title' = 'Recette 2', 'cache';
+  -- Un échec ne consomme pas de quota
+  select * into r from public.ai_reserve_generation(hid, null, 'cle-5', 4);
+  assert r.reservation is not null, 'réservation avec quota 4';
+  perform public.ai_fail_generation(r.reservation, 3);
+  select * into r from public.ai_reserve_generation(hid, null, 'cle-6', 4);
+  assert r.reservation is not null, 'l''échec a libéré la place';
+end $$;
+reset role;
+select pg_temp.as_user(:bob);
+do $$ begin
+  assert (select count(*) from public.ai_generations) >= 4, 'les membres relisent l''historique';
+  perform public.ai_reserve_generation((select id from t_h), auth.uid(), 'triche', 1000);
+  raise exception 'aurait dû échouer';
+exception when insufficient_privilege then null;
+end $$;
+reset role;
+select pg_temp.as_user(:carol);
+do $$ begin
+  assert (select count(*) from public.ai_generations) = 0, 'Carol ne voit pas l''historique du foyer';
 end $$;
 reset role;
 

@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, FolderPlus, Plus, Search } from 'lucide-react-native';
+import { ChevronLeft, FolderPlus, Plus, Search, Sparkles } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -108,7 +108,21 @@ export default function Recettes() {
       </ScrollView>
 
       {quick === 'pour-toi' && !folder && !tag && !query && (
-        <Text variant="label" tone="secondary">Classées pour utiliser d’abord ce qui périme bientôt.</Text>
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Invente-moi une recette avec l’IA"
+            onPress={() => router.push('/recettes/ia')}
+            style={[styles.ai, { backgroundColor: colors.primarySoft }]}
+          >
+            <Sparkles size={22} color={colors.primaryText} />
+            <View style={{ flex: 1 }}>
+              <Text variant="bodyStrong" tone="primary">Invente-moi une recette</Text>
+              <Text variant="label" tone="primary">Une idée sur mesure avec ce qui périme bientôt</Text>
+            </View>
+          </Pressable>
+          <Text variant="label" tone="secondary">Classées pour utiliser d’abord ce qui périme bientôt.</Text>
+        </>
       )}
     </View>
   );
@@ -170,5 +184,6 @@ const styles = StyleSheet.create({
   row: { gap: 8 },
   addFolder: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, minHeight: MIN_TOUCH, borderRadius: radius.chip, borderWidth: 1, borderStyle: 'dashed' },
   empty: { alignItems: 'center', gap: 12, marginTop: 40 },
+  ai: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, padding: 14, minHeight: 64 },
   bold: { fontFamily: 'DMSans_700Bold' },
 });
