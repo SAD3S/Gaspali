@@ -1,10 +1,13 @@
 name: Android – build & release
 
-# Un tag « v* » (ex. v0.1.0) construit l'APK et le publie dans une Release GitHub.
-# Lancement manuel possible (onglet Actions) : l'APK est alors seulement disponible en artefact.
+# - Tag « v* » (ex. v0.1.0) : construit l'APK et le publie dans une Release GitHub.
+# - Push sur une branche de travail : construit l'APK (artefact téléchargeable), sans Release.
+# - Lancement manuel possible (onglet Actions).
 on:
   push:
     tags: ['v*']
+    branches-ignore: [main]
+    paths-ignore: ['**/*.md', 'docs/**', 'design/**']
   workflow_dispatch:
 
 permissions:
