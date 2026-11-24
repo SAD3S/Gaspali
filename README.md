@@ -63,7 +63,7 @@ docs/captures/       captures à chaque étape
 - [x] 3. Scan (caméra, Open Food Facts + cache, produit inconnu, mode rafale, OCR de la date)
 - [x] 4. Comptes et foyer (Supabase : auth, RLS, invitations, synchro hors ligne champ par champ)
 - [x] 5. Accueil et notifications (alertes, stats du mois, rappel quotidien + veille de DLC, 1 notification/jour max)
-- [ ] 6. Recettes (dont recettes perso avec tags et dossiers)
+- [x] 6. Recettes (52 recettes, moteur anti-gaspi, recettes perso avec tags et dossiers, favoris, préférences alimentaires, « J'ai cuisiné ça »)
 - [ ] 7. IA recettes
 - [ ] 8. Courses, planning, statistiques
 - [ ] 9. Scan du ticket

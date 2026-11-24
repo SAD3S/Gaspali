@@ -109,3 +109,10 @@ describe('statistiques du mois', () => {
     expect(formatEuros(4.8)).toBe('4,80 €');
   });
 });
+
+describe('idée de recette dans le rappel', () => {
+  it('ajoute l’idée du jour au texte', () => {
+    const [first] = planNotifications([item('Crème fraîche', 0)], DEFAULT_NOTIFICATION_SETTINGS, morning, 1, () => 'Gratin poulet-épinards');
+    expect(first!.body).toBe('Aujourd’hui : Crème fraîche. Idée : Gratin poulet-épinards.');
+  });
+});

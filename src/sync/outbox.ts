@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db, sqlite } from '@/db/client';
 import { members, outbox, syncState } from '@/db/schema';
 import { toServerFields, type OutboxEntry } from '@/domain/sync';
+import { stableUuid } from '@/db/ids';
 import { getSyncContext, notifyLocalChange } from './context';
 import { columnSpecs, SYNCED_TABLE_NAMES, SYNCED_TABLES, type SyncedTableName } from './tables';
 
@@ -72,6 +73,14 @@ export function countLocalOnly(): number {
 export function adoptLocalData(householdId: string): number {
   let adopted = 0;
   sqlite.withTransactionSync(() => {
+    // Préférences saisies sans compte : elles deviennent celles de l'utilisateur dans ce foyer.
+    const uid = getSyncContext().userId;
+    const local = sqlite.getFirstSync<{ id: string }>(`SELECT id FROM dietary_profiles WHERE household_id IS NULL AND user_id = 'local'`);
+    if (uid && local) {
+      const id = stableUuid(`${householdId}:${uid}`);
+      if (sqlite.getFirstSync(`SELECT id FROM dietary_profiles WHERE id = ?`, id)) sqlite.runSync(`DELETE FROM dietary_profiles WHERE id = ?`, local.id);
+      else sqlite.runSync(`UPDATE dietary_profiles SET id = ?, user_id = ? WHERE id = ?`, id, uid, local.id);
+    }
     for (const name of SYNCED_TABLE_NAMES) {
       const table = SYNCED_TABLES[name];
       const rows = db.select().from(table).where(isNull(table.householdId)).all() as ({ id: string } & Record<string, unknown>)[];

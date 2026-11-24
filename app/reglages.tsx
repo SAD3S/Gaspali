@@ -6,6 +6,7 @@ import { Button, Card, Chip, Screen, SegmentedControl, Stepper, Text, useSnackba
 import { startOfDay } from '@/domain/dates';
 import { formatTime, planNotifications } from '@/domain/notifications';
 import { useInventory } from '@/features/inventory/hooks';
+import { DEFAULT_BASICS, INGREDIENTS_BY_ID } from '@/data/ingredients';
 import { updateNotificationSettings, updateSettings, useSettings } from '@/features/settings/settings';
 import {
   getPermission,
@@ -19,6 +20,8 @@ import { useTheme, type ThemePreference } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
 const HOURS = [8, 12, 18, 20];
+/** Ingrédients qu'on peut déclarer « toujours à la maison ». */
+const BASIC_CANDIDATES = [...DEFAULT_BASICS, 'moutarde', 'ail', 'oignon', 'beurre', 'lait', 'oeufs', 'riz', 'pates', 'bouillon', 'sauce_soja', 'curry', 'cumin', 'levure', 'sucre_vanille', 'cannelle', 'concentre_tomate'];
 
 function Row({ label, hint, value, onChange, disabled }: { label: string; hint: string; value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   const { colors } = useTheme();
@@ -43,7 +46,7 @@ function Row({ label, hint, value, onChange, disabled }: { label: string; hint: 
 export default function Reglages() {
   const { colors, preference, setPreference } = useTheme();
   const snackbar = useSnackbar();
-  const { notifications: n } = useSettings();
+  const { notifications: n, basics } = useSettings();
   const items = useInventory();
   const [permission, setPermission] = useState<PermissionState>('undetermined');
 
@@ -80,6 +83,24 @@ export default function Reglages() {
             { value: 'dark', label: 'Sombre' },
           ]}
         />
+      </Card>
+
+      <Text variant="overline" tone="secondary">Ingrédients de base</Text>
+      <Card style={{ gap: 10 }}>
+        <Text variant="label" tone="secondary">Considérés comme toujours disponibles dans les recettes (jamais comptés comme manquants).</Text>
+        <View style={styles.wrap}>
+          {BASIC_CANDIDATES.map((id) => {
+            const on = basics.includes(id);
+            return (
+              <Chip
+                key={id}
+                label={INGREDIENTS_BY_ID[id]?.name ?? id}
+                selected={on}
+                onPress={() => updateSettings({ basics: on ? basics.filter((b) => b !== id) : [...basics, id] })}
+              />
+            );
+          })}
+        </View>
       </Card>
 
       <Text variant="overline" tone="secondary">Notifications</Text>

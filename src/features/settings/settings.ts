@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
+import { DEFAULT_BASICS } from '@/data/ingredients';
 import { DEFAULT_NOTIFICATION_SETTINGS, type NotificationSettings } from '@/domain/notifications';
 
 /** Réglages propres à cet appareil (les notifications ne se synchronisent pas entre téléphones). */
@@ -7,10 +8,12 @@ export interface AppSettings {
   notifications: NotificationSettings;
   /** L'utilisateur a répondu (ou refusé pour l'instant) à la proposition d'activer les rappels. */
   notificationPromptDone: boolean;
+  /** Ingrédients de base considérés comme toujours disponibles (sel, huile…). */
+  basics: string[];
 }
 
 const KEY = 'gaspalli.settings';
-const DEFAULTS: AppSettings = { notifications: DEFAULT_NOTIFICATION_SETTINGS, notificationPromptDone: false };
+const DEFAULTS: AppSettings = { notifications: DEFAULT_NOTIFICATION_SETTINGS, notificationPromptDone: false, basics: DEFAULT_BASICS };
 
 let current: AppSettings = DEFAULTS;
 let loaded = false;

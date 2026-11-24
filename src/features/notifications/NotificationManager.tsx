@@ -2,6 +2,8 @@ import * as Notifications from 'expo-notifications';
 import { router, type Href } from 'expo-router';
 import { useEffect } from 'react';
 import { planNotifications } from '@/domain/notifications';
+import { suggestRecipes } from '@/domain/recipeEngine';
+import { useAllRecipes, useHouseholdPrefs } from '@/features/recipes/hooks';
 import { useInventory } from '@/features/inventory/hooks';
 import { useSettings } from '@/features/settings/settings';
 import { getPermission, notificationsSupported, reschedule } from '@/services/notifications';
@@ -18,7 +20,9 @@ export function NotificationManager() {
 
 function NativeNotificationManager() {
   const items = useInventory();
-  const { notifications, loaded } = useSettings();
+  const { notifications, loaded, basics } = useSettings();
+  const recipes = useAllRecipes();
+  const { members } = useHouseholdPrefs();
   const lastResponse = Notifications.useLastNotificationResponse();
 
   useEffect(() => {
@@ -26,13 +30,19 @@ function NativeNotificationManager() {
     const t = setTimeout(async () => {
       try {
         if ((await getPermission()) !== 'granted') return;
-        await reschedule(planNotifications(items, notifications));
+        const basicsSet = new Set(basics);
+        // Recette du jour : la mieux classée pour ce jour-là, si elle sauve un produit urgent.
+        const hint = (day: Date) => {
+          const top = suggestRecipes(recipes, { items, basics: basicsSet, members, today: day })[0];
+          return top && top.urgentUsed > 0 ? top.recipe.title : null;
+        };
+        await reschedule(planNotifications(items, notifications, new Date(), 7, hint));
       } catch {
         // une erreur de programmation ne doit jamais bloquer l'app
       }
     }, 1500);
     return () => clearTimeout(t);
-  }, [items, notifications, loaded]);
+  }, [items, notifications, loaded, basics, recipes, members]);
 
   useEffect(() => {
     const url = lastResponse?.notification.request.content.data?.url;

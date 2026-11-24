@@ -77,4 +77,49 @@ CREATE TABLE members (
 CREATE INDEX items_household_idx ON inventory_items (household_id);
 CREATE INDEX events_household_idx ON events (household_id);
 CREATE INDEX products_household_idx ON products (household_id);`,
+
+  // v3 — recettes, dossiers, préférences alimentaires, courses (étape 6)
+  `CREATE TABLE recipes (
+  ${sync},
+  title TEXT NOT NULL,
+  minutes INTEGER NOT NULL,
+  servings INTEGER NOT NULL,
+  kind TEXT NOT NULL,
+  tags TEXT NOT NULL,
+  ingredients TEXT NOT NULL,
+  steps TEXT NOT NULL,
+  photo_uri TEXT,
+  source TEXT NOT NULL,
+  author_id TEXT
+);
+CREATE TABLE recipe_folders (
+  ${sync},
+  name TEXT NOT NULL,
+  position INTEGER NOT NULL
+);
+CREATE TABLE recipe_links (
+  ${sync},
+  recipe_id TEXT NOT NULL,
+  folder_id TEXT,
+  kind TEXT NOT NULL
+);
+CREATE INDEX recipe_links_recipe_idx ON recipe_links (recipe_id);
+CREATE TABLE dietary_profiles (
+  ${sync},
+  user_id TEXT NOT NULL,
+  diet TEXT NOT NULL,
+  allergens TEXT NOT NULL,
+  dislikes TEXT NOT NULL
+);
+CREATE TABLE shopping_items (
+  ${sync},
+  name TEXT NOT NULL,
+  quantity REAL,
+  unit TEXT,
+  aisle TEXT NOT NULL,
+  checked INTEGER NOT NULL DEFAULT 0,
+  ingredient_id TEXT,
+  recipe_id TEXT,
+  added_by TEXT
+);`,
 ];

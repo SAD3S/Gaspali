@@ -10,6 +10,8 @@ import { formatTime, joinNames } from '@/domain/notifications';
 import { formatEuros } from '@/domain/stats';
 import { itemSubtitle } from '@/features/inventory/format';
 import { useInventory, useMonthStats } from '@/features/inventory/hooks';
+import { useSuggestions } from '@/features/recipes/hooks';
+import { suggestionSummary } from '@/domain/recipeEngine';
 import { updateSettings, useSettings } from '@/features/settings/settings';
 import { getPermission, notificationsSupported, requestPermission, type PermissionState } from '@/services/notifications';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -68,6 +70,9 @@ export default function Accueil() {
   const today = new Date();
   const items = useInventory();
   const stats = useMonthStats();
+  const suggestions = useSuggestions();
+  // Recette du jour : la mieux classée, si elle sauve au moins un produit qui périme bientôt.
+  const idea = suggestions.find((sg) => sg.urgentUsed + sg.soonUsed > 0) ?? null;
   const sorted = queryInventory(items, { today });
   const urgent = sorted.filter(({ freshness: f }) => f.state === 'urgent' || f.state === 'bientot').slice(0, 3);
   const veryUrgent = sorted.filter(({ freshness: f }) => f.state === 'urgent');
@@ -135,21 +140,32 @@ export default function Accueil() {
         ))}
       </View>
 
-      {/* Étape 6 : la carte proposera une recette du moteur de suggestion. */}
       <Card tone="primary" style={{ gap: 6 }}>
         <Text variant="overline" tone="onPrimary" style={{ opacity: 0.85 }}>Idée anti-gaspi</Text>
-        {veryUrgent.length > 0 ? (
+        {idea ? (
+          <>
+            <Text variant="title2" tone="onPrimary">{idea.recipe.title}</Text>
+            <Text variant="body" tone="onPrimary">{idea.recipe.minutes} min · {suggestionSummary(idea)}</Text>
+            <View style={styles.ideaActions}>
+              <Button label="Voir la recette" variant="onPrimary" style={styles.recipeBtn} onPress={() => router.push({ pathname: '/recettes/[id]', params: { id: idea.recipe.id } })} />
+              <Pressable accessibilityRole="link" onPress={() => router.push('/recettes')} hitSlop={10} style={styles.otherIdeas}>
+                <Text variant="label" tone="onPrimary" style={styles.bold}>Autres idées</Text>
+              </Pressable>
+            </View>
+          </>
+        ) : veryUrgent.length > 0 ? (
           <>
             <Text variant="title2" tone="onPrimary">À cuisiner en priorité</Text>
             <Text variant="body" tone="onPrimary">
               {joinNames(veryUrgent.map((r) => r.item.name))} : pense à {veryUrgent.length > 1 ? 'les ' : 'l’'}utiliser dans ton prochain repas.
             </Text>
-            <Button label="Voir les alertes" variant="onPrimary" style={styles.recipeBtn} onPress={() => router.push('/alertes')} />
+            <Button label="Chercher une recette" variant="onPrimary" style={styles.recipeBtn} onPress={() => router.push('/recettes')} />
           </>
         ) : (
           <>
             <Text variant="title2" tone="onPrimary">Tout est sous contrôle</Text>
-            <Text variant="body" tone="onPrimary">Aucun produit à finir en urgence. Bravo !</Text>
+            <Text variant="body" tone="onPrimary">Aucun produit à finir en urgence. Envie de cuisiner quand même ?</Text>
+            <Button label="Voir les recettes" variant="onPrimary" style={styles.recipeBtn} onPress={() => router.push('/recettes')} />
           </>
         )}
       </Card>
@@ -197,6 +213,8 @@ const styles = StyleSheet.create({
   tile: { flex: 1, borderWidth: 1, borderRadius: radius.tile, padding: 14, gap: 4 },
   tileCount: { marginTop: 8 },
   recipeBtn: { alignSelf: 'flex-start', marginTop: 8 },
+  ideaActions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  otherIdeas: { marginTop: 8, minHeight: 44, justifyContent: 'center' },
   track: { height: 8, borderRadius: 4, overflow: 'hidden' },
   fill: { height: 8, borderRadius: 4 },
   promptHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },

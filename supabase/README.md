@@ -10,7 +10,8 @@ L'app fonctionne sans serveur (mode local). Pour activer comptes, foyers et sync
 ## 2. Appliquer le schéma
 
 Au choix :
-- **SQL Editor** : colle et exécute `migrations/20261124120000_foyers_et_inventaire.sql` ;
+- **SQL Editor** : colle et exécute, dans l'ordre, les fichiers de `migrations/`
+  (`20261124120000_foyers_et_inventaire.sql`, puis `20261124160000_recettes_preferences_courses.sql`) ;
 - **CLI** : `supabase link --project-ref <ref>` puis `supabase db push`.
 
 Le schéma crée : profils, foyers, membres (rôles admin / membre), inventaire, produits, historique,

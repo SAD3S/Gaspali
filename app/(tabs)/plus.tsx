@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { CalendarDays, ChartColumn, ChefHat, ChevronRight, Info, Settings, Users, type LucideIcon } from 'lucide-react-native';
+import { CalendarDays, ChartColumn, ChefHat, ChevronRight, Info, Salad, Settings, Users, type LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, Screen, Text, useSnackbar } from '@/components/ui';
 import { seedDemo } from '@/db/inventoryRepo';
@@ -8,8 +8,9 @@ import { useMembers } from '@/features/account/hooks';
 import { useSyncStatus } from '@/sync/engine';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const ENTRIES: { label: string; Icon: LucideIcon; href?: '/reglages'; soon?: string }[] = [
-  { label: 'Recettes', Icon: ChefHat, soon: 'Étape 6' },
+const ENTRIES: { label: string; Icon: LucideIcon; href?: '/reglages' | '/recettes' | '/preferences'; soon?: string }[] = [
+  { label: 'Recettes', Icon: ChefHat, href: '/recettes' },
+  { label: 'Préférences alimentaires', Icon: Salad, href: '/preferences' },
   { label: 'Planning des repas', Icon: CalendarDays, soon: 'Étape 8' },
   { label: 'Statistiques', Icon: ChartColumn, soon: 'Étape 8' },
   { label: 'Réglages', Icon: Settings, href: '/reglages' },

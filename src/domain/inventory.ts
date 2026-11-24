@@ -28,7 +28,7 @@ export type LocationFilter = 'tout' | Location;
 const collator = typeof Intl !== 'undefined' ? new Intl.Collator('fr', { sensitivity: 'base' }) : null;
 
 export function normalizeText(s: string): string {
-  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
 
 export interface ItemWithFreshness<T extends Item = Item> {

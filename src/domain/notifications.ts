@@ -51,6 +51,8 @@ export function planNotifications(
   settings: NotificationSettings,
   now: Date = new Date(),
   days = 7,
+  /** Idée de recette du jour (« Gratin poulet-épinards »), calculée pour la date donnée. */
+  recipeHint?: (day: Date) => string | null,
 ): PlannedNotification[] {
   if (!settings.dailyEnabled && !settings.dlcEveEnabled) return [];
   const stock = items.filter((i) => i.status === 'en_stock');
@@ -85,6 +87,8 @@ export function planNotifications(
       title = n > 1 ? `${n} DLC demain` : 'DLC demain';
       body = `${joinNames(tomorrow)} : à consommer au plus tard demain.`;
     }
+    const hint = recipeHint?.(day);
+    if (hint) body += ` Idée : ${hint}.`;
     out.push({ id: `digest-${dayKey(day)}`, date: fireAt, title, body, itemIds: chosen.map(({ item }) => item.id) });
   }
   return out;

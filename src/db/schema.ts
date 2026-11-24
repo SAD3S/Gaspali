@@ -69,6 +69,73 @@ export type InventoryRow = typeof inventoryItems.$inferSelect;
 export type NewInventoryRow = typeof inventoryItems.$inferInsert;
 export type EventRow = typeof events.$inferSelect;
 
+/** Recettes personnelles (et recettes IA enregistrées). Listes stockées en JSON. */
+export const recipes = sqliteTable('recipes', {
+  ...syncColumns,
+  title: text('title').notNull(),
+  minutes: integer('minutes').notNull(),
+  servings: integer('servings').notNull(),
+  kind: text('kind').notNull(),
+  /** JSON : string[] */
+  tags: text('tags').notNull(),
+  /** JSON : RecipeIngredient[] */
+  ingredients: text('ingredients').notNull(),
+  /** JSON : string[] */
+  steps: text('steps').notNull(),
+  photoUri: text('photo_uri'),
+  source: text('source', { enum: ['perso', 'ia'] }).notNull(),
+  authorId: text('author_id'),
+});
+
+/** Dossiers de recettes (« Desserts du dimanche », « Batch cooking »…). */
+export const recipeFolders = sqliteTable('recipe_folders', {
+  ...syncColumns,
+  name: text('name').notNull(),
+  position: integer('position').notNull(),
+});
+
+/**
+ * Favoris et rangement en dossiers. recipe_id peut désigner une recette de la base
+ * (identifiant texte) ou une recette perso (UUID).
+ */
+export const recipeLinks = sqliteTable('recipe_links', {
+  ...syncColumns,
+  recipeId: text('recipe_id').notNull(),
+  folderId: text('folder_id'),
+  kind: text('kind', { enum: ['favori', 'dossier'] }).notNull(),
+}, (t) => [index('recipe_links_recipe_idx').on(t.recipeId)]);
+
+/** Préférences alimentaires d'un membre (régime, allergènes, aliments détestés). */
+export const dietaryProfiles = sqliteTable('dietary_profiles', {
+  ...syncColumns,
+  /** Utilisateur Supabase, ou « local » sans compte. */
+  userId: text('user_id').notNull(),
+  diet: text('diet', { enum: ['omnivore', 'pescetarien', 'vegetarien', 'vegan'] }).notNull(),
+  /** JSON : AllergenId[] */
+  allergens: text('allergens').notNull(),
+  /** JSON : identifiants d'ingrédients */
+  dislikes: text('dislikes').notNull(),
+});
+
+/** Liste de courses partagée. */
+export const shoppingItems = sqliteTable('shopping_items', {
+  ...syncColumns,
+  name: text('name').notNull(),
+  quantity: real('quantity'),
+  unit: text('unit'),
+  aisle: text('aisle').notNull(),
+  checked: integer('checked', { mode: 'boolean' }).notNull(),
+  ingredientId: text('ingredient_id'),
+  recipeId: text('recipe_id'),
+  addedBy: text('added_by'),
+});
+
+export type RecipeRow = typeof recipes.$inferSelect;
+export type FolderRow = typeof recipeFolders.$inferSelect;
+export type RecipeLinkRow = typeof recipeLinks.$inferSelect;
+export type DietaryRow = typeof dietaryProfiles.$inferSelect;
+export type ShoppingRow = typeof shoppingItems.$inferSelect;
+
 /**
  * File des modifications locales à envoyer au serveur (synchro hors ligne).
  * Une ligne = un ensemble de champs modifiés d'une ligne, avec l'horodatage de chaque champ.

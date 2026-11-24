@@ -24,7 +24,7 @@ const DDM_HINTS = /(de\s*preference|ddm|dluo|best\s*before|bbe|a\s*consommer\s*d
 function normalize(text: string): string {
   return text
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     // Confusions fréquentes de l'OCR dans les zones de chiffres.
     .replace(/(?<=\d)o(?=[\d./-])|(?<=[\d./-])o(?=\d)/g, '0')

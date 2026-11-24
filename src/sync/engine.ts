@@ -47,8 +47,11 @@ async function push(): Promise<void> {
     const grouped = coalesceOutbox(entries);
     for (const name of SYNCED_TABLE_NAMES) {
       for (const batch of chunk(grouped.get(name) ?? [], 100)) {
-        const { error } = await supabase.rpc('sync_push', { p_table: name, p_changes: batch });
+        const { data, error } = await supabase.rpc('sync_push', { p_table: name, p_changes: batch });
         if (error) throw error;
+        // Lignes refusées par le serveur (droits, contraintes) : on ne les renverra pas indéfiniment.
+        const rejected = (data as { rejected?: string[] } | null)?.rejected ?? [];
+        if (rejected.length) console.warn(`[synchro] ${rejected.length} ligne(s) refusée(s) dans ${name}`, rejected);
       }
     }
     deleteOutbox(entries.map((e) => e.seq));

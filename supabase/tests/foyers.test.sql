@@ -104,13 +104,12 @@ do $$ begin
   assert (select count(*) from public.inventory_items) = 0, 'Carol ne voit pas l''inventaire';
   assert (select count(*) from public.profiles) = 1, 'Carol ne voit que son profil';
 end $$;
-do $$ begin
-  -- Carol connaît l'identifiant du foyer (fuite, devinette…) mais n'en est pas membre.
-  perform public.sync_push('inventory_items', jsonb_build_array(jsonb_build_object(
+do $$ declare res jsonb; begin
+  -- Carol connaît l'identifiant du foyer (fuite, devinette…) mais n'en est pas membre : ligne rejetée.
+  res := public.sync_push('inventory_items', jsonb_build_array(jsonb_build_object(
     'id', 'd0000000-0000-4000-8000-000000000010', 'household_id', (select id from t_h),
     'fields', '{"quantity": 0}'::jsonb, 'ts', '{"quantity": 99999}'::jsonb)));
-  raise exception 'aurait dû échouer';
-exception when insufficient_privilege then null;
+  assert (res ->> 'applied')::int = 0 and res -> 'rejected' = '["d0000000-0000-4000-8000-000000000010"]'::jsonb, 'rejet de Carol : ' || res::text;
 end $$;
 do $$ begin
   update public.inventory_items set quantity = 0;
@@ -129,6 +128,55 @@ do $$ begin
   perform count(*) from public.inventory_items;
   raise exception 'aurait dû échouer';
 exception when insufficient_privilege then null;
+end $$;
+reset role;
+
+-- 6 bis. Recettes, préférences, courses (migration 2)
+select pg_temp.as_user(:bob);
+do $$ declare res jsonb; hid uuid := (select id from t_h); begin
+  -- Un lot mêlant une ligne valide et une ligne invalide : la valide passe, l'autre est rejetée.
+  res := public.sync_push('recipes', jsonb_build_array(
+    jsonb_build_object('id', 'e0000000-0000-4000-8000-000000000020', 'household_id', hid,
+      'fields', jsonb_build_object('created_at', 1, 'updated_at', 1, 'title', 'Tarte de Bob', 'minutes', 30, 'servings', 4,
+        'kind', 'dessert', 'tags', '["dessert","sans gluten"]', 'ingredients', '[]', 'steps', '["Cuire"]', 'source', 'perso'),
+      'ts', '{"title": 1, "minutes": 1, "servings": 1}'::jsonb),
+    jsonb_build_object('id', 'e0000000-0000-4000-8000-000000000021', 'household_id', hid,
+      'fields', jsonb_build_object('created_at', 1, 'updated_at', 1, 'title', 'Trop longue', 'minutes', 99999, 'servings', 4,
+        'kind', 'plat', 'tags', '[]', 'ingredients', '[]', 'steps', '[]', 'source', 'perso'),
+      'ts', '{}'::jsonb)));
+  assert (res ->> 'applied')::int = 1, 'une recette appliquée : ' || res::text;
+  assert res -> 'rejected' = '["e0000000-0000-4000-8000-000000000021"]'::jsonb, 'la recette invalide est rejetée';
+  -- Favori sur une recette de la base (identifiant texte)
+  res := public.sync_push('recipe_links', jsonb_build_array(jsonb_build_object('id', 'e0000000-0000-4000-8000-000000000030', 'household_id', hid,
+    'fields', '{"created_at": 1, "updated_at": 1, "recipe_id": "gratin-poulet-epinards", "kind": "favori"}'::jsonb, 'ts', '{}'::jsonb)));
+  assert (res ->> 'applied')::int = 1, 'favori';
+  -- Préférences : Bob écrit les siennes…
+  res := public.sync_push('dietary_profiles', jsonb_build_array(jsonb_build_object('id', 'e0000000-0000-4000-8000-000000000040', 'household_id', hid,
+    'fields', jsonb_build_object('created_at', 1, 'updated_at', 1, 'user_id', 'b0000000-0000-4000-8000-000000000002', 'diet', 'vegetarien', 'allergens', '["lait"]', 'dislikes', '[]'),
+    'ts', '{}'::jsonb)));
+  assert (res ->> 'applied')::int = 1, 'préférences de Bob';
+  -- … mais pas celles d'Alice.
+  res := public.sync_push('dietary_profiles', jsonb_build_array(jsonb_build_object('id', 'e0000000-0000-4000-8000-000000000041', 'household_id', hid,
+    'fields', jsonb_build_object('created_at', 1, 'updated_at', 1, 'user_id', 'a0000000-0000-4000-8000-000000000001', 'diet', 'vegan', 'allergens', '[]', 'dislikes', '[]'),
+    'ts', '{}'::jsonb)));
+  assert (res ->> 'applied')::int = 0, 'Bob ne peut pas écrire les préférences d''Alice';
+  -- Courses
+  res := public.sync_push('shopping_items', jsonb_build_array(jsonb_build_object('id', 'e0000000-0000-4000-8000-000000000050', 'household_id', hid,
+    'fields', '{"created_at": 1, "updated_at": 1, "name": "Lait", "aisle": "Crèmerie", "checked": false}'::jsonb, 'ts', '{}'::jsonb)));
+  assert (res ->> 'applied')::int = 1, 'article de courses';
+end $$;
+reset role;
+select pg_temp.as_user(:alice);
+do $$ begin
+  assert (select count(*) from public.recipes) = 1, 'Alice voit la recette de Bob';
+  assert (select diet from public.dietary_profiles) = 'vegetarien', 'Alice voit les préférences de Bob';
+  assert (select count(*) from public.shopping_items) = 1, 'Alice voit la liste de courses';
+end $$;
+reset role;
+select pg_temp.as_user(:carol);
+do $$ begin
+  assert (select count(*) from public.recipes) + (select count(*) from public.dietary_profiles) + (select count(*) from public.shopping_items) = 0,
+    'Carol ne voit rien du foyer';
 end $$;
 reset role;
 

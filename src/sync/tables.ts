@@ -1,13 +1,18 @@
 import { getTableColumns } from 'drizzle-orm';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import type { ColumnKind, ColumnSpec } from '@/domain/sync';
-import { events, inventoryItems, products } from '@/db/schema';
+import { dietaryProfiles, events, inventoryItems, products, recipeFolders, recipeLinks, recipes, shoppingItems } from '@/db/schema';
 
 /** Tables synchronisées avec Supabase (même nom local et serveur). L'ordre compte : produits avant articles. */
 export const SYNCED_TABLES = {
   products,
   inventory_items: inventoryItems,
   events,
+  recipes,
+  recipe_folders: recipeFolders,
+  recipe_links: recipeLinks,
+  dietary_profiles: dietaryProfiles,
+  shopping_items: shoppingItems,
 } as const;
 
 export type SyncedTableName = keyof typeof SYNCED_TABLES;

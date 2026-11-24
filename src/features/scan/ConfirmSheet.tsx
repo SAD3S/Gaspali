@@ -5,6 +5,8 @@ import { CATEGORY_LIST, getCategory, type CategoryId, type Location } from '@/do
 import type { ScannedProduct } from '@/domain/offProduct';
 import { formatQuantity } from '@/domain/quantity';
 import { ItemForm, type ItemFormValue } from '@/features/inventory/ItemForm';
+import { ALLERGEN_LABELS, allergensFromOff } from '@/data/allergens';
+import { useHouseholdPrefs } from '@/features/recipes/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export type SheetProduct =
@@ -29,9 +31,16 @@ interface Props {
 
 /** Feuille de confirmation après un scan (maquette « Ajout après scan »). */
 export function ConfirmSheet(p: Props) {
-  const { colors } = useTheme();
+  const { colors, freshness } = useTheme();
   const [focused, setFocused] = useState(false);
   const found = p.target.kind === 'found' ? p.target : null;
+  const { members } = useHouseholdPrefs();
+  // Allergènes du produit (Open Food Facts) déclarés par un membre du foyer.
+  const conflicts = found
+    ? allergensFromOff(found.product.allergens).flatMap((a) =>
+        members.filter((m) => m.allergens.includes(a)).map((m) => `${ALLERGEN_LABELS[a]} (${m.name === 'Toi' ? 'toi' : m.name})`),
+      )
+    : [];
   const name = found ? found.product.name : p.unknownName;
   const canAdd = name.trim().length > 0;
 
@@ -81,6 +90,13 @@ export function ConfirmSheet(p: Props) {
           </View>
         )}
 
+        {conflicts.length > 0 && (
+          <View accessibilityRole="alert" style={[styles.warning, { backgroundColor: freshness.perime.bg }]}>
+            <Text variant="bodyStrong" color={freshness.perime.fg}>Attention, allergène déclaré</Text>
+            <Text variant="label" color={freshness.perime.fg}>Contient : {conflicts.join(', ')}.</Text>
+          </View>
+        )}
+
         <ItemForm
           value={p.form}
           onChange={p.onFormChange}
@@ -105,4 +121,5 @@ const styles = StyleSheet.create({
   small: { fontSize: 12 },
   input: { fontFamily: 'DMSans_500Medium', fontSize: 17, borderRadius: 14, borderWidth: 2, paddingHorizontal: 14, minHeight: 52 },
   ghost: { borderWidth: 0, backgroundColor: 'transparent' },
+  warning: { borderRadius: 14, padding: 12, gap: 2 },
 });
