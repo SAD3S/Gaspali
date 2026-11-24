@@ -1,12 +1,16 @@
 name: Android – build & release
 
 # - Tag « v* » (ex. v0.1.0) : construit l'APK et le publie dans une Release GitHub.
-# - Push sur une branche de travail : construit l'APK (artefact téléchargeable), sans Release.
+# - Push sur une branche : construit l'APK (artefact téléchargeable), sans Release.
+#
+# Caches : GitHub ne partage un cache qu'avec la même branche/tag ou avec la branche par défaut.
+# Les builds de branche sont donc rapides dès le 2e passage ; ceux des tags le deviennent
+# une fois que la branche par défaut (main) a été construite.
 # - Lancement manuel possible (onglet Actions).
 on:
   push:
     tags: ['v*']
-    branches-ignore: [main]
+    branches: ['**']
     paths-ignore: ['**/*.md', 'docs/**', 'design/**']
   workflow_dispatch:
 
@@ -51,6 +55,15 @@ jobs:
           yes | "$SDKMANAGER" --licenses > /dev/null || true
 
       - uses: gradle/actions/setup-gradle@v5
+        with:
+          # Par défaut, seul main écrit le cache : on l'autorise partout.
+          cache-read-only: false
+
+      # Cache de compilation C++ (React Native, Reanimated, Worklets, Screens, modules Expo…).
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: android-arm64
+          max-size: 2G
 
       - name: Version
         run: |
@@ -87,8 +100,28 @@ jobs:
 
       - name: Compilation APK
         working-directory: android
+        env:
+          # CMake (≥ 3.17) lit ces variables : chaque compilation C/C++ passe par ccache.
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+          # Chemins et dates de node_modules changent à chaque checkout : on ne s'y fie pas.
+          CCACHE_BASEDIR: ${{ github.workspace }}
+          CCACHE_NOHASHDIR: 'true'
+          CCACHE_SLOPPINESS: include_file_mtime,include_file_ctime,time_macros,file_stat_matches,pch_defines
         # arm64-v8a : tous les téléphones Android récents ; compile ~4× plus vite que toutes les ABI.
-        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
+        # --build-cache : réutilise les sorties Java/Kotlin/dex déjà produites.
+        # Mémoire : R8 manquait de Metaspace avec les 2 Go / 512 Mo par défaut.
+        # -x lintVitalRelease : le lint n'apporte rien à un APK de test (~15 s).
+        run: >
+          ./gradlew assembleRelease
+          -PreactNativeArchitectures=arm64-v8a
+          --build-cache --no-daemon
+          -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError"
+          -x lintVitalRelease
+
+      - name: Statistiques ccache
+        if: always()
+        run: ccache --show-stats || true
 
       - name: Nommer l'APK
         run: |
@@ -96,7 +129,7 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk "dist/gaspalli-${APP_VERSION}.apk"
           ls -lh dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: gaspalli-${{ env.APP_VERSION }}
           path: dist/*.apk
