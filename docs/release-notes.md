@@ -9,6 +9,8 @@
 
 ## Nouveautés à tester
 
+- **Pépin** dans les écrans vides (inventaire, courses, recettes, alertes) et dans les **widgets** ;
+  fil de fond plus aérien, avec de grandes boucles.
 - **Nouveau look** : un fil vert qui boucle derrière l'app, et **Pépin**, la mascotte, qui présente l'app au premier lancement
   (à revoir depuis À propos).
 - **Boîtes de confirmation** aux couleurs de l'app ; les fenêtres remontent au-dessus du clavier ;
