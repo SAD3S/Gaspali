@@ -9,6 +9,8 @@
 
 ## Nouveautés à tester
 
+- **Nouveau thème sombre « Graphite »** : gris neutre au lieu du fond verdâtre, cartes bien détachées, texte
+  blanc cassé et couleurs adoucies ; contrastes vérifiés (norme AA).
 - **Prix des produits** : champ « Prix payé » au scan, à l'ajout et sur la fiche produit, avec en suggestion ton
   dernier prix payé et les prix relevés par la communauté Open Prices. « Consommé · 4,20 € sauvés » ou « Jeté ·
   4,20 € perdus » ; la fiche affiche la valeur du produit. Les statistiques utilisent les vrais prix.
