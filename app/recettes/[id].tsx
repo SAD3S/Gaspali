@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { CalendarDays, CalendarPlus, Check, ChevronLeft, Clock, ExternalLink, FolderPlus, Heart, Pencil, ShoppingBasket } from 'lucide-react-native';
+import { CalendarDays, CalendarPlus, Check, ChefHat, ChevronLeft, Clock, ExternalLink, FolderPlus, Heart, Pencil, ShoppingBasket } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -160,7 +160,18 @@ export default function RecetteFiche() {
         </View>
         <IngredientChecks checks={evaluation.checks} ratio={ratio} />
 
-        <Text variant="title2">Préparation</Text>
+        <View style={styles.between}>
+          <Text variant="title2">Préparation</Text>
+          {recipe.steps.length > 0 && (
+            <Button
+              label="Mode cuisine"
+              variant="soft"
+              icon={<ChefHat size={18} color={colors.primaryText} />}
+              accessibilityHint="Étapes en grand, écran allumé, minuteurs"
+              onPress={() => router.push({ pathname: '/cuisine/[id]', params: { id: recipe.id, portions: String(n) } })}
+            />
+          )}
+        </View>
         {recipe.steps.map((s, i) => (
           <View key={i} style={styles.step}>
             <View style={[styles.stepNum, { backgroundColor: colors.primarySoft }]}>

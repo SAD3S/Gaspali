@@ -9,6 +9,10 @@
 
 ## Nouveautés à tester
 
+- **Mode cuisine** (fiche recette › Mode cuisine) : étapes en grand, écran allumé. Touche une durée (« 25 min »)
+  pour lancer le minuteur de l'horloge du téléphone.
+- **Partager vers Gaspalli** : dans Chrome ou l'app Marmiton, Partager › Gaspalli importe la recette.
+- **Recettes** : nouvel onglet en bas, 16 recettes de plus ; paramètres via l'engrenage de l'accueil.
 - **Partage du frigo** : Paramètres › Compte et foyer › ton e-mail, puis touche le lien reçu **depuis ce téléphone**
   (l'e-mail de Supabase est en anglais : « Your sign-in link »). Crée le foyer ; l'autre personne le rejoint avec le code.
 - **Importer une recette** (Recettes › +) : depuis un site (colle le lien), une photo de livre ou de fiche

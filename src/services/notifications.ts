@@ -5,6 +5,8 @@ import type { PlannedNotification } from '@/domain/notifications';
 /** Notifications locales (aucun serveur) : rappel quotidien et veille de DLC. */
 export const notificationsSupported = Platform.OS !== 'web';
 export const CHANNEL_ID = 'rappels';
+export const TIMER_CHANNEL_ID = 'minuteurs';
+const TIMER_PREFIX = 'minuteur-';
 
 export type PermissionState = 'granted' | 'undetermined' | 'denied';
 
@@ -54,7 +56,11 @@ export function openSystemSettings(): void {
 export async function reschedule(plan: PlannedNotification[]): Promise<void> {
   if (!notificationsSupported) return;
   await ensureChannel();
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  // On ne touche qu'aux rappels anti-gaspi (pas aux minuteurs du mode cuisine).
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(
+    scheduled.filter((n) => !n.identifier.startsWith(TIMER_PREFIX)).map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
+  );
   for (const n of plan) {
     await Notifications.scheduleNotificationAsync({
       identifier: n.id,
@@ -72,4 +78,30 @@ export async function sendTest(title: string, body: string): Promise<void> {
     content: { title, body, data: { url: '/alertes' } },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 5, channelId: CHANNEL_ID },
   });
+}
+
+/**
+ * Minuteur du mode cuisine quand l'horloge du téléphone n'est pas disponible (iOS…) :
+ * notification sonore à la fin. Renvoie son identifiant (pour l'annuler), ou null.
+ */
+export async function scheduleTimerNotification(seconds: number, title: string, body: string): Promise<string | null> {
+  if (!notificationsSupported) return null;
+  if ((await getPermission()) !== 'granted' && (await requestPermission()) !== 'granted') return null;
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync(TIMER_CHANNEL_ID, {
+      name: 'Minuteurs de cuisine',
+      importance: Notifications.AndroidImportance.HIGH,
+      sound: 'default',
+      vibrationPattern: [0, 400, 200, 400],
+    });
+  }
+  return Notifications.scheduleNotificationAsync({
+    identifier: `${TIMER_PREFIX}${Date.now()}`,
+    content: { title, body, sound: 'default' },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: Math.max(1, Math.round(seconds)), channelId: TIMER_CHANNEL_ID },
+  });
+}
+
+export async function cancelTimerNotification(id: string): Promise<void> {
+  if (notificationsSupported) await Notifications.cancelScheduledNotificationAsync(id).catch(() => {});
 }

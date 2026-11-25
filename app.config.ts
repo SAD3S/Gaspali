@@ -33,6 +33,8 @@ const config: ExpoConfig = {
   android: {
     package: appId,
     versionCode,
+    // Minuteurs du mode cuisine dans l'horloge du téléphone.
+    permissions: ['com.android.alarm.permission.SET_ALARM'],
     // Rien de plus que nécessaire (exigence des stores) : le sélecteur de photos et de fichiers
     // d'Android ne demande aucun accès au stockage ; la superposition ne sert qu'au débogage.
     blockedPermissions: [
@@ -54,6 +56,7 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-font',
     './plugins/withAndroidRelease',
+    './plugins/withShareIntent',
     'expo-apple-authentication',
     'expo-web-browser',
     ['expo-notifications', { icon: './assets/notification-icon.png', color: '#1F7A4D' }],

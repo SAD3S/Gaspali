@@ -92,7 +92,7 @@ docs/captures/       captures à chaque étape
 - [x] 3. Scan (caméra, Open Food Facts + cache, produit inconnu, mode rafale, OCR de la date)
 - [x] 4. Comptes et foyer (Supabase : auth, RLS, invitations, synchro hors ligne champ par champ)
 - [x] 5. Accueil et notifications (alertes, stats du mois, rappel quotidien + veille de DLC, 1 notification/jour max)
-- [x] 6. Recettes (52 recettes, moteur anti-gaspi, recettes perso avec tags et dossiers, favoris, préférences alimentaires, « J'ai cuisiné ça »)
+- [x] 6. Recettes (68 recettes, moteur anti-gaspi, recettes perso avec tags et dossiers, favoris, préférences alimentaires, « J'ai cuisiné ça »)
 - [x] 7. IA recettes (Edge Function Supabase + API Claude, quota et cache, revalidation des allergènes)
 - [x] 8. Courses (rangement dans l'inventaire, produits habituels), planning des repas (semaine anti-gaspi, réservations, manquants), statistiques
 - [x] 9. Scan du ticket (OCR avec positions des lignes, abréviations, remises, pesées, apprentissage par foyer, prix pour les statistiques)

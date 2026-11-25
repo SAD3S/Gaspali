@@ -51,3 +51,32 @@ describe('métadonnées ML Kit', () => {
     ]);
   });
 });
+
+describe('plugin withShareIntent', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { applyShareIntent } = require('../plugins/withShareIntent') as { applyShareIntent: (m: unknown) => unknown };
+  const manifest = () => ({
+    manifest: {
+      application: [
+        {
+          $: { 'android:name': '.MainApplication' },
+          activity: [
+            {
+              $: { 'android:name': '.MainActivity' },
+              'intent-filter': [{ action: [{ $: { 'android:name': 'android.intent.action.MAIN' } }], category: [{ $: { 'android:name': 'android.intent.category.LAUNCHER' } }] }],
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  it('ajoute le partage de texte une seule fois', () => {
+    const once = applyShareIntent(manifest());
+    const twice = applyShareIntent(once) as ReturnType<typeof manifest>;
+    const filters = twice.manifest.application[0]!.activity[0]!['intent-filter'] as { action: { $: Record<string, string> }[]; data?: { $: Record<string, string> }[] }[];
+    expect(filters).toHaveLength(2);
+    expect(filters[1]!.action[0]!.$['android:name']).toBe('android.intent.action.SEND');
+    expect(filters[1]!.data![0]!.$['android:mimeType']).toBe('text/plain');
+  });
+});
