@@ -1,16 +1,18 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router } from 'expo-router';
 import { Archive, Check, ListChecks, Plus, ReceiptText, X } from 'lucide-react-native';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
 import { Button, Card, Screen, Text, useSnackbar } from '@/components/ui';
 import { addItem } from '@/db/inventoryRepo';
 import type { ShoppingRow } from '@/db/schema';
-import { addShopping, clearChecked, removeShopping, setChecked, shoppingQuery } from '@/db/shoppingRepo';
+import { addShopping, clearChecked, removeShopping, repairNumberedItems, setChecked, shoppingQuery } from '@/db/shoppingRepo';
 import { LOCATION_LABELS } from '@/domain/categories';
 import { SavedListsSheet } from '@/features/shopping/SavedListsSheet';
 import { categoryOf, defaultForm, StoreSheet } from '@/features/shopping/StoreSheet';
 import { resolveIngredient } from '@/domain/ingredientMatch';
+import { categoryFromKeywords } from '@/domain/receiptMatch';
+import { parseShoppingInput } from '@/domain/shoppingInput';
 import { formatQuantity } from '@/domain/quantity';
 import { EmptyState } from '@/components/brand/EmptyState';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -39,6 +41,10 @@ export default function Courses() {
   const total = (data ?? []).length;
 
   const input = useRef<TextInputInstance>(null);
+  // Articles saisis avant que l'app lise les quantités (« 5 jus de pomme ») : remis en ordre une fois.
+  useEffect(() => {
+    repairNumberedItems();
+  }, []);
   // « + » : ajoute l'article tapé et garde le clavier ouvert pour le suivant ; champ vide → on y place le curseur.
   const add = () => {
     const name = text.trim();
@@ -46,7 +52,18 @@ export default function Courses() {
       input.current?.focus();
       return;
     }
-    addShopping([{ name, ingredientId: resolveIngredient(name)?.id ?? null }]);
+    // « 5 jus de pomme » → 5 × « Jus de pomme », rangé en Boissons (ingrédient connu, sinon mots-clés).
+    const parsed = parseShoppingInput(name);
+    const ingredient = resolveIngredient(parsed.name);
+    addShopping([
+      {
+        name: parsed.name,
+        quantity: parsed.quantity,
+        unit: parsed.unit,
+        ingredientId: ingredient?.id ?? null,
+        category: ingredient ? undefined : (categoryFromKeywords(parsed.name) ?? undefined),
+      },
+    ]);
     setText('');
     input.current?.focus();
   };
@@ -114,7 +131,7 @@ export default function Courses() {
                   </View>
                   <Text variant="body" style={[styles.flex, r.checked && { textDecorationLine: 'line-through', color: colors.textSecondary }]}>
                     {r.name}
-                    {r.quantity != null ? <Text variant="label" tone="secondary">{`  ${formatQuantity(r.quantity, r.unit ?? '')}`}</Text> : null}
+                    {r.quantity != null ? <Text variant="label" tone="secondary">{r.unit ? `  ${formatQuantity(r.quantity, r.unit)}` : `  × ${formatQuantity(r.quantity, '')}`}</Text> : null}
                   </Text>
                 </Pressable>
                 {r.checked && (

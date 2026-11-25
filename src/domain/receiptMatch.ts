@@ -128,6 +128,12 @@ function asciiLower(s: string): string {
   return upperAscii(s).toLowerCase();
 }
 
+/** Catégorie devinée d'après des mots-clés (« jus de pomme » → boissons), ou null. */
+export function categoryFromKeywords(name: string): CategoryId | null {
+  const plain = asciiLower(name);
+  return KEYWORDS.find(([re]) => re.test(plain))?.[1] ?? null;
+}
+
 /** Score de ressemblance entre jetons de ticket (souvent tronqués) et jetons d'un produit connu. */
 function similarity(receiptTokens: string[], productTokens: string[]): number {
   // Les jetons avec chiffres (« 18m », « 4x125 ») ne disent rien du produit.

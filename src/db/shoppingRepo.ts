@@ -2,7 +2,10 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { INGREDIENTS_BY_ID } from '@/data/ingredients';
 import { getCategory } from '@/domain/categories';
 import { normalizeText } from '@/domain/inventory';
+import { resolveIngredient } from '@/domain/ingredientMatch';
+import { categoryFromKeywords } from '@/domain/receiptMatch';
 import type { SavedListItem } from '@/domain/savedLists';
+import { parseShoppingInput } from '@/domain/shoppingInput';
 import { ownership, trackInsert, trackPatch } from '@/sync/outbox';
 import { db } from './client';
 import { newId } from './ids';
@@ -143,4 +146,31 @@ export function deleteSavedList(id: string): void {
 /** Ajoute le contenu d'une liste enregistrée à la liste en cours. Renvoie le nombre d'articles nouveaux. */
 export function applySavedList(items: SavedListItem[]): number {
   return addShopping(items).length;
+}
+
+/**
+ * Réparation des articles saisis avant la lecture des quantités : « 5 jus de pomme » rangé dans
+ * « Autre » devient 5 × « Jus de pomme » dans Boissons. Ne touche que les noms qui commencent par un chiffre.
+ */
+export function repairNumberedItems(): number {
+  const rows = db.select().from(shoppingItems).where(and(isNull(shoppingItems.deletedAt), eq(shoppingItems.checked, false))).all();
+  let fixed = 0;
+  for (const r of rows) {
+    if (!/^\d/.test(r.name.trim())) continue;
+    const parsed = parseShoppingInput(r.name);
+    if (parsed.quantity == null || parsed.name === r.name) continue;
+    const ingredient = resolveIngredient(parsed.name);
+    const patch = {
+      name: parsed.name,
+      quantity: r.quantity ?? parsed.quantity,
+      unit: r.quantity != null ? r.unit : parsed.unit,
+      ingredientId: r.ingredientId ?? ingredient?.id ?? null,
+      aisle: aisleFor(ingredient?.id ?? r.ingredientId, ingredient ? undefined : (categoryFromKeywords(parsed.name) ?? undefined)),
+      updatedAt: new Date(),
+    };
+    db.update(shoppingItems).set(patch).where(eq(shoppingItems.id, r.id)).run();
+    trackPatch('shopping_items', r.id, patch);
+    fixed++;
+  }
+  return fixed;
 }
