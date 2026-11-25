@@ -19,6 +19,10 @@ export interface AppSettings {
   crashReports: boolean;
   /** Équipement de la cuisine : filtre les recettes proposées. */
   equipment: EquipmentId[];
+  /** Badges déjà fêtés sur ce téléphone (null : pas encore initialisé, rien à fêter). */
+  seenBadges: string[] | null;
+  /** Dernier défi de la semaine réussi déjà fêté (« lundi-id »). */
+  celebratedChallenge: string | null;
 }
 
 const KEY = 'gaspalli.settings';
@@ -30,6 +34,8 @@ const DEFAULTS: AppSettings = {
   onboardingDone: false,
   crashReports: true,
   equipment: ALL_EQUIPMENT,
+  seenBadges: null,
+  celebratedChallenge: null,
 };
 
 let current: AppSettings = DEFAULTS;

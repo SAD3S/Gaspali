@@ -17,6 +17,7 @@ import { updateSettings, useSettings } from '@/features/settings/settings';
 import { getPermission, notificationsSupported, requestPermission, type PermissionState } from '@/services/notifications';
 import { RecipeVisual } from '@/features/recipes/RecipeCard';
 import { Pepin } from '@/components/brand/Pepin';
+import { ChallengeCard } from '@/features/achievements/ChallengeCard';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius } from '@/theme/tokens';
 
@@ -269,6 +270,8 @@ export default function Accueil() {
           </>
         )}
       </Card>
+
+      <ChallengeCard />
     </Screen>
   );
 }

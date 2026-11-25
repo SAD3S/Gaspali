@@ -16,6 +16,7 @@ import { NotificationManager } from '@/features/notifications/NotificationManage
 import { loadSettings } from '@/features/settings/settings';
 import { ShareReceiver } from '@/features/recipes/ShareReceiver';
 import { WidgetSync } from '@/widgets/WidgetSync';
+import { Celebration } from '@/features/achievements/Celebration';
 import { RestockNotifier } from '@/features/shopping/RestockNotifier';
 import { initCrashReporting, reportError, wrapRoot } from '@/services/crashReporting';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
@@ -97,6 +98,7 @@ function RootLayout() {
               <ShareReceiver />
               <WidgetSync />
               <DialogHost />
+              <Celebration />
             </SnackbarProvider>
           </AuthProvider>
         </ThemeProvider>

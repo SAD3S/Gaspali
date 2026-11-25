@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { CalendarDays, ChartColumn, ChevronLeft, ChevronRight, Info, Salad, Settings, ShieldCheck, Users, type LucideIcon } from 'lucide-react-native';
+import { CalendarDays, ChartColumn, ChevronLeft, ChevronRight, Info, Salad, Settings, ShieldCheck, Trophy, Users, type LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, Screen, Text, useSnackbar } from '@/components/ui';
 import { seedDemo } from '@/db/inventoryRepo';
@@ -8,9 +8,10 @@ import { useMembers } from '@/features/account/hooks';
 import { useSyncStatus } from '@/sync/engine';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const ENTRIES: { label: string; Icon: LucideIcon; href: '/reglages' | '/preferences' | '/planning' | '/statistiques' | '/confidentialite' | '/a-propos' }[] = [
+const ENTRIES: { label: string; Icon: LucideIcon; href: '/reglages' | '/preferences' | '/planning' | '/statistiques' | '/defis' | '/confidentialite' | '/a-propos' }[] = [
   { label: 'Préférences alimentaires et cuisine', Icon: Salad, href: '/preferences' },
   { label: 'Planning des repas', Icon: CalendarDays, href: '/planning' },
+  { label: 'Défis et badges', Icon: Trophy, href: '/defis' },
   { label: 'Statistiques', Icon: ChartColumn, href: '/statistiques' },
   { label: 'Thème, rappels et ingrédients de base', Icon: Settings, href: '/reglages' },
   { label: 'Confidentialité et données', Icon: ShieldCheck, href: '/confidentialite' },

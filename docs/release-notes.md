@@ -9,6 +9,9 @@
 
 ## Nouveautés à tester
 
+- **Défis et badges** (carte « Défis » de l'accueil, ou Paramètres › Défis et badges) : ta série de jours sans
+  rien jeter, un défi par semaine (zéro gâchis, finis 10 produits, cuisine 3 repas prévus, sauve 15 €) et 12 badges
+  bronze, argent, or. Pépin fête chaque nouveau badge. Tout est partagé avec le foyer.
 - **Pépin** dans les écrans vides (inventaire, courses, recettes, alertes) et dans les **widgets** ;
   fil de fond plus aérien, avec de grandes boucles.
 - **Nouveau look** : un fil vert qui boucle derrière l'app, et **Pépin**, la mascotte, qui présente l'app au premier lancement
