@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { BottomSheet, Button, Chip, Text } from '@/components/ui';
 import { INGREDIENTS_BY_ID } from '@/data/ingredients';
+import { lastPaidPrice } from '@/db/inventoryRepo';
 import type { ShoppingRow } from '@/db/schema';
 import { CATEGORY_LIST, getCategory, type CategoryId, type Location } from '@/domain/categories';
+import { formatShortDate } from '@/domain/dates';
 import { defaultExpiry } from '@/domain/inventory';
+import type { PriceHint } from '@/domain/prices';
 import { ItemForm, type ItemFormValue } from '@/features/inventory/ItemForm';
 
 /** Catégorie probable d'un article de courses (ingrédient reconnu, sinon « autre »). */
@@ -29,6 +32,10 @@ export function StoreSheet({ row, onClose, onStore }: Props) {
   const [category, setCategory] = useState<CategoryId>(initialCategory);
   const [form, setForm] = useState<ItemFormValue>(() => defaultForm(initialCategory, row?.quantity ?? null, row?.unit ?? null));
   const [touched, setTouched] = useState(false);
+  const hints = useMemo((): PriceHint[] => {
+    const last = row ? lastPaidPrice(null, row.name) : null;
+    return last ? [{ amount: last.value, label: `Ton dernier prix (${formatShortDate(last.at)})` }] : [];
+  }, [row]);
   if (!row) return null;
 
   return (
@@ -50,6 +57,8 @@ export function StoreSheet({ row, onClose, onStore }: Props) {
           ))}
         </ScrollView>
         <ItemForm
+          showPrice
+          priceHints={hints}
           value={form}
           onChange={(v) => {
             if (v.expiresAt.getTime() !== form.expiresAt.getTime() || v.dateType !== form.dateType) setTouched(true);

@@ -6,16 +6,20 @@ import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text, useSnackbar } from '@/components/ui';
-import { addItem } from '@/db/inventoryRepo';
+import { addItem, lastPaidPrice } from '@/db/inventoryRepo';
 import { lookupBarcode, saveManualProduct } from '@/db/productsRepo';
 import { normalizeBarcode } from '@/domain/barcode';
 import { getCategory, LOCATION_LABELS, type CategoryId, type Location } from '@/domain/categories';
 import { parsePackageDates, type DateCandidate } from '@/domain/dateOcr';
+import { formatShortDate } from '@/domain/dates';
 import { defaultExpiry } from '@/domain/inventory';
+import type { ScannedProduct } from '@/domain/offProduct';
+import type { PriceHint } from '@/domain/prices';
 import type { ItemFormValue } from '@/features/inventory/ItemForm';
 import { ConfirmSheet, type SheetProduct } from '@/features/scan/ConfirmSheet';
 import { DateResultSheet } from '@/features/scan/DateResultSheet';
 import { ManualCodeSheet } from '@/features/scan/ManualCodeSheet';
+import { fetchOpenPrice } from '@/services/openPrices';
 import { pickReceiptPhotos } from '@/services/photos';
 import { ocrAvailable, recognizeText } from '@/services/textRecognition';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -57,6 +61,24 @@ export default function Scan() {
   const [unknownCategory, setUnknownCategory] = useState<CategoryId>('autre');
   const [candidates, setCandidates] = useState<DateCandidate[] | null>(null);
 
+  // Prix suggérés pour UN exemplaire : dernier prix payé, puis prix relevés par la communauté.
+  const [unitHints, setUnitHints] = useState<PriceHint[]>([]);
+  const hintFor = useRef('');
+  const loadPriceHints = useCallback((productId: string, product: ScannedProduct) => {
+    hintFor.current = product.barcode;
+    const hints: PriceHint[] = [];
+    const last = lastPaidPrice(productId, product.name);
+    if (last) {
+      const packs = last.quantity && product.packQuantity > 0 ? last.quantity / product.packQuantity : 1;
+      hints.push({ amount: Math.round((last.value / Math.max(1, Math.round(packs))) * 100) / 100, label: `Ton dernier prix (${formatShortDate(last.at)})` });
+    }
+    setUnitHints(hints);
+    void fetchOpenPrice(product.barcode).then((open) => {
+      if (open && hintFor.current === product.barcode) setUnitHints((h) => [...h.filter((x) => !x.label.startsWith('Prix relevé')), open]);
+    });
+  }, []);
+  const priceHints = unitHints.map((h) => (form.quantity > 1 ? { amount: Math.round(h.amount * form.quantity * 100) / 100, label: `${h.label} × ${form.quantity}` } : h));
+
   const lastCode = useRef<{ code: string; at: number } | null>(null);
   const busy = useRef(false);
 
@@ -74,13 +96,15 @@ export default function Scan() {
     try {
       const r = await lookupBarcode(code);
       if (r.status === 'found') {
-        setTarget({ kind: 'found', product: r.product, source: r.source });
+        setTarget({ kind: 'found', product: r.product, source: r.source, productId: r.productId });
         setForm(initialForm(r.product.category));
+        loadPriceHints(r.productId, r.product);
       } else {
         setTarget({ kind: 'unknown', barcode: code, offline: r.offline });
         setUnknownName('');
         setUnknownCategory('autre');
         setForm(initialForm('autre'));
+        setUnitHints([]);
       }
       setDateTouched(false);
       setMode('confirm');
@@ -100,7 +124,7 @@ export default function Scan() {
 
   const add = () => {
     if (!target) return;
-    let productId: string | null = null;
+    let productId: string | null = target.kind === 'found' ? target.productId : null;
     let product = target.kind === 'found' ? target.product : null;
     if (target.kind === 'unknown') {
       const saved = saveManualProduct(target.barcode, unknownName, unknownCategory);
@@ -121,6 +145,7 @@ export default function Scan() {
       dateType: form.dateType,
       expiresAt: form.expiresAt,
       expiryEstimated: !dateTouched,
+      price: form.price ?? null,
     });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setAdded((n) => n + 1);
@@ -370,6 +395,7 @@ export default function Scan() {
             unknownCategory={unknownCategory}
             onUnknownCategory={onUnknownCategory}
             burst={burst}
+            priceHints={priceHints}
             onAdd={add}
             onCancel={reset}
           />

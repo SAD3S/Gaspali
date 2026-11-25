@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Chip, ProductAvatar, Sheet, Text } from '@/components/ui';
 import { CATEGORY_LIST, getCategory, type CategoryId, type Location } from '@/domain/categories';
 import type { ScannedProduct } from '@/domain/offProduct';
+import type { PriceHint } from '@/domain/prices';
 import { formatQuantity } from '@/domain/quantity';
 import { ItemForm, type ItemFormValue } from '@/features/inventory/ItemForm';
 import { ALLERGEN_LABELS, allergensFromOff } from '@/data/allergens';
@@ -10,7 +11,7 @@ import { useHouseholdPrefs } from '@/features/recipes/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export type SheetProduct =
-  | { kind: 'found'; product: ScannedProduct; source: 'off' | 'manuel' }
+  | { kind: 'found'; product: ScannedProduct; source: 'off' | 'manuel'; productId: string }
   | { kind: 'unknown'; barcode: string; offline: boolean };
 
 interface Props {
@@ -25,6 +26,8 @@ interface Props {
   unknownCategory: CategoryId;
   onUnknownCategory: (c: CategoryId) => void;
   burst: boolean;
+  /** Prix suggérés (dernier prix payé, prix relevés), déjà multipliés par la quantité. */
+  priceHints: PriceHint[];
   onAdd: () => void;
   onCancel: () => void;
 }
@@ -103,6 +106,8 @@ export function ConfirmSheet(p: Props) {
           onLocationChange={p.onLocationChange}
           onReadDate={p.onReadDate}
           showUnits={false}
+          showPrice
+          priceHints={p.priceHints}
         />
 
         <View style={{ gap: 6 }}>

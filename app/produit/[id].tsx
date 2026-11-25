@@ -13,6 +13,8 @@ import { formatDuration, freezerExtension, remainingOptions } from '@/domain/inv
 import { formatQuantity, roundQuarter, stepFor } from '@/domain/quantity';
 import { roundForDisplay } from '@/domain/units';
 import { ItemForm } from '@/features/inventory/ItemForm';
+import { finishMessage, itemWorth } from '@/domain/prices';
+import { formatEuros } from '@/domain/stats';
 import { useItem, useItemHistory } from '@/features/inventory/hooks';
 import { useAuthorName } from '@/features/account/hooks';
 import { useReservations } from '@/features/recipes/hooks';
@@ -60,9 +62,11 @@ export default function Produit() {
     else moveTo(item.id, loc, false);
   };
 
+  const worth = itemWorth(item.row);
+
   const finish = (status: 'consomme' | 'jete') => {
     const undo = setStatus(item.id, status);
-    snackbar.show(`${item.name} : ${status === 'consomme' ? 'consommé' : 'jeté'}`, undo);
+    snackbar.show(finishMessage(item.name, status, item.row), undo);
     router.back();
   };
 
@@ -92,6 +96,13 @@ export default function Produit() {
           {item.openedAt && <FreshnessBadge state="bientot" label="Entamé" showDot={false} />}
           {item.row.expiryEstimated && <FreshnessBadge state="a_verifier" label="Date estimée" showDot={false} />}
         </View>
+        {inStock && (
+          <Text variant="label" tone={f.state === 'urgent' || f.state === 'perime' ? 'urgent' : 'secondary'}>
+            {worth.estimated
+              ? `Vaut environ ${formatEuros(worth.value)} (estimation : indique le prix payé plus bas)`
+              : `Vaut ${formatEuros(worth.value)}${f.state === 'urgent' || f.state === 'perime' ? ' : à ne pas laisser perdre !' : ''}`}
+          </Text>
+        )}
         {inStock && item.row.expiryEstimated && (
           <View style={styles.estimatedRow}>
             <Text variant="label" tone="secondary" style={styles.flex}>
@@ -159,7 +170,8 @@ export default function Produit() {
 
             <Card style={{ gap: 4 }}>
               <ItemForm
-                value={{ dateType: item.dateType, expiresAt: item.expiresAt, quantity: item.quantity, unit: item.unit, location: item.location }}
+                showPrice
+                value={{ dateType: item.dateType, expiresAt: item.expiresAt, quantity: item.quantity, unit: item.unit, location: item.location, price: item.row.price }}
                 onChange={(v) => updateItem(item.id, { ...v, expiryEstimated: item.row.expiryEstimated && v.expiresAt.getTime() === item.expiresAt.getTime() })}
                 onLocationChange={changeLocation}
               />

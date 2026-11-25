@@ -1,8 +1,8 @@
-import { and, desc, eq, gte, isNull } from 'drizzle-orm';
+import { and, desc, eq, gte, isNotNull, isNull } from 'drizzle-orm';
 import { addDays } from '@/domain/dates';
 import type { DateType } from '@/domain/freshness';
 import { getCategory, type Location } from '@/domain/categories';
-import { consumePartially, freezerExtension, openItem, type Item, type ItemStatus } from '@/domain/inventory';
+import { consumePartially, freezerExtension, normalizeText, openItem, type Item, type ItemStatus } from '@/domain/inventory';
 import { maybeRestock } from '@/features/shopping/restock';
 import { ownership, trackInsert, trackPatch } from '@/sync/outbox';
 import { db } from './client';
@@ -146,10 +146,12 @@ export function consumePart(id: string, remaining: number): () => void {
   const r = consumePartially(before, remaining);
   if (r.finished) return setStatus(id, 'consomme');
   const opened = before.openedAt ? {} : openItem(rowToItem(before));
-  updateItem(id, { quantity: r.remaining, ...opened });
+  // Le prix suit ce qui reste : sinon la valeur du reste serait surestimée.
+  const price = before.price != null && before.quantity > 0 ? Math.round(((before.price * r.remaining) / before.quantity) * 100) / 100 : before.price;
+  updateItem(id, { quantity: r.remaining, price, ...opened });
   const eventId = logEvent(before, 'partiel', r.consumed);
   return () => {
-    updateItem(id, { quantity: before.quantity, openedAt: before.openedAt, expiresAt: before.expiresAt });
+    updateItem(id, { quantity: before.quantity, price: before.price, openedAt: before.openedAt, expiresAt: before.expiresAt });
     cancelEvent(eventId);
   };
 }
@@ -238,4 +240,22 @@ export function seedDemo(): void {
     db.insert(products).values(values).run();
     trackInsert('products', values);
   }
+}
+
+/**
+ * Dernier prix payé pour ce produit (même code-barres, sinon même nom), d'après l'historique des
+ * ajouts du foyer : ticket de caisse, scan ou saisie. Renvoie le prix et la quantité achetée.
+ */
+export function lastPaidPrice(productId: string | null, name: string): { value: number; quantity: number | null; at: Date } | null {
+  const rows = db
+    .select({ value: events.value, quantity: events.quantity, at: events.createdAt, productName: events.productName, productId: inventoryItems.productId })
+    .from(events)
+    .leftJoin(inventoryItems, eq(inventoryItems.id, events.itemId))
+    .where(and(eq(events.type, 'ajout'), isNotNull(events.value), isNull(events.deletedAt)))
+    .orderBy(desc(events.createdAt))
+    .limit(500)
+    .all();
+  const key = normalizeText(name);
+  const hit = (productId && rows.find((r) => r.productId === productId)) || rows.find((r) => normalizeText(r.productName) === key);
+  return hit && hit.value != null ? { value: hit.value, quantity: hit.quantity, at: hit.at } : null;
 }

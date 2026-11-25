@@ -1,13 +1,15 @@
 import { Calendar, Camera } from 'lucide-react-native';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Chip, OptionTiles, SegmentedControl, Stepper, Text } from '@/components/ui';
 import { CalendarSheet } from '@/components/ui/CalendarSheet';
 import { UNITS } from '@/data/freshProducts';
 import { LOCATION_LABELS, LOCATIONS, type Location } from '@/domain/categories';
 import { applyShortcut, DATE_SHORTCUTS, daysBetween, formatLongDate, type DateShortcut } from '@/domain/dates';
 import type { DateType } from '@/domain/freshness';
+import { parsePrice, priceInput, type PriceHint } from '@/domain/prices';
 import { formatNumber, formatQuantity, stepFor } from '@/domain/quantity';
+import { formatEuros } from '@/domain/stats';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
@@ -17,6 +19,8 @@ export interface ItemFormValue {
   quantity: number;
   unit: string;
   location: Location;
+  /** Prix payé pour ce qui est ajouté (€), null si inconnu. */
+  price?: number | null;
 }
 
 interface Props {
@@ -27,10 +31,13 @@ interface Props {
   /** Bouton « Lire la date » (OCR, étape 3). */
   onReadDate?: () => void;
   showUnits?: boolean;
+  /** Affiche le champ « Prix payé » (avec ses suggestions). */
+  showPrice?: boolean;
+  priceHints?: PriceHint[];
 }
 
 /** Bloc date / quantité / emplacement, partagé par le scan, l'ajout manuel et la fiche produit. */
-export function ItemForm({ value, onChange, onLocationChange, onReadDate, showUnits = true }: Props) {
+export function ItemForm({ value, onChange, onLocationChange, onReadDate, showUnits = true, showPrice = false, priceHints = [] }: Props) {
   const { colors } = useTheme();
   const [calendar, setCalendar] = useState(false);
   const set = (patch: Partial<ItemFormValue>) => onChange({ ...value, ...patch });
@@ -114,6 +121,8 @@ export function ItemForm({ value, onChange, onLocationChange, onReadDate, showUn
         </ScrollView>
       )}
 
+      {showPrice && <PriceField value={value.price ?? null} hints={priceHints} onChange={(price) => set({ price })} />}
+
       <OptionTiles<Location>
         accessibilityLabel="Emplacement"
         value={value.location}
@@ -135,7 +144,65 @@ export function ItemForm({ value, onChange, onLocationChange, onReadDate, showUn
   );
 }
 
+/** Prix payé : saisie libre (« 3,49 ») et suggestions à toucher (dernier prix, prix relevés). */
+function PriceField({ value, hints, onChange }: { value: number | null; hints: PriceHint[]; onChange: (v: number | null) => void }) {
+  const { colors } = useTheme();
+  const [text, setText] = useState(priceInput(value));
+  // Valeur changée de l'extérieur (suggestion, nouveau produit scanné) : on la reflète.
+  useEffect(() => {
+    if (parsePrice(text) !== value) setText(priceInput(value));
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  const fresh = hints.filter((h) => h.amount !== value);
+
+  return (
+    <View style={{ gap: 8 }}>
+      <View style={styles.between}>
+        <View style={styles.flex}>
+          <Text variant="bodyStrong" style={styles.h}>Prix payé</Text>
+          <Text variant="label" tone="secondary">Facultatif : pour compter ce que tu sauves</Text>
+        </View>
+        <View style={[styles.priceBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+          <TextInput
+            value={text}
+            onChangeText={(t) => {
+              setText(t);
+              onChange(parsePrice(t));
+            }}
+            placeholder="0,00"
+            placeholderTextColor={colors.textSecondary}
+            keyboardType="decimal-pad"
+            accessibilityLabel="Prix payé en euros"
+            maxLength={7}
+            style={[styles.priceInput, { color: colors.text }]}
+          />
+          <Text variant="bodyStrong" tone="secondary">€</Text>
+        </View>
+      </View>
+      {fresh.length > 0 && (
+        <View style={styles.wrap}>
+          {fresh.map((h) => (
+            <Pressable
+              key={h.label}
+              accessibilityRole="button"
+              accessibilityLabel={`Utiliser ${formatEuros(h.amount)}, ${h.label}`}
+              onPress={() => onChange(h.amount)}
+              style={[styles.hint, { backgroundColor: colors.primarySoft }]}
+            >
+              <Text variant="label" tone="primary" style={styles.bold}>{formatEuros(h.amount)}</Text>
+              <Text variant="label" tone="primary" numberOfLines={1} style={styles.flexShrink}>{h.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  priceBox: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, minHeight: MIN_TOUCH + 4, width: 136 },
+  priceInput: { flex: 1, minWidth: 0, width: '100%', fontFamily: 'DMSans_700Bold', fontSize: 18, textAlign: 'right', minHeight: MIN_TOUCH },
+  hint: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 12, minHeight: 36, maxWidth: '100%' },
+  flexShrink: { flexShrink: 1 },
   flex: { flex: 1 },
   h: { fontSize: 16 },
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },

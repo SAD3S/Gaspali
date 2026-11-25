@@ -9,6 +9,10 @@
 
 ## Nouveautés à tester
 
+- **Prix des produits** : champ « Prix payé » au scan, à l'ajout et sur la fiche produit, avec en suggestion ton
+  dernier prix payé et les prix relevés par la communauté Open Prices. « Consommé · 4,20 € sauvés » ou « Jeté ·
+  4,20 € perdus » ; la fiche affiche la valeur du produit. Les statistiques utilisent les vrais prix.
+- **Courses** : le « + » ajoute l'article tapé du premier coup, même clavier ouvert, et garde le clavier pour le suivant.
 - **Défis et badges** (carte « Défis » de l'accueil, ou Paramètres › Défis et badges) : ta série de jours sans
   rien jeter, un défi par semaine (zéro gâchis, finis 10 produits, cuisine 3 repas prévus, sauve 15 €) et 12 badges
   bronze, argent, or. Pépin fête chaque nouveau badge. Tout est partagé avec le foyer.

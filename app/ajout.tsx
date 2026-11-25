@@ -5,10 +5,11 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Chip, ProductAvatar, Text, useSnackbar } from '@/components/ui';
 import { FRESH_PRESETS, type FreshPreset } from '@/data/freshProducts';
-import { addItem } from '@/db/inventoryRepo';
+import { addItem, lastPaidPrice } from '@/db/inventoryRepo';
 import { CATEGORY_LIST, getCategory, LOCATION_LABELS, type CategoryId, type Location } from '@/domain/categories';
-import { addDays } from '@/domain/dates';
+import { addDays, formatShortDate } from '@/domain/dates';
 import { defaultExpiry, normalizeText } from '@/domain/inventory';
+import type { PriceHint } from '@/domain/prices';
 import { ItemForm, type ItemFormValue } from '@/features/inventory/ItemForm';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
@@ -80,6 +81,13 @@ export default function Ajout() {
       form: { ...draft.form, location, ...(draft.estimated ? { expiresAt: defaultExpiry(draft.category, location) } : {}) },
     });
   };
+
+  // Dernier prix payé pour un produit du même nom (ticket, scan ou saisie précédente).
+  const lastName = draft?.name.trim() ?? '';
+  const lastHint = useMemo((): PriceHint[] => {
+    const last = lastName.length > 2 ? lastPaidPrice(null, lastName) : null;
+    return last ? [{ amount: last.value, label: `Ton dernier prix (${formatShortDate(last.at)})` }] : [];
+  }, [lastName]);
 
   return (
     <SafeAreaView style={[styles.flex, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
@@ -160,6 +168,8 @@ export default function Ajout() {
             </ScrollView>
 
             <ItemForm
+              showPrice
+              priceHints={lastHint}
               value={draft.form}
               onChange={(form) => setDraft({ ...draft, form, estimated: draft.estimated && form.expiresAt === draft.form.expiresAt })}
               onLocationChange={changeLocation}

@@ -11,7 +11,7 @@ export function Screen({ children, scroll = true, thread = 1 }: { children: Reac
     <SafeAreaView edges={['top']} style={[styles.flex, { backgroundColor: colors.background }]}>
       {thread > 0 && <ThreadBackground variant={thread} />}
       {scroll ? (
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {children}
         </ScrollView>
       ) : (

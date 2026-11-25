@@ -11,6 +11,7 @@ import { useInventory } from '@/features/inventory/hooks';
 import { useReservations } from '@/features/recipes/hooks';
 import { SwipeableItem } from '@/features/inventory/SwipeableItem';
 import { ThreadBackground } from '@/components/brand/ThreadBackground';
+import { finishMessage } from '@/domain/prices';
 import { EmptyState } from '@/components/brand/EmptyState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH, radius } from '@/theme/tokens';
@@ -106,8 +107,8 @@ export default function Inventaire() {
             state={freshness.state}
             badgeLabel={item.row.expiryEstimated ? `≈ ${freshness.label}` : freshness.label}
             onPress={() => router.push({ pathname: '/produit/[id]', params: { id: item.id } })}
-            onConsumed={() => snackbar.show(`${item.name} : consommé`, setStatus(item.id, 'consomme'))}
-            onDiscarded={() => snackbar.show(`${item.name} : jeté`, setStatus(item.id, 'jete'))}
+            onConsumed={() => snackbar.show(finishMessage(item.name, 'consomme', item.row), setStatus(item.id, 'consomme'))}
+            onDiscarded={() => snackbar.show(finishMessage(item.name, 'jete', item.row), setStatus(item.id, 'jete'))}
           />
         )}
         ListEmptyComponent={

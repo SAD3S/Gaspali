@@ -1,8 +1,8 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router } from 'expo-router';
 import { Archive, Check, ListChecks, Plus, ReceiptText, X } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Pressable, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
 import { Button, Card, Screen, Text, useSnackbar } from '@/components/ui';
 import { addItem } from '@/db/inventoryRepo';
 import type { ShoppingRow } from '@/db/schema';
@@ -38,11 +38,17 @@ export default function Courses() {
   const checkedCount = (data ?? []).filter((r) => r.checked).length;
   const total = (data ?? []).length;
 
+  const input = useRef<TextInputInstance>(null);
+  // « + » : ajoute l'article tapé et garde le clavier ouvert pour le suivant ; champ vide → on y place le curseur.
   const add = () => {
     const name = text.trim();
-    if (!name) return;
+    if (!name) {
+      input.current?.focus();
+      return;
+    }
     addShopping([{ name, ingredientId: resolveIngredient(name)?.id ?? null }]);
     setText('');
+    input.current?.focus();
   };
 
   return (
@@ -66,6 +72,7 @@ export default function Courses() {
 
       <View style={styles.addRow}>
         <TextInput
+          ref={input}
           value={text}
           onChangeText={setText}
           onSubmitEditing={add}
@@ -76,7 +83,7 @@ export default function Courses() {
           blurOnSubmit={false}
           style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
         />
-        <Pressable accessibilityRole="button" accessibilityLabel="Ajouter" onPress={add} style={[styles.addBtn, { backgroundColor: colors.primary }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Ajouter" accessibilityHint="Ajoute l’article tapé à la liste" onPress={add} style={[styles.addBtn, { backgroundColor: colors.primary }]}>
           <Plus size={22} color={colors.onPrimary} />
         </Pressable>
       </View>

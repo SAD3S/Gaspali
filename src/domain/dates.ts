@@ -38,6 +38,12 @@ export function formatLongDate(d: Date): string {
   return `${JOURS[d.getDay()]} ${d.getDate()} ${MOIS[d.getMonth()]}`;
 }
 
+/** « 12 nov. » */
+export function formatShortDate(d: Date): string {
+  const short = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  return `${d.getDate()} ${short[d.getMonth()]}`;
+}
+
 /** « Vendredi 13 novembre » (en-tête de l'accueil) */
 export function formatHeaderDate(d: Date): string {
   const s = formatLongDate(d);
