@@ -9,6 +9,10 @@
 
 ## Nouveautés à tester
 
+- **Nouveau look** : un fil vert qui boucle derrière l'app, et **Pépin**, la mascotte, qui présente l'app au premier lancement
+  (à revoir depuis À propos).
+- **Boîtes de confirmation** aux couleurs de l'app ; les fenêtres remontent au-dessus du clavier ;
+  au-delà de 4 dossiers de recettes, « … » les montre tous d'un coup.
 - **Listes enregistrées** (Courses › « Mes listes ») : donne un nom à ta liste (« Apéro », « Courses de base »)
   et remets-la dans tes courses en un geste plus tard. Partagées avec le foyer.
 - **Remplacements d'ingrédients** : pas de crème mais un yaourt qui périme ? La recette reste proposée,
