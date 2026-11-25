@@ -45,9 +45,10 @@ sur l'écran de scan).
 Tout le code est prêt ; il reste des comptes et des réglages que seul le propriétaire du dépôt peut faire.
 Dans l'ordre d'utilité :
 
-1. **Partager le frigo entre téléphones** — créer le projet Supabase (`supabase/README.md`, étapes 1 à 6), puis
-   dans *Settings › Secrets and variables › Actions › Variables* : `SUPABASE_URL` et `SUPABASE_ANON_KEY`.
-   La prochaine release activera comptes, foyers, synchronisation et suppression de compte.
+1. **Partager le frigo entre téléphones** — fait : projet Supabase créé et configuré (`supabase/README.md`), URL et
+   clé publique intégrées par la CI (`.github/workflows/android-release.yml`, remplaçables par les variables
+   `SUPABASE_URL` et `SUPABASE_ANON_KEY`). Comptes, foyers, synchronisation et suppression de compte sont actifs
+   dans les releases.
 2. **Idées de recettes par IA** (facultatif) — clé Anthropic dans les secrets Supabase (`supabase/README.md`, étape 5).
 3. **Rapports de plantage** (facultatif) — projet React Native sur sentry.io ; variable `SENTRY_DSN`. Pour des piles
    d'appels lisibles : variables `SENTRY_ORG`, `SENTRY_PROJECT` et secret `SENTRY_AUTH_TOKEN`.

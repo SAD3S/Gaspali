@@ -35,10 +35,11 @@ jobs:
     timeout-minutes: 60
     env:
       EXPO_NO_TELEMETRY: '1'
-      # Projet Supabase (variables du dépôt : Settings › Secrets and variables › Actions › Variables).
-      # Vides → l'APK fonctionne en mode local, sans compte ni partage.
-      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+      # Projet Supabase : variables du dépôt (Settings › Secrets and variables › Actions › Variables)
+      # si elles existent, sinon le projet du foyer. L'URL et la clé « publishable » sont publiques par
+      # conception (intégrées à l'APK) : les données sont protégées par la RLS côté serveur.
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://nqhdyrjidvjrahkfobbz.supabase.co' }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY || 'sb_publishable_e31UTzNKS-tbM8JY5oya6w_k_5A5789' }}
       # Facultatif : contact, page de confidentialité, rapports de plantage (vides → masqués / désactivés).
       EXPO_PUBLIC_CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
       EXPO_PUBLIC_PRIVACY_URL: ${{ vars.PRIVACY_URL }}
