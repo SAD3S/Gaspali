@@ -45,7 +45,7 @@ export default function Courses() {
   };
 
   return (
-    <Screen>
+    <Screen thread={3}>
       <View style={styles.head}>
         <View style={styles.flex}>
           <Text variant="title1" accessibilityRole="header">Courses</Text>

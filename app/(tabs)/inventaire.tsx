@@ -10,6 +10,7 @@ import { itemSubtitle } from '@/features/inventory/format';
 import { useInventory } from '@/features/inventory/hooks';
 import { useReservations } from '@/features/recipes/hooks';
 import { SwipeableItem } from '@/features/inventory/SwipeableItem';
+import { ThreadBackground } from '@/components/brand/ThreadBackground';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH, radius } from '@/theme/tokens';
 
@@ -89,6 +90,7 @@ export default function Inventaire() {
 
   return (
     <SafeAreaView edges={['top']} style={[styles.flex, { backgroundColor: colors.background }]}>
+      <ThreadBackground variant={2} />
       <FlatList
         data={list}
         keyExtractor={(r) => r.item.id}

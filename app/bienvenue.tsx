@@ -3,6 +3,8 @@ import { BellRing, ChefHat, ScanLine, Users, type LucideIcon } from 'lucide-reac
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pepin, type PepinMood } from '@/components/brand/Pepin';
+import { ThreadBackground } from '@/components/brand/ThreadBackground';
 import { Button, Text } from '@/components/ui';
 import { useAuth } from '@/features/account/AuthProvider';
 import { EquipmentPicker } from '@/features/settings/EquipmentPicker';
@@ -10,25 +12,67 @@ import { updateSettings } from '@/features/settings/settings';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
-const SLIDES: { Icon: LucideIcon; title: string; text: string }[] = [
+/** Pépin présente l'app : une bulle (sa voix), puis le titre et l'explication. */
+const SLIDES: { Icon: LucideIcon | null; mood: PepinMood; say: string; title: string; text: string }[] = [
+  {
+    Icon: null,
+    mood: 'joie',
+    say: 'Salut, moi c’est Pépin !',
+    title: 'Bienvenue sur Gaspalli',
+    text: 'Je t’aide à finir ce qu’il y a dans ton frigo avant qu’il ne soit trop tard. Je te montre ?',
+  },
   {
     Icon: ScanLine,
+    mood: 'sourire',
+    say: 'Montre-moi tes courses, je retiens tout.',
     title: 'Scanne tes courses',
     text: 'Code-barres, date limite ou ticket de caisse : ton frigo se remplit en quelques secondes.',
   },
   {
     Icon: BellRing,
+    mood: 'clin',
+    say: 'Je te préviens avant que ça périme. Une fois par jour, pas plus.',
     title: 'Ne laisse plus rien périmer',
-    text: 'Gaspalli te montre quoi finir en premier et te prévient au bon moment, une fois par jour au plus.',
+    text: 'Gaspalli te montre quoi finir en premier et te prévient au bon moment.',
   },
   {
     Icon: ChefHat,
+    mood: 'joie',
+    say: 'Et je te trouve quoi cuisiner avec ce qui doit partir.',
     title: 'Cuisine ce qui doit partir',
     text: 'Des recettes et un planning de la semaine qui utilisent d’abord tes produits les plus urgents.',
   },
 ];
 
-/** Présentation du premier lancement (3 écrans), équipement de la cuisine, puis compte / foyer ou mode local. */
+/** Bulle de Pépin, pointe vers le bas (vers lui). */
+function Bubble({ text }: { text: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.bubbleWrap}>
+      <View style={[styles.bubble, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text variant="bodyStrong" style={styles.center}>{text}</Text>
+      </View>
+      <View style={[styles.tail, { backgroundColor: colors.surface, borderColor: colors.border }]} />
+    </View>
+  );
+}
+
+/** Pépin et le symbole de l'étape dans une pastille. */
+function PepinVisual({ Icon, mood }: { Icon: LucideIcon | null; mood: PepinMood }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.visual}>
+      <Pepin size={170} mood={mood} float />
+      {Icon && (
+        <View style={[styles.badge, { backgroundColor: colors.primary, borderColor: colors.background }]}>
+          <Icon size={26} color={colors.onPrimary} />
+        </View>
+      )}
+    </View>
+  );
+}
+
+/** Présentation du premier lancement par Pépin (4 écrans), équipement de la cuisine, puis compte / foyer ou mode local. */
 export default function Bienvenue() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -55,6 +99,7 @@ export default function Bienvenue() {
 
   return (
     <SafeAreaView style={[styles.flex, { backgroundColor: colors.background }]}>
+      <ThreadBackground variant={5} />
       <View style={styles.top}>
         <Text variant="title2" style={{ color: colors.primaryText }}>Gaspalli</Text>
         {page < last && (
@@ -74,17 +119,22 @@ export default function Bienvenue() {
         scrollEventThrottle={64}
         style={styles.flex}
       >
-        {SLIDES.map(({ Icon, title, text }) => (
-          <View key={title} style={[styles.page, { width }]} accessible accessibilityLabel={`${title}. ${text}`}>
-            <View style={[styles.visual, { backgroundColor: colors.primarySoft }]}>
-              <Icon size={84} color={colors.primaryText} strokeWidth={1.5} />
-            </View>
+        {SLIDES.map(({ Icon, mood, say, title, text }) => (
+          <View key={title} style={[styles.page, { width }]} accessible accessibilityLabel={`Pépin : ${say} ${title}. ${text}`}>
+            <Bubble text={say} />
+            <PepinVisual Icon={Icon} mood={mood} />
             <Text variant="title1" style={styles.center}>{title}</Text>
             <Text variant="body" tone="secondary" style={[styles.center, styles.text]}>{text}</Text>
           </View>
         ))}
 
         <ScrollView style={{ width }} contentContainerStyle={[styles.page, styles.kitchen]}>
+          <View style={styles.kitchenHead}>
+            <Pepin size={72} mood="clin" />
+            <View style={[styles.bubbleSide, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text variant="bodyStrong">Dis-moi ce que tu as, je trie les recettes.</Text>
+            </View>
+          </View>
           <Text variant="title1" style={styles.center}>Ta cuisine</Text>
           <Text variant="body" tone="secondary" style={[styles.center, styles.text]}>
             Décoche ce que tu n’as pas : on ne te proposera pas de recette impossible. Modifiable dans Paramètres › Préférences.
@@ -93,9 +143,8 @@ export default function Bienvenue() {
         </ScrollView>
 
         <View style={[styles.page, { width }]}>
-          <View style={[styles.visual, { backgroundColor: colors.primarySoft }]}>
-            <Users size={84} color={colors.primaryText} strokeWidth={1.5} />
-          </View>
+          <Bubble text={auth.cloud ? 'Tu cuisines à plusieurs ? Je partage tout avec ton foyer.' : 'C’est tout bon, on y va !'} />
+          <PepinVisual Icon={auth.cloud ? Users : null} mood="joie" />
           <Text variant="title1" style={styles.center}>On commence ?</Text>
           <Text variant="body" tone="secondary" style={[styles.center, styles.text]}>
             {auth.cloud
@@ -137,7 +186,13 @@ const styles = StyleSheet.create({
   skip: { minHeight: MIN_TOUCH, justifyContent: 'center' },
   page: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, gap: 16 },
   kitchen: { flexGrow: 1, paddingVertical: 12, gap: 12 },
-  visual: { width: 180, height: 180, borderRadius: 56, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  visual: { width: 190, height: 180, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  badge: { position: 'absolute', right: 4, bottom: 8, width: 52, height: 52, borderRadius: 26, borderWidth: 4, alignItems: 'center', justifyContent: 'center' },
+  bubbleWrap: { alignItems: 'center', maxWidth: 320 },
+  bubble: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 12 },
+  tail: { width: 16, height: 16, borderRightWidth: 1, borderBottomWidth: 1, transform: [{ rotate: '45deg' }], marginTop: -9 },
+  kitchenHead: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch' },
+  bubbleSide: { flex: 1, borderWidth: 1, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
   text: { maxWidth: 340, fontSize: 16, lineHeight: 23 },
   bottom: { paddingHorizontal: 20, paddingBottom: 12, gap: 10 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 6 },

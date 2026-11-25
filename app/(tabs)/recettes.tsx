@@ -13,6 +13,7 @@ import { AddRecipeSheet } from '@/features/recipes/AddRecipeSheet';
 import { RecipeCard } from '@/features/recipes/RecipeCard';
 import { useAllRecipes, useRecipeOrganization, useSuggestions } from '@/features/recipes/hooks';
 import { useSettings } from '@/features/settings/settings';
+import { ThreadBackground } from '@/components/brand/ThreadBackground';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH, radius } from '@/theme/tokens';
 
@@ -206,6 +207,7 @@ export default function Recettes() {
 
   return (
     <SafeAreaView edges={['top']} style={[styles.flex, { backgroundColor: colors.background }]}>
+      <ThreadBackground variant={4} />
       <FlatList
         data={list}
         keyExtractor={(r) => r.recipe.id}
