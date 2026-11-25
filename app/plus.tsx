@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { CalendarDays, ChartColumn, ChefHat, ChevronRight, Info, Salad, Settings, ShieldCheck, Users, type LucideIcon } from 'lucide-react-native';
+import { CalendarDays, ChartColumn, ChevronLeft, ChevronRight, Info, Salad, Settings, ShieldCheck, Users, type LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, Screen, Text, useSnackbar } from '@/components/ui';
 import { seedDemo } from '@/db/inventoryRepo';
@@ -8,12 +8,11 @@ import { useMembers } from '@/features/account/hooks';
 import { useSyncStatus } from '@/sync/engine';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const ENTRIES: { label: string; Icon: LucideIcon; href: '/reglages' | '/recettes' | '/preferences' | '/planning' | '/statistiques' | '/confidentialite' | '/a-propos' }[] = [
-  { label: 'Recettes', Icon: ChefHat, href: '/recettes' },
+const ENTRIES: { label: string; Icon: LucideIcon; href: '/reglages' | '/preferences' | '/planning' | '/statistiques' | '/confidentialite' | '/a-propos' }[] = [
   { label: 'Préférences alimentaires', Icon: Salad, href: '/preferences' },
   { label: 'Planning des repas', Icon: CalendarDays, href: '/planning' },
   { label: 'Statistiques', Icon: ChartColumn, href: '/statistiques' },
-  { label: 'Réglages', Icon: Settings, href: '/reglages' },
+  { label: 'Thème, rappels et ingrédients de base', Icon: Settings, href: '/reglages' },
   { label: 'Confidentialité et données', Icon: ShieldCheck, href: '/confidentialite' },
   { label: 'À propos', Icon: Info, href: '/a-propos' },
 ];
@@ -51,12 +50,18 @@ function AccountCard() {
   );
 }
 
-export default function Plus() {
+/** Paramètres (engrenage de l'accueil) : compte et foyer, préférences, planning, statistiques, réglages. */
+export default function Parametres() {
   const { colors } = useTheme();
   const snackbar = useSnackbar();
   return (
     <Screen>
-      <Text variant="title1" accessibilityRole="header">Plus</Text>
+      <View style={styles.header}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Retour" onPress={() => router.back()} style={[styles.round, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <ChevronLeft size={22} color={colors.text} />
+        </Pressable>
+        <Text variant="title1" accessibilityRole="header" style={{ flex: 1 }}>Paramètres</Text>
+      </View>
 
       <AccountCard />
 
@@ -91,6 +96,8 @@ export default function Plus() {
 }
 
 const styles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  round: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 52 },
   account: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   accountIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },

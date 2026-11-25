@@ -66,7 +66,7 @@ jeu d'argent ; pas d'échanges entre utilisateurs inconnus (le foyer se rejoint 
 
 **Public cible** : 18 ans et plus (ou 13 ans et plus) ; l'app ne vise pas les enfants.
 
-**Suppression de compte** : dans l'app (*Plus › Confidentialité et données › Supprimer mon compte*) et par une page web :
+**Suppression de compte** : dans l'app (*Paramètres › Confidentialité et données › Supprimer mon compte*) et par une page web :
 URL de `docs/suppression-compte.md` publiée.
 
 ## Sécurité des données (formulaire Play Console)

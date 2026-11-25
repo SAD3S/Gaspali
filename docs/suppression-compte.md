@@ -4,7 +4,7 @@ Tu peux supprimer ton compte et tes données à tout moment.
 
 ## Depuis l'application (immédiat)
 
-1. Ouvre Gaspalli, onglet **Plus › Confidentialité et données**.
+1. Ouvre Gaspalli, touche l’engrenage en haut de l’accueil, puis **Confidentialité et données**.
 2. (Facultatif) **Exporter mes données** pour en garder une copie.
 3. **Supprimer mon compte**, puis tape `SUPPRIMER` pour confirmer.
 

@@ -9,23 +9,23 @@
 
 ## Nouveautés à tester
 
-- **Partage du frigo** : Plus › Compte et foyer › ton e-mail, puis touche le lien reçu **depuis ce téléphone**
+- **Partage du frigo** : Paramètres › Compte et foyer › ton e-mail, puis touche le lien reçu **depuis ce téléphone**
   (l'e-mail de Supabase est en anglais : « Your sign-in link »). Crée le foyer ; l'autre personne le rejoint avec le code.
 - **Importer une recette** (Recettes › +) : depuis un site (colle le lien), une photo de livre ou de fiche
   (jusqu'à 4 pages), ou un fichier. Tout est modifiable avant d'enregistrer ; la fiche garde le lien du site.
 - **Nouvelle icône** aux couleurs de Gaspalli.
-- **Confidentialité** (Plus › Confidentialité et données) : exporte toutes tes données dans un fichier, restaure-les
+- **Confidentialité** (Paramètres › Confidentialité et données) : exporte toutes tes données dans un fichier, restaure-les
   sur un autre téléphone, ou efface tout. **À propos** : version, crédits Open Food Facts.
 - **Présentation** au premier lancement (à revoir depuis À propos).
 - **Ticket de caisse** : bouton central › onglet « Ticket » (ou Courses › « Scanner le ticket de caisse »).
   Pose le ticket à plat, bien éclairé. Vérifie les lignes, corrige-en une en la touchant, puis « Ajouter ».
   Au premier usage, Android peut mettre quelques secondes à télécharger le module de lecture.
   Les dates sont estimées (« ≈ » dans l'inventaire, « C'est la bonne date » sur la fiche produit).
-- **Planning des repas** : Plus › Planning (ou la carte de l'accueil) › « Planifier ma semaine anti-gaspi ».
+- **Planning des repas** : Paramètres › Planning (ou la carte de l'accueil) › « Planifier ma semaine anti-gaspi ».
   Les produits prévus affichent « prévu ce soir » dans l'inventaire ; « Ajouter les manquants aux courses ».
 - **Courses** : coche un article puis l'icône boîte pour le ranger dans l'inventaire, ou « Tout ranger ».
   Un produit habituel terminé revient tout seul dans la liste (réglable dans Réglages).
-- **Statistiques** : Plus › Statistiques (en développement, « Charger des produits de démo » ajoute un historique).
+- **Statistiques** : Paramètres › Statistiques (en développement, « Charger des produits de démo » ajoute un historique).
 
 ## Toujours là
 

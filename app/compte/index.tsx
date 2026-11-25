@@ -126,7 +126,7 @@ function NoHousehold() {
           autoCapitalize="characters"
           autoCorrect={false}
           maxLength={11}
-          hint="Demande-le à un membre du foyer (Plus › Compte et foyer)."
+          hint="Demande-le à un membre du foyer (Paramètres › Compte et foyer)."
         />
         <Button
           label="Rejoindre"

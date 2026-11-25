@@ -1,5 +1,5 @@
 /**
- * Politique de confidentialité : source unique, affichée dans l'app (Plus › Confidentialité)
+ * Politique de confidentialité : source unique, affichée dans l'app (Paramètres › Confidentialité)
  * et publiée en page web pour les stores (`docs/confidentialite.md`, régénérée par
  * `UPDATE_PRIVACY=1 npx jest __tests__/privacy.test.ts`).
  */
@@ -23,7 +23,7 @@ export function privacySections(contact: string | null): PrivacySection[] {
         'Tes données servent uniquement à faire fonctionner Gaspalli : ton inventaire, tes courses, tes recettes.',
         'Pas de publicité, pas de revente, pas de pistage.',
         'Sans compte, tout reste sur ton téléphone.',
-        'Tu peux exporter ou effacer tes données à tout moment, depuis l’app (Plus › Confidentialité).',
+        'Tu peux exporter ou effacer tes données à tout moment, depuis l’app (Paramètres › Confidentialité).',
       ],
     },
     {
@@ -82,9 +82,9 @@ export function privacySections(contact: string | null): PrivacySection[] {
       title: 'Tes droits',
       bullets: true,
       items: [
-        'Accès et portabilité : Plus › Confidentialité › « Exporter mes données » (fichier JSON).',
+        'Accès et portabilité : Paramètres › Confidentialité › « Exporter mes données » (fichier JSON).',
         'Rectification : directement dans l’app.',
-        'Effacement : Plus › Confidentialité › « Supprimer mon compte », ou « Effacer mes données » sans compte.',
+        'Effacement : Paramètres › Confidentialité › « Supprimer mon compte », ou « Effacer mes données » sans compte.',
         'Opposition : désactive les rapports de plantage dans Réglages.',
         `Pour toute autre demande, contacte l’éditeur ${reach}. Tu peux aussi adresser une réclamation à la CNIL (cnil.fr).`,
       ],

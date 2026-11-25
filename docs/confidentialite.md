@@ -5,7 +5,7 @@
 - Tes données servent uniquement à faire fonctionner Gaspalli : ton inventaire, tes courses, tes recettes.
 - Pas de publicité, pas de revente, pas de pistage.
 - Sans compte, tout reste sur ton téléphone.
-- Tu peux exporter ou effacer tes données à tout moment, depuis l’app (Plus › Confidentialité).
+- Tu peux exporter ou effacer tes données à tout moment, depuis l’app (Paramètres › Confidentialité).
 
 ## Qui est responsable de tes données ?
 
@@ -46,9 +46,9 @@ L’éditeur de l’application Gaspalli. Pour toute question ou demande, contac
 
 ## Tes droits
 
-- Accès et portabilité : Plus › Confidentialité › « Exporter mes données » (fichier JSON).
+- Accès et portabilité : Paramètres › Confidentialité › « Exporter mes données » (fichier JSON).
 - Rectification : directement dans l’app.
-- Effacement : Plus › Confidentialité › « Supprimer mon compte », ou « Effacer mes données » sans compte.
+- Effacement : Paramètres › Confidentialité › « Supprimer mon compte », ou « Effacer mes données » sans compte.
 - Opposition : désactive les rapports de plantage dans Réglages.
 - Pour toute autre demande, contacte l’éditeur par e-mail à [adresse e-mail de contact]. Tu peux aussi adresser une réclamation à la CNIL (cnil.fr).
 

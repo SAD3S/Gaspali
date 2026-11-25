@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, Download, FolderPlus, Plus, Search, Sparkles } from 'lucide-react-native';
+import { Download, FolderPlus, Plus, Search, Sparkles } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,7 +24,7 @@ const QUICK: { key: Quick; label: string }[] = [
   { key: 'sans-gluten', label: 'Sans gluten' },
 ];
 
-/** Recettes : suggestions anti-gaspi, filtres, tags et dossiers. */
+/** Onglet Recettes : suggestions anti-gaspi, filtres, tags, dossiers, ajout et import. */
 export default function Recettes() {
   const { colors } = useTheme();
   const snackbar = useSnackbar();
@@ -66,9 +66,6 @@ export default function Recettes() {
   const header = (
     <View style={{ gap: 12, marginBottom: 12 }}>
       <View style={styles.head}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Retour" onPress={() => router.back()} style={[styles.round, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <ChevronLeft size={22} color={colors.text} />
-        </Pressable>
         <Text variant="title1" accessibilityRole="header" style={{ flex: 1 }}>Recettes</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Ajouter une recette" onPress={() => setAdding(true)} style={[styles.round, { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }]}>
           <Plus size={22} color={colors.primaryText} />

@@ -17,7 +17,7 @@ npm run typecheck
 
 ## Données de démo
 
-En développement, « Plus › Charger des produits de démo » remplit l'inventaire, ajoute 5 mois d'historique
+En développement, « Paramètres › Charger des produits de démo » remplit l'inventaire, ajoute 5 mois d'historique
 (pour l'écran Statistiques) et met en cache le code-barres `3260000000012` (à saisir via « Saisir le code »
 sur l'écran de scan).
 

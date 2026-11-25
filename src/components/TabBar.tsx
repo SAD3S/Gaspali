@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/tabs';
-import { House, LayoutGrid, List, ScanBarcode, ShoppingCart, type LucideIcon } from 'lucide-react-native';
+import { ChefHat, House, List, ScanBarcode, ShoppingCart, type LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -11,10 +11,10 @@ const TABS: Record<string, { label: string; Icon: LucideIcon }> = {
   index: { label: 'Accueil', Icon: House },
   inventaire: { label: 'Inventaire', Icon: List },
   courses: { label: 'Courses', Icon: ShoppingCart },
-  plus: { label: 'Plus', Icon: LayoutGrid },
+  recettes: { label: 'Recettes', Icon: ChefHat },
 };
 
-/** Barre du bas : Accueil · Inventaire · [Scan] · Courses · Plus. */
+/** Barre du bas : Accueil · Inventaire · [Scan] · Courses · Recettes (paramètres : engrenage de l'accueil). */
 export function TabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Bell, BellRing, CalendarDays, ChevronRight, Package, Refrigerator, Snowflake, type LucideIcon } from 'lucide-react-native';
+import { Bell, BellRing, Settings, CalendarDays, ChevronRight, Package, Refrigerator, Snowflake, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, ProductCard, Screen, Text, useSnackbar } from '@/components/ui';
@@ -140,6 +140,7 @@ export default function Accueil() {
           <Text variant="label" tone="secondary">{formatHeaderDate(today)}</Text>
           <Text variant="title1" accessibilityRole="header">Bonjour !</Text>
         </View>
+        <View style={styles.headerActions}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={alerts ? `Alertes : ${alerts} produit${alerts > 1 ? 's' : ''} à traiter` : 'Alertes'}
@@ -149,6 +150,15 @@ export default function Accueil() {
           <Bell size={22} color={colors.text} />
           {alerts > 0 && <View style={[styles.dot, { backgroundColor: colors.urgent, borderColor: colors.surface }]} />}
         </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Paramètres"
+            onPress={() => router.push('/plus')}
+            style={[styles.bell, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
+            <Settings size={22} color={colors.text} />
+          </Pressable>
+        </View>
       </View>
 
       <Card>
@@ -261,6 +271,7 @@ export default function Accueil() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerActions: { flexDirection: 'row', gap: 10 },
   bell: { width: 48, height: 48, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   dot: { position: 'absolute', top: 10, right: 11, width: 10, height: 10, borderRadius: 5, borderWidth: 2 },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },

@@ -77,7 +77,7 @@ export async function importFromFile(): Promise<ImportedRecipe[] | null> {
     } catch {
       throw new Error('Fichier JSON illisible.');
     }
-    if ((data as { app?: string }).app === 'gaspalli') throw new Error('C’est une sauvegarde Gaspalli : restaure-la depuis Plus › Confidentialité et données.');
+    if ((data as { app?: string }).app === 'gaspalli') throw new Error('C’est une sauvegarde Gaspalli : restaure-la depuis Paramètres › Confidentialité et données.');
     const found = recipesFromJson(data);
     if (!found.length) throw new Error('Pas de recette au format schema.org dans ce fichier.');
     return found;
