@@ -1,9 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Download, FolderPlus, Plus, Search, Sparkles } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Alert, FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BottomSheet, Button, Chip, Field, Text, useSnackbar } from '@/components/ui';
+import { BottomSheet, Button, Chip, Field, showDialog, Text, useSnackbar } from '@/components/ui';
 import { createFolder, deleteFolder, renameFolder } from '@/db/recipesRepo';
 import { isNoCook, missingEquipment } from '@/domain/equipment';
 import { normalizeText } from '@/domain/inventory';
@@ -27,6 +27,8 @@ const QUICK: { key: Quick; label: string }[] = [
   { key: 'sans-gluten', label: 'Sans gluten' },
 ];
 
+const FOLDERS_INLINE = 3;
+
 /** Onglet Recettes : suggestions anti-gaspi, filtres, tags, dossiers, ajout et import. */
 export default function Recettes() {
   const { colors } = useTheme();
@@ -41,6 +43,7 @@ export default function Recettes() {
   const [query, setQuery] = useState('');
   const [newFolder, setNewFolder] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
+  const [allFolders, setAllFolders] = useState(false);
   const [adding, setAdding] = useState(false);
 
   const { equipment } = useSettings();
@@ -50,6 +53,12 @@ export default function Recettes() {
   }, [all, equipment]);
 
   const currentFolder = org.folders.find((f) => f.id === folder) ?? null;
+  // Au-delà de 3 dossiers : les premiers (et celui ouvert), puis « … » pour tout voir d'un coup.
+  const shownFolders = useMemo(() => {
+    if (org.folders.length <= FOLDERS_INLINE + 1) return org.folders;
+    const first = org.folders.slice(0, FOLDERS_INLINE);
+    return currentFolder && !first.includes(currentFolder) ? [currentFolder, ...first.slice(0, FOLDERS_INLINE - 1)] : first;
+  }, [org.folders, currentFolder]);
 
   const bySuggestion = useMemo(() => new Map(suggestions.map((s) => [s.recipe.id, s])), [suggestions]);
 
@@ -101,8 +110,8 @@ export default function Recettes() {
         {QUICK.map((f) => <Chip key={f.key} label={f.label} selected={quick === f.key} onPress={() => setQuick(f.key)} />)}
       </ScrollView>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row} accessibilityLabel="Dossiers">
-        {org.folders.map((f) => (
+      <View style={styles.wrapRow} accessibilityLabel="Dossiers">
+        {shownFolders.map((f) => (
           <Chip
             key={f.id}
             label={`${f.name} · ${org.byFolder.get(f.id)?.size ?? 0}`}
@@ -110,11 +119,14 @@ export default function Recettes() {
             onPress={() => setFolder(folder === f.id ? null : f.id)}
           />
         ))}
+        {org.folders.length > shownFolders.length && (
+          <Chip label={`… ${org.folders.length} dossiers`} accessibilityLabel={`Voir les ${org.folders.length} dossiers`} onPress={() => setAllFolders(true)} />
+        )}
         <Pressable accessibilityRole="button" accessibilityLabel="Créer un dossier" onPress={() => setNewFolder('')} style={[styles.addFolder, { borderColor: colors.border }]}>
           <FolderPlus size={18} color={colors.primaryText} />
           <Text variant="label" tone="primary" style={styles.bold}>Dossier</Text>
         </Pressable>
-      </ScrollView>
+      </View>
 
       {currentFolder && (
         <View style={[styles.folderBar, { backgroundColor: colors.surface2 }]}>
@@ -126,7 +138,7 @@ export default function Recettes() {
             accessibilityRole="button"
             accessibilityLabel={`Supprimer le dossier ${currentFolder.name}`}
             onPress={() =>
-              Alert.alert(`Supprimer « ${currentFolder.name} » ?`, 'Les recettes ne sont pas supprimées, seulement retirées du dossier.', [
+              showDialog(`Supprimer « ${currentFolder.name} » ?`, 'Les recettes ne sont pas supprimées, seulement retirées du dossier.', [
                 { text: 'Annuler', style: 'cancel' },
                 {
                   text: 'Supprimer',
@@ -235,6 +247,35 @@ export default function Recettes() {
           />
         </View>
       </BottomSheet>
+      <BottomSheet visible={allFolders} onClose={() => setAllFolders(false)}>
+        <ScrollView style={{ maxHeight: 520, flexShrink: 1 }} contentContainerStyle={{ gap: 14 }}>
+          <Text variant="title2">Tes dossiers</Text>
+          <View style={styles.wrapRow}>
+            <Chip label={`♥ Favoris · ${org.favorites.size}`} selected={quick === 'favoris' && !folder} onPress={() => { setFolder(null); setQuick('favoris'); setAllFolders(false); }} />
+            {org.folders.map((f) => (
+              <Chip
+                key={f.id}
+                label={`${f.name} · ${org.byFolder.get(f.id)?.size ?? 0}`}
+                selected={folder === f.id}
+                onPress={() => {
+                  setFolder(folder === f.id ? null : f.id);
+                  setAllFolders(false);
+                }}
+              />
+            ))}
+          </View>
+          <Button
+            label="Nouveau dossier"
+            variant="soft"
+            icon={<FolderPlus size={18} color={colors.primaryText} />}
+            onPress={() => {
+              setAllFolders(false);
+              setNewFolder('');
+            }}
+          />
+          <Button label="Fermer" variant="outline" onPress={() => setAllFolders(false)} />
+        </ScrollView>
+      </BottomSheet>
       <BottomSheet visible={renaming !== null} onClose={() => setRenaming(null)}>
         <View style={{ gap: 14 }}>
           <Text variant="title2">Renommer le dossier</Text>
@@ -266,6 +307,7 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', gap: 12, marginTop: 40 },
   ai: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, padding: 14, minHeight: 64 },
   bold: { fontFamily: 'DMSans_700Bold' },
+  wrapRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   folderBar: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 14, paddingLeft: 14, paddingRight: 4 },
   folderAction: { minHeight: MIN_TOUCH, justifyContent: 'center', paddingHorizontal: 10 },
 });

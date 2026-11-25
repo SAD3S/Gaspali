@@ -1,9 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowDown, ArrowUp, Camera, ChevronLeft, ImagePlus, Plus, Trash2, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Card, Chip, Field, Stepper, Text, useSnackbar } from '@/components/ui';
+import { Button, Card, Chip, Field, showDialog, Stepper, Text, useSnackbar } from '@/components/ui';
 import { INGREDIENTS_BY_ID } from '@/data/ingredients';
 import type { RecipeIngredient, RecipeKind } from '@/data/recipes';
 import { deleteRecipe, saveRecipe, setInFolder } from '@/db/recipesRepo';
@@ -288,7 +288,7 @@ export default function EditerRecette() {
               label="Supprimer la recette"
               variant="outline"
               onPress={() =>
-                Alert.alert('Supprimer cette recette ?', 'Elle sera retirée pour tout le foyer.', [
+                showDialog('Supprimer cette recette ?', 'Elle sera retirée pour tout le foyer.', [
                   { text: 'Annuler', style: 'cancel' },
                   { text: 'Supprimer', style: 'destructive', onPress: () => { deleteRecipe(id!); snackbar.show('Recette supprimée'); router.replace('/recettes'); } },
                 ])

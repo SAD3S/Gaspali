@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
 import { ChevronLeft, Download, ExternalLink, ShieldCheck, Trash2, Upload } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
-import { Button, Card, Screen, Text, useSnackbar } from '@/components/ui';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Button, Card, Screen, showDialog, Text, useSnackbar } from '@/components/ui';
 import { CONTACT_EMAIL, PRIVACY_URL } from '@/config';
 import { privacySections, PRIVACY_UPDATED } from '@/data/privacy';
 import { wipeLocalData } from '@/db/reset';
@@ -11,13 +11,9 @@ import { exportData, importData } from '@/services/dataExport';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
-/** Confirmation (Alert sur téléphone, confirm() sur le web). */
+/** Confirmation dans une boîte aux couleurs de l'app. */
 function confirmAction(title: string, message: string, action: string, onConfirm: () => void) {
-  if (Platform.OS === 'web') {
-    if (window.confirm(`${title}\n\n${message}`)) onConfirm();
-    return;
-  }
-  Alert.alert(title, message, [
+  showDialog(title, message, [
     { text: 'Annuler', style: 'cancel' },
     { text: action, style: 'destructive', onPress: onConfirm },
   ]);

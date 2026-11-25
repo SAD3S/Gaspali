@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { showDialog } from '@/components/ui/Dialog';
 import { ThemeProvider } from '@/theme/ThemeProvider';
 
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
@@ -11,6 +11,7 @@ jest.mock('@/sync/engine', () => ({
   syncNow: jest.fn(),
   useSyncStatus: () => ({ phase: 'offline', lastSyncAt: null, pending: 2, error: null }),
 }));
+jest.mock('@/components/ui/Dialog', () => ({ showDialog: jest.fn(), DialogHost: () => null }));
 jest.mock('@/services/supabase', () => ({ frenchError: (e: Error) => e.message }));
 jest.mock('@/components/ui/Snackbar', () => ({ useSnackbar: () => ({ show: jest.fn() }), SnackbarProvider: ({ children }: { children: unknown }) => children }));
 
@@ -58,7 +59,7 @@ describe('écran Compte et foyer (connecté)', () => {
   });
 
   it('un admin peut retirer un autre membre (avec confirmation), pas lui-même', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alert = jest.mocked(showDialog);
     await renderScreen();
     expect(screen.queryByLabelText('Retirer Léa du foyer')).toBeNull();
     await fireEvent.press(screen.getByLabelText('Retirer Tom du foyer'));
@@ -66,7 +67,7 @@ describe('écran Compte et foyer (connecté)', () => {
   });
 
   it('prévient des modifications non envoyées avant la déconnexion', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const alert = jest.mocked(showDialog);
     await renderScreen();
     await fireEvent.press(screen.getByLabelText('Se déconnecter'));
     expect(alert).toHaveBeenCalledWith('Se déconnecter ?', expect.stringContaining('2 modification(s)'), expect.any(Array));

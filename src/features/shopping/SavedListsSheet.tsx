@@ -1,15 +1,8 @@
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { Pencil, Trash2 } from "lucide-react-native";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import {
-  BottomSheet,
-  Button,
-  Card,
-  Field,
-  Text,
-  useSnackbar,
-} from "@/components/ui";
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { BottomSheet, Button, Card, Field, showDialog, Text, useSnackbar } from '@/components/ui';
 import type { ShoppingRow } from "@/db/schema";
 import {
   applySavedList,
@@ -61,7 +54,7 @@ export function SavedListsSheet({ visible, onClose, current }: Props) {
       setName("");
     };
     if (taken) {
-      Alert.alert(
+      showDialog(
         `Remplacer « ${taken.name} » ?`,
         "Son contenu sera remplacé par la liste actuelle.",
         [
@@ -75,7 +68,7 @@ export function SavedListsSheet({ visible, onClose, current }: Props) {
   return (
     <BottomSheet visible={visible} onClose={onClose}>
       <ScrollView
-        style={{ maxHeight: 560 }}
+        style={{ maxHeight: 560, flexShrink: 1 }}
         contentContainerStyle={{ gap: 14 }}
         keyboardShouldPersistTaps="handled"
       >
@@ -160,7 +153,7 @@ export function SavedListsSheet({ visible, onClose, current }: Props) {
                     accessibilityRole="button"
                     accessibilityLabel={`Supprimer ${l.name}`}
                     onPress={() =>
-                      Alert.alert(
+                      showDialog(
                         `Supprimer « ${l.name} » ?`,
                         "La liste de courses en cours n’est pas touchée.",
                         [
@@ -197,7 +190,7 @@ export function SavedListsSheet({ visible, onClose, current }: Props) {
                 <Pressable
                   accessibilityRole="button"
                   onPress={() =>
-                    Alert.alert(
+                    showDialog(
                       `Mettre à jour « ${l.name} » ?`,
                       "Elle contiendra exactement la liste actuelle.",
                       [

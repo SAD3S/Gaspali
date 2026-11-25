@@ -2,8 +2,8 @@ import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { ChevronLeft, CloudOff, RefreshCw, Share2, Users } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, Share, StyleSheet, View } from 'react-native';
-import { Button, Card, Field, ProductAvatar, Screen, Text, useSnackbar } from '@/components/ui';
+import { Pressable, Share, StyleSheet, View } from 'react-native';
+import { Button, Card, Field, ProductAvatar, Screen, showDialog, Text, useSnackbar } from '@/components/ui';
 import { formatInviteCode, isValidInviteCode, normalizeInviteCode } from '@/domain/sync';
 import { useAuth, type Household } from '@/features/account/AuthProvider';
 import { useMembers } from '@/features/account/hooks';
@@ -195,7 +195,7 @@ function HouseholdView({ household }: { household: Household }) {
   };
 
   const confirm = (title: string, message: string, action: string, run: () => Promise<void>) =>
-    Alert.alert(title, message, [
+    showDialog(title, message, [
       { text: 'Annuler', style: 'cancel' },
       { text: action, style: 'destructive', onPress: () => run().catch((e) => snackbar.show(frenchError(e))) },
     ]);
@@ -276,7 +276,7 @@ function HouseholdView({ household }: { household: Household }) {
               label={`Passer à « ${h.name} »`}
               variant="outline"
               onPress={() =>
-                Alert.alert('Changer de foyer ?', 'Ce téléphone affichera les données de l’autre foyer.', [
+                showDialog('Changer de foyer ?', 'Ce téléphone affichera les données de l’autre foyer.', [
                   { text: 'Annuler', style: 'cancel' },
                   { text: 'Changer', onPress: () => void auth.activate(h.id) },
                 ])
@@ -314,7 +314,7 @@ function SignOutButton() {
       label="Se déconnecter"
       variant="outline"
       onPress={() =>
-        Alert.alert(
+        showDialog(
           'Se déconnecter ?',
           status.pending > 0
             ? `${status.pending} modification(s) n’ont pas encore été envoyées et seront perdues. Reconnecte-toi au réseau d’abord si possible.`

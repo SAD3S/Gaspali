@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
-import { Alert, AppState } from 'react-native';
-import { useSnackbar } from '@/components/ui';
+import { AppState } from 'react-native';
+import { showDialog, useSnackbar } from '@/components/ui';
 import { setPendingReceiptText } from '@/features/receipt/pendingText';
 import { onShared, takeShared, type SharedPayload } from '@/services/androidBridge';
 import { normalizeUrl } from '@/services/recipeImport';
@@ -22,7 +22,7 @@ export function ShareReceiver() {
       if (shared.uris.length) {
         const photos = JSON.stringify(shared.uris);
         const n = shared.uris.length;
-        Alert.alert(n > 1 ? `${n} images reçues` : 'Image reçue', 'Que veux-tu en faire ?', [
+        showDialog(n > 1 ? `${n} images reçues` : 'Image reçue', 'Que veux-tu en faire ?', [
           { text: 'Annuler', style: 'cancel' },
           { text: 'Recette', onPress: () => router.push({ pathname: '/recettes/importer', params: { photos } }) },
           { text: 'Ticket ou commande', onPress: () => router.push({ pathname: '/ticket', params: { photos } }) },

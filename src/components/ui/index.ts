@@ -10,3 +10,4 @@ export { SegmentedControl, Stepper, OptionTiles } from './controls';
 export { Screen } from './Screen';
 export { SnackbarProvider, useSnackbar } from './Snackbar';
 export { Field } from './Field';
+export { DialogHost, showDialog, type DialogButton } from './Dialog';

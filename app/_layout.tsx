@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, Text as RNText, useColorScheme, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { SnackbarProvider } from '@/components/ui';
+import { DialogHost, SnackbarProvider } from '@/components/ui';
 import { initDb } from '@/db/client';
 import { AuthProvider } from '@/features/account/AuthProvider';
 import { SyncManager } from '@/features/account/SyncManager';
@@ -96,6 +96,7 @@ function RootLayout() {
               <RootStack />
               <ShareReceiver />
               <WidgetSync />
+              <DialogHost />
             </SnackbarProvider>
           </AuthProvider>
         </ThemeProvider>
