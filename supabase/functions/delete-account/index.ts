@@ -7,7 +7,8 @@
  *    restent au foyer, sans auteur), supprime profil et préférences alimentaires.
  * 2. Suppression de l'utilisateur dans Supabase Auth (e-mail, identités Google / Apple).
  */
-import { createClient } from '@supabase/supabase-js';
+// Spécificateur complet : le fichier se colle tel quel dans l'éditeur de fonctions du tableau de bord Supabase.
+import { createClient } from 'npm:@supabase/supabase-js@2.119.2';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

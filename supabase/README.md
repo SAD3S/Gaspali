@@ -10,9 +10,9 @@ L'app fonctionne sans serveur (mode local). Pour activer comptes, foyers et sync
 ## 2. Appliquer le schéma
 
 Au choix :
-- **SQL Editor** : colle et exécute, dans l'ordre, les fichiers de `migrations/`
-  (`…_foyers_et_inventaire.sql`, `…_recettes_preferences_courses.sql`, `…_recettes_ia.sql`,
-  `…_planning_repas.sql`, `…_ticket_de_caisse.sql`, puis `…_suppression_compte.sql`) ;
+- **Le plus simple** : *SQL Editor › New query*, colle tout le contenu de `setup.sql` (toutes les migrations,
+  dans l'ordre), puis **Run**. À faire une seule fois, sur un projet neuf ;
+- **SQL Editor, fichier par fichier** : les fichiers de `migrations/`, dans l'ordre ;
 - **CLI** : `supabase link --project-ref <ref>` puis `supabase db push`.
 
 Le schéma crée : profils, foyers, membres (rôles admin / membre), inventaire, produits, historique,
@@ -82,6 +82,9 @@ Tests : `npx tsc -p supabase/functions` (types contre les SDK épinglés dans `d
 ## 6. Suppression de compte (Edge Function `delete-account`)
 
 Exigée par Apple et par le RGPD (droit à l'effacement), depuis Plus › Confidentialité › « Supprimer mon compte ».
+
+Sans outil à installer : *Edge Functions › Deploy a new function › Via Editor*, nom `delete-account`, colle
+le contenu de `functions/delete-account/index.ts`, puis **Deploy**. Ou avec la CLI :
 
 ```bash
 supabase functions deploy delete-account
