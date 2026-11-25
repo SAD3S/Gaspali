@@ -38,6 +38,22 @@ export function matchesIngredient(productName: string, ingredient: Pick<Ingredie
   return [ingredient.name, ...ingredient.synonyms].some((term) => containsAll(pt, tokens(term)));
 }
 
+/**
+ * Sépare le produit principal de sa garniture ou de son parfum : « pavés de bœuf à l'échalote »,
+ * « poulet au curry », « yaourt saveur vanille ». Renvoie [principal, garniture] ou null.
+ */
+export function splitFlavor(productName: string): [string, string] | null {
+  const s = productName
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[’']/g, "' ");
+  const m = /\s(?:a la|a l'|a|au|aux|sauce|saveurs?|parfums?|gout|aromatisee?s?|facon|fourree?s?)\s/.exec(` ${s} `);
+  if (!m || m.index === 0) return null;
+  const at = m.index - 1;
+  return [s.slice(0, at), s.slice(at + m[0].length - 1)];
+}
+
 const cache = new Map<string, string[]>();
 
 /** Tous les ingrédients normalisés auxquels correspond un nom de produit. */
@@ -46,6 +62,16 @@ export function ingredientsForProduct(productName: string): string[] {
   let ids = cache.get(key);
   if (!ids) {
     ids = INGREDIENTS.filter((ing) => matchesIngredient(productName, ing)).map((ing) => ing.id);
+    // Un ingrédient trouvé seulement dans la garniture n'est pas le produit (« bœuf à l'échalote » ≠ échalotes).
+    // Un nom composé qui chevauche (« pâte à pizza ») reste reconnu : il ne figure pas dans la garniture seule.
+    const parts = splitFlavor(productName);
+    if (parts) {
+      const [head, tail] = parts;
+      ids = ids.filter((id) => {
+        const ing = INGREDIENTS_BY_ID[id]!;
+        return matchesIngredient(head, ing) || !matchesIngredient(tail, ing);
+      });
+    }
     // Éviter les doublons trop généraux : « emmental râpé » est du fromage râpé, pas (aussi) de l'emmental en bloc.
     if (ids.includes('fromage_rape')) ids = ids.filter((x) => x !== 'emmental');
     if (ids.includes('saumon_fume')) ids = ids.filter((x) => x !== 'saumon');

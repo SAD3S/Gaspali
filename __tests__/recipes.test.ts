@@ -272,3 +272,19 @@ describe('équipement du foyer', () => {
     expect(suggestRecipes(recipes, { items: [], basics, members: [me], today }).length).toBe(recipes.length);
   });
 });
+
+describe('garniture et parfum dans le nom du produit', () => {
+  it('le produit principal compte, pas sa garniture', () => {
+    expect(ingredientsForProduct('Les Marinés 2 pavés de bœuf à l’échalote')).toEqual(['boeuf']);
+    expect(ingredientsForProduct("Pavés de boeuf à l'échalote")).toEqual(['boeuf']);
+    expect(ingredientsForProduct('Filet de poulet au curry')).toEqual(['poulet']);
+    expect(ingredientsForProduct('Yaourt saveur citron')).not.toContain('citron');
+    expect(ingredientsForProduct('Riz au lait')).not.toContain('lait');
+    expect(ingredientsForProduct('Gâteau au chocolat')).toEqual([]);
+  });
+  it('garde les noms composés et les produits sans garniture', () => {
+    expect(ingredientsForProduct('Pâte à pizza fine')).toContain('pate_pizza');
+    expect(ingredientsForProduct('Échalotes')).toEqual(['echalote']);
+    expect(ingredientsForProduct('Tomates et mozzarella')).toEqual(expect.arrayContaining(['tomate', 'mozzarella']));
+  });
+});
