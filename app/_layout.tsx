@@ -15,6 +15,7 @@ import { SyncManager } from '@/features/account/SyncManager';
 import { NotificationManager } from '@/features/notifications/NotificationManager';
 import { loadSettings } from '@/features/settings/settings';
 import { ShareReceiver } from '@/features/recipes/ShareReceiver';
+import { WidgetSync } from '@/widgets/WidgetSync';
 import { RestockNotifier } from '@/features/shopping/RestockNotifier';
 import { initCrashReporting, reportError, wrapRoot } from '@/services/crashReporting';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
@@ -94,6 +95,7 @@ function RootLayout() {
               <RestockNotifier />
               <RootStack />
               <ShareReceiver />
+              <WidgetSync />
             </SnackbarProvider>
           </AuthProvider>
         </ThemeProvider>

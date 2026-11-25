@@ -52,3 +52,9 @@ export async function pickRecipePages(source: 'galerie' | 'camera'): Promise<str
   const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9, allowsMultipleSelection: true, selectionLimit: 4, orderedSelection: true });
   return res.canceled ? [] : res.assets.map((a) => a.uri);
 }
+
+/** Tickets ou captures d'un récapitulatif de commande drive : jusqu'à 5 images de la galerie. */
+export async function pickReceiptPhotos(): Promise<string[]> {
+  const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9, allowsMultipleSelection: true, selectionLimit: 5, orderedSelection: true });
+  return res.canceled ? [] : res.assets.map((a) => a.uri);
+}

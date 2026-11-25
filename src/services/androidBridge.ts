@@ -2,27 +2,34 @@ import { requireOptionalNativeModule } from 'expo';
 import { Platform } from 'react-native';
 
 /** Module local `modules/gaspalli-android` (absent sur iOS, le web et dans Expo Go). */
+/** Contenu partagé vers Gaspalli par une autre app. */
+export interface SharedPayload {
+  text: string | null;
+  /** Images (content://…) : tickets, captures de commande, photos de recettes. */
+  uris: string[];
+}
+
 interface GaspalliAndroid {
-  takeSharedText(): string | null;
+  takeShared(): SharedPayload | null;
   startTimer(seconds: number, message: string): boolean;
-  addListener(event: 'onShare', listener: (e: { text: string }) => void): { remove(): void };
+  addListener(event: 'onShare', listener: (e: SharedPayload) => void): { remove(): void };
 }
 
 const native = Platform.OS === 'android' ? requireOptionalNativeModule<GaspalliAndroid>('GaspalliAndroid') : null;
 
-/** Texte partagé vers Gaspalli qui a ouvert l'app (une seule fois). */
-export function takeSharedText(): string | null {
+/** Partage qui a ouvert l'app (une seule fois). */
+export function takeShared(): SharedPayload | null {
   try {
-    return native?.takeSharedText() ?? null;
+    return native?.takeShared() ?? null;
   } catch {
     return null;
   }
 }
 
 /** Partages reçus pendant que l'app est ouverte. */
-export function onSharedText(listener: (text: string) => void): () => void {
+export function onShared(listener: (shared: SharedPayload) => void): () => void {
   if (!native) return () => {};
-  const sub = native.addListener('onShare', (e) => listener(e.text));
+  const sub = native.addListener('onShare', (e) => listener({ text: e.text ?? null, uris: e.uris ?? [] }));
   return () => sub.remove();
 }
 

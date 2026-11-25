@@ -16,7 +16,7 @@ import type { ItemFormValue } from '@/features/inventory/ItemForm';
 import { ConfirmSheet, type SheetProduct } from '@/features/scan/ConfirmSheet';
 import { DateResultSheet } from '@/features/scan/DateResultSheet';
 import { ManualCodeSheet } from '@/features/scan/ManualCodeSheet';
-import { pickReceiptPhoto } from '@/services/photos';
+import { pickReceiptPhotos } from '@/services/photos';
 import { ocrAvailable, recognizeText } from '@/services/textRecognition';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
@@ -170,8 +170,8 @@ export default function Scan() {
   };
 
   /** Photo du ticket → écran de revue (la lecture se fait là-bas). */
-  const openTicket = (photo: string | null) => {
-    if (photo) router.replace({ pathname: '/ticket', params: { photo } });
+  const openTicket = (photos: string[]) => {
+    if (photos.length) router.replace({ pathname: '/ticket', params: { photos: JSON.stringify(photos) } });
   };
 
   const captureTicket = async () => {
@@ -179,7 +179,7 @@ export default function Scan() {
     setMode('reading');
     try {
       const photo = await camera.current.takePictureAsync({ quality: 0.85 });
-      openTicket(photo?.uri ?? null);
+      openTicket(photo?.uri ? [photo.uri] : []);
     } catch {
       snackbar.show('La photo n’a pas pu être prise. Réessaie.', undefined, 'top');
     } finally {
@@ -301,16 +301,19 @@ export default function Scan() {
               </View>
             )}
             <View style={styles.altRow}>
-              <Pressable accessibilityRole="button" onPress={() => pickReceiptPhoto('galerie').then(openTicket).catch(() => {})} style={[styles.alt, { backgroundColor: GLASS }]}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityHint="Jusqu’à 5 tickets ou captures d’une commande drive"
+                onPress={() => pickReceiptPhotos().then(openTicket).catch(() => {})}
+                style={[styles.alt, { backgroundColor: GLASS }]}
+              >
                 <ImageIcon size={18} color={ON_DARK} />
-                <Text variant="label" color={ON_DARK} style={styles.bold}>Choisir une photo</Text>
+                <Text variant="label" color={ON_DARK} style={styles.bold}>Photos / captures</Text>
               </Pressable>
-              {!cameraReady && (
-                <Pressable accessibilityRole="button" onPress={() => router.replace({ pathname: '/ticket', params: { mode: 'texte' } })} style={[styles.alt, { backgroundColor: GLASS }]}>
+              <Pressable accessibilityRole="button" onPress={() => router.replace({ pathname: '/ticket', params: { mode: 'texte' } })} style={[styles.alt, { backgroundColor: GLASS }]}>
                   <Type size={18} color={ON_DARK} />
-                  <Text variant="label" color={ON_DARK} style={styles.bold}>Saisir le texte</Text>
+                  <Text variant="label" color={ON_DARK} style={styles.bold}>{cameraReady ? 'Coller une commande' : 'Saisir le texte'}</Text>
                 </Pressable>
-              )}
             </View>
           </View>
         )}

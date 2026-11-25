@@ -9,6 +9,17 @@ export interface NotificationSettings {
   minute: number;
   /** Alerte la veille de la DLC (fusionnée dans le rappel du jour : une seule notification par jour). */
   dlcEveEnabled: boolean;
+  /** Prévenir N jours avant la date, par catégorie (viande : 3 ; défaut : la veille). */
+  leadDays: Partial<Record<string, number>>;
+}
+
+/** Délai par défaut : le rappel cite les produits à finir aujourd'hui et demain. */
+export const DEFAULT_LEAD_DAYS = 1;
+export const MAX_LEAD_DAYS = 7;
+
+export function leadDaysFor(settings: Pick<NotificationSettings, 'leadDays'>, category: string): number {
+  const v = settings.leadDays?.[category];
+  return v === undefined ? DEFAULT_LEAD_DAYS : Math.max(0, Math.min(MAX_LEAD_DAYS, Math.round(v)));
 }
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
@@ -16,6 +27,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   hour: 18,
   minute: 0,
   dlcEveEnabled: true,
+  leadDays: {},
 };
 
 export interface PlannedNotification {
@@ -66,7 +78,8 @@ export function planNotifications(
     const evaluated = stock
       .map((item) => ({ item, f: computeFreshness(item.expiresAt, item.dateType, day) }))
       .filter(({ f }) => f.daysLeft >= 0);
-    const soon = evaluated.filter(({ f }) => f.daysLeft <= 1);
+    // Chaque catégorie a son délai : la viande peut être annoncée 3 jours avant, les yaourts la veille.
+    const soon = evaluated.filter(({ item, f }) => f.daysLeft <= leadDaysFor(settings, item.category));
     const dlcEve = soon.filter(({ item, f }) => item.dateType === 'DLC' && f.daysLeft === 1);
     const chosen = settings.dailyEnabled ? soon : dlcEve;
     if (!chosen.length) continue;
@@ -74,13 +87,19 @@ export function planNotifications(
     chosen.sort((a, b) => urgencyRank(a.f) - urgencyRank(b.f) || a.item.name.localeCompare(b.item.name, 'fr'));
     const today = chosen.filter(({ f }) => f.daysLeft === 0).map(({ item }) => item.name);
     const tomorrow = chosen.filter(({ f }) => f.daysLeft === 1).map(({ item }) => item.name);
+    const later = chosen.filter(({ f }) => f.daysLeft >= 2);
     const n = chosen.length;
 
     let title: string;
     let body: string;
     if (settings.dailyEnabled) {
-      title = `${n} produit${n > 1 ? 's' : ''} à consommer d’ici demain`;
-      body = [today.length ? `Aujourd’hui : ${joinNames(today)}.` : '', tomorrow.length ? `Demain : ${joinNames(tomorrow)}.` : '']
+      title = later.length ? `${n} produit${n > 1 ? 's' : ''} à consommer bientôt` : `${n} produit${n > 1 ? 's' : ''} à consommer d’ici demain`;
+      const laterText = later.map(({ item, f }) => `${item.name} (${f.daysLeft} j)`);
+      body = [
+        today.length ? `Aujourd’hui : ${joinNames(today)}.` : '',
+        tomorrow.length ? `Demain : ${joinNames(tomorrow)}.` : '',
+        laterText.length ? `Bientôt : ${joinNames(laterText)}.` : '',
+      ]
         .filter(Boolean)
         .join(' ');
     } else {

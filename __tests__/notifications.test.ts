@@ -12,6 +12,21 @@ function item(name: string, days: number, over: Partial<Item> = {}): Item {
   };
 }
 
+describe('délais par catégorie', () => {
+  it('prévient 3 jours avant pour la viande, le jour même pour les yaourts', () => {
+    const items = [
+      item('Steak haché', 3, { category: 'viande' }),
+      item('Yaourts', 1, { category: 'laitier' }),
+      item('Crème', 0, { category: 'laitier' }),
+    ];
+    const settings = { ...DEFAULT_NOTIFICATION_SETTINGS, leadDays: { viande: 3, laitier: 0 } };
+    const [first] = planNotifications(items, settings, morning);
+    expect(first).toMatchObject({ title: '2 produits à consommer bientôt', body: 'Aujourd’hui : Crème. Bientôt : Steak haché (3 j).' });
+    // Sans réglage : la veille, comme avant.
+    expect(planNotifications(items, DEFAULT_NOTIFICATION_SETTINGS, morning)[0]!.title).toBe('2 produits à consommer d’ici demain');
+  });
+});
+
 describe('planNotifications', () => {
   const items = [item('Blanc de poulet', 0), item('Crème fraîche', 1), item('Épinards frais', 3), item('Comté', 12)];
 

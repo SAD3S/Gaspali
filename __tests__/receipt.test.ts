@@ -116,6 +116,30 @@ describe('découpage du ticket', () => {
     ]);
   });
 
+  it('récapitulatif de commande drive (e-mail ou capture) : quantités et prix sur leurs lignes', () => {
+    const rows = rowsFromText(`
+      Votre commande n°123456 est prête
+      Retrait le 24/11/2026 entre 18h et 19h
+      Lait demi-écrémé LACTEL 1L
+      Quantité : 2
+      1,98 €
+      Bananes Cavendish x5
+      Qté 1
+      1,49 €
+      Steak haché 5% MG 2x125g     4,20 €
+      Frais de préparation          2,00 €
+      Sac de livraison              0,15 €
+      Total TTC                    9,82 €
+    `);
+    const r = parseReceipt(rows, now);
+    expect(r.items.map((i) => [i.label, i.count, i.price, i.nonFood])).toEqual([
+      ['LAIT DEMI-ECREME LACTEL', 2, 1.98, false],
+      ['BANANES CAVENDISH', 1, 1.49, false],
+      ['STEAK HACHE 5% MG', 1, 4.2, false],
+    ]);
+    expect(r.total).toBe(9.82);
+  });
+
   it('ignore une date dans le futur ou trop ancienne', () => {
     expect(parseReceipt(['01/01/2020', 'PAIN 1,00'], now).date).toBeNull();
     expect(parseReceipt(['24.11.26 18:42', 'PAIN 1,00'], now).date).toEqual(new Date(2026, 10, 24));

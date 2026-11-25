@@ -45,6 +45,7 @@ export function Stepper({
   value,
   onChange,
   min = 0,
+  max = Infinity,
   step = 1,
   format = String,
   label,
@@ -52,6 +53,7 @@ export function Stepper({
   value: number;
   onChange: (v: number) => void;
   min?: number;
+  max?: number;
   step?: number;
   format?: (v: number) => string;
   label: string;
@@ -64,7 +66,7 @@ export function Stepper({
         <Minus size={18} color={colors.text} />
       </Pressable>
       <Text variant="bodyStrong" accessibilityLabel={`${label} : ${format(value)}`} style={styles.stepValue}>{format(value)}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Augmenter ${label}`} onPress={() => onChange(Math.round((value + step) * 100) / 100)} style={btn}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Augmenter ${label}`} onPress={() => onChange(Math.min(max, Math.round((value + step) * 100) / 100))} style={btn}>
         <Plus size={18} color={colors.text} />
       </Pressable>
     </View>

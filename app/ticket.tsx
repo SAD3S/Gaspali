@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Camera, Check, ReceiptText, TriangleAlert, X } from 'lucide-react-native';
+import { Camera, Check, Image as ImageIcon, ReceiptText, TriangleAlert, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +15,8 @@ import { ingredientOfName } from '@/domain/receiptMatch';
 import { buildReview, reviewSummary, shortDate, type ReviewLine } from '@/domain/receiptReview';
 import { formatEuros } from '@/domain/stats';
 import { LineSheet } from '@/features/receipt/LineSheet';
-import { pickReceiptPhoto } from '@/services/photos';
+import { takePendingReceiptText } from '@/features/receipt/pendingText';
+import { pickReceiptPhoto, pickReceiptPhotos } from '@/services/photos';
 import { ocrAvailable, receiptOcrAvailable, recognizeLines, recognizeText } from '@/services/textRecognition';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH, radius } from '@/theme/tokens';
@@ -33,8 +34,18 @@ async function readReceiptPhoto(uri: string): Promise<string[] | null> {
 export default function Ticket() {
   const { colors } = useTheme();
   const snackbar = useSnackbar();
-  const { photo } = useLocalSearchParams<{ photo?: string; mode?: string }>();
-  const [phase, setPhase] = useState<Phase>(photo ? 'lecture' : 'saisie');
+  const { photo, photos, mode } = useLocalSearchParams<{ photo?: string; photos?: string; mode?: string }>();
+  // Une ou plusieurs images (tickets, captures de commande drive), ou un texte partagé vers Gaspalli.
+  const [initialPhotos] = useState<string[]>(() => {
+    if (photo) return [photo];
+    try {
+      const list = photos ? (JSON.parse(photos) as unknown) : [];
+      return Array.isArray(list) ? list.filter((u): u is string => typeof u === 'string') : [];
+    } catch {
+      return [];
+    }
+  });
+  const [phase, setPhase] = useState<Phase>(initialPhotos.length || mode === 'partage' ? 'lecture' : 'saisie');
   const [lines, setLines] = useState<ReviewLine[]>([]);
   const [meta, setMeta] = useState<{ store: string | null; date: Date | null; total: number | null }>({ store: null, date: null, total: null });
   const [editing, setEditing] = useState<ReviewLine | null>(null);
@@ -48,38 +59,62 @@ export default function Ticket() {
     const added = buildReview(parsed, { aliases: loadAliases(), products: loadKnownProducts() }, parts.current++);
     count.current += added.length;
     setLines((prev) => [...prev, ...added]);
-    setMeta((m) => ({ store: m.store ?? parsed.store, date: m.date ?? parsed.date, total: parsed.total ?? m.total }));
+    // Plusieurs tickets : les totaux s'additionnent (la suite d'un long ticket n'a pas de total).
+    setMeta((m) => ({
+      store: m.store && parsed.store && m.store !== parsed.store ? `${m.store}, ${parsed.store}` : m.store ?? parsed.store,
+      date: m.date ?? parsed.date,
+      total: parsed.total !== null ? Math.round(((m.total ?? 0) + parsed.total) * 100) / 100 : m.total,
+    }));
     return added.length;
   }, []);
 
+  /** Lit les images une à une ; chacune devient une partie de la revue. */
   const read = useCallback(
-    async (uri: string) => {
+    async (uris: string[]) => {
       setPhase('lecture');
-      try {
-        const rows = await readReceiptPhoto(uri);
-        if (!rows) {
-          snackbar.show('La lecture automatique fonctionne dans l’app installée. Tu peux saisir le texte du ticket.', undefined, 'top');
-          setPhase(count.current ? 'revue' : 'saisie');
-          return;
+      let unread = 0;
+      for (const uri of uris) {
+        try {
+          const rows = await readReceiptPhoto(uri);
+          if (!rows) {
+            snackbar.show('La lecture automatique fonctionne dans l’app installée. Tu peux saisir le texte du ticket.', undefined, 'top');
+            setPhase(count.current ? 'revue' : 'saisie');
+            return;
+          }
+          if (!analyse(rows)) unread++;
+        } catch {
+          unread++;
         }
-        const n = analyse(rows);
-        if (!n && count.current) snackbar.show('Aucun article reconnu sur cette photo.', undefined, 'top');
-        setPhase(count.current ? 'revue' : 'vide');
-      } catch {
-        snackbar.show('Le ticket n’a pas pu être lu. Réessaie avec plus de lumière.', undefined, 'top');
-        setPhase(count.current ? 'revue' : 'vide');
       }
+      if (unread && count.current) snackbar.show(`${unread} image${unread > 1 ? 's' : ''} sans article reconnu.`, undefined, 'top');
+      setPhase(count.current ? 'revue' : 'vide');
     },
     [analyse, snackbar],
   );
 
+  const started = useRef(false);
   useEffect(() => {
-    if (photo) void read(photo);
-  }, [photo]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (started.current) return;
+    started.current = true;
+    if (initialPhotos.length) void read(initialPhotos);
+    else if (mode === 'partage') {
+      const text = takePendingReceiptText();
+      if (text && analyse(rowsFromText(text))) setPhase('revue');
+      else {
+        if (text) setText(text);
+        setPhase('saisie');
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addNextPart = async () => {
     const uri = await pickReceiptPhoto('camera').catch(() => null);
-    if (uri) await read(uri);
+    if (uri) await read([uri]);
+  };
+
+  const addOtherReceipts = async () => {
+    const uris = await pickReceiptPhotos().catch(() => [] as string[]);
+    if (uris.length) await read(uris);
   };
 
   const update = (l: ReviewLine) => setLines((prev) => prev.map((x) => (x.id === l.id ? l : x)));
@@ -224,6 +259,7 @@ export default function Ticket() {
             )}
 
             <Button label="Ajouter la suite du ticket" variant="outline" icon={<Camera size={18} color={colors.text} />} onPress={addNextPart} />
+            <Button label="Ajouter d’autres tickets ou captures" variant="outline" icon={<ImageIcon size={18} color={colors.text} />} onPress={addOtherReceipts} />
             <Button label="Saisir une ligne manquante" variant="outline" onPress={() => setPhase('saisie')} />
           </ScrollView>
           <View style={[styles.bottomBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>

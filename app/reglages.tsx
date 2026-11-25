@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { Button, Card, Chip, Screen, SegmentedControl, Stepper, Text, useSnackbar } from '@/components/ui';
 import { startOfDay } from '@/domain/dates';
-import { formatTime, planNotifications } from '@/domain/notifications';
+import { formatTime, leadDaysFor, MAX_LEAD_DAYS, planNotifications } from '@/domain/notifications';
+import { getCategory, type CategoryId } from '@/domain/categories';
 import { useInventory } from '@/features/inventory/hooks';
 import { DEFAULT_BASICS, INGREDIENTS_BY_ID } from '@/data/ingredients';
 import { updateNotificationSettings, updateSettings, useSettings } from '@/features/settings/settings';
@@ -23,6 +24,14 @@ import { MIN_TOUCH } from '@/theme/tokens';
 const HOURS = [8, 12, 18, 20];
 /** Ingrédients qu'on peut déclarer « toujours à la maison ». */
 const BASIC_CANDIDATES = [...DEFAULT_BASICS, 'moutarde', 'ail', 'oignon', 'beurre', 'lait', 'oeufs', 'riz', 'pates', 'bouillon', 'sauce_soja', 'curry', 'cumin', 'levure', 'sucre_vanille', 'cannelle', 'concentre_tomate'];
+
+/** Catégories périssables proposées pour les délais de rappel. */
+const LEAD_CATEGORIES: CategoryId[] = ['viande', 'poisson', 'laitier', 'fromage', 'oeufs', 'traiteur', 'restes', 'fruits', 'legumes', 'boulangerie'];
+
+/** 0 → « le jour même », 1 → « la veille », 3 → « 3 j avant » */
+function leadLabel(v: number): string {
+  return v === 0 ? 'Le jour J' : v === 1 ? 'La veille' : `${v} j avant`;
+}
 
 function Row({ label, hint, value, onChange, disabled }: { label: string; hint: string; value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   const { colors } = useTheme();
@@ -183,6 +192,27 @@ export default function Reglages() {
             />
           </View>
           <Text variant="label" tone="secondary">Jamais plus d’une notification par jour.</Text>
+        </View>
+
+        <View style={{ gap: 8, opacity: enabled && n.dailyEnabled ? 1 : 0.5 }} pointerEvents={enabled && n.dailyEnabled ? 'auto' : 'none'}>
+          <Text variant="bodyStrong" style={{ fontSize: 16 }}>Prévenir plus tôt selon le produit</Text>
+          <Text variant="label" tone="secondary">Par défaut, le rappel cite ce qui est à finir aujourd’hui et demain.</Text>
+          {LEAD_CATEGORIES.map((id) => {
+            const value = leadDaysFor(n, id);
+            return (
+              <View key={id} style={styles.between}>
+                <Text variant="body" style={styles.flex}>{getCategory(id).label}</Text>
+                <Stepper
+                  label={`délai pour ${getCategory(id).label}`}
+                  value={value}
+                  min={0}
+                  max={MAX_LEAD_DAYS}
+                  format={leadLabel}
+                  onChange={(v) => updateNotificationSettings({ leadDays: { ...n.leadDays, [id]: v } })}
+                />
+              </View>
+            );
+          })}
         </View>
 
         {enabled && (

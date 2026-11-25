@@ -71,12 +71,15 @@ describe('plugin withShareIntent', () => {
     },
   });
 
-  it('ajoute le partage de texte une seule fois', () => {
+  it('ajoute le partage de texte et d’images une seule fois', () => {
     const once = applyShareIntent(manifest());
     const twice = applyShareIntent(once) as ReturnType<typeof manifest>;
     const filters = twice.manifest.application[0]!.activity[0]!['intent-filter'] as { action: { $: Record<string, string> }[]; data?: { $: Record<string, string> }[] }[];
-    expect(filters).toHaveLength(2);
-    expect(filters[1]!.action[0]!.$['android:name']).toBe('android.intent.action.SEND');
-    expect(filters[1]!.data![0]!.$['android:mimeType']).toBe('text/plain');
+    expect(filters).toHaveLength(4);
+    expect(filters.slice(1).map((f) => [f.action[0]!.$['android:name'], f.data![0]!.$['android:mimeType']])).toEqual([
+      ['android.intent.action.SEND', 'text/plain'],
+      ['android.intent.action.SEND', 'image/*'],
+      ['android.intent.action.SEND_MULTIPLE', 'image/*'],
+    ]);
   });
 });

@@ -89,7 +89,9 @@ const WEIGHT = new RegExp(String.raw`^(\d{1,3}[.,]\d{1,3})\s*KG\s*(?:[X*@]|A)?\s
 /** Fin des articles (« TOTAL », « NET A PAYER », « SUMME / TOTAL »). */
 const END_OF_ITEMS = /^(?:\S+\s*\/\s*)?(SOUS[- ]?TOTAL|TOTAL|NET A PAYER|A PAYER|MONTANT (DU|A PAYER)|TOTAL TTC|TOTAL A PAYER)\b/;
 const SKIP =
-  /\b(TVA|HT|TTC|CB|CARTE|VISA|MASTERCARD|ESPECES|RENDU|MONNAIE|PAIEMENT|REGLEMENT|TICKET|CAISSE|CAISSIER|CAISSIERE|MERCI|SIRET|SIREN|TEL|NB ARTICLES?|ARTICLES?|POINTS|CAGNOTTE|SOLDE|CONTACTLESS|SANS CONTACT|AUTORISATION|DEBIT|TRANSACTION|BIENVENUE|HORAIRES|OUVERT)\b/;
+  /\b(TVA|HT|TTC|CB|CARTE|VISA|MASTERCARD|ESPECES|RENDU|MONNAIE|PAIEMENT|REGLEMENT|TICKET|CAISSE|CAISSIER|CAISSIERE|MERCI|SIRET|SIREN|TEL|NB ARTICLES?|ARTICLES?|POINTS|CAGNOTTE|SOLDE|CONTACTLESS|SANS CONTACT|AUTORISATION|DEBIT|TRANSACTION|BIENVENUE|HORAIRES|OUVERT|FRAIS|LIVRAISON|PREPARATION|CRENEAU|RETRAIT|COMMANDE|LIVREE?|CONSIGNES?)\b/;
+/** Quantité sur sa propre ligne (récapitulatifs de commande drive) : « Quantité : 2 », « Qté 3 », « x2 ». */
+const QTY_LINE = /^(?:QTE|QUANTITE|QTY)\s*:?\s*(\d{1,3})$|^X\s?(\d{1,3})$/;
 const DISCOUNT = /\b(REMISE|PROMO|REDUC|REDUCTION|RISTOURNE|BON D.?ACHAT|AVANTAGE|COUPON|ECONOMIE|IMMEDIATE|FIDELITE|ANNULATION|ANNUL)\b/;
 
 const NON_FOOD = [
@@ -267,6 +269,7 @@ export function parseReceipt(rows: string[], now: Date = new Date()): ParsedRece
   let pendingLabel: string | null = null;
   let pendingMult: { count: number; unit: number } | null = null;
   let pendingWeight: { kg: number; unit: number } | null = null;
+  let pendingCount: number | null = null;
 
   const push = (raw: string, labelRaw: string, price: number | null, extra: Partial<ReceiptItem> = {}) => {
     const { label, pack } = splitPack(labelRaw);
@@ -278,8 +281,10 @@ export function parseReceipt(rows: string[], now: Date = new Date()): ParsedRece
     // Multiplicateur ou pesée lus juste avant, s'ils correspondent au prix.
     if (pendingMult && price !== null && close(pendingMult.count * pendingMult.unit, price)) item.count = pendingMult.count;
     if (pendingWeight && price !== null && close(pendingWeight.kg * pendingWeight.unit, price)) item.weightKg = pendingWeight.kg;
+    if (pendingCount && item.count === 1) item.count = pendingCount;
     pendingMult = null;
     pendingWeight = null;
+    pendingCount = null;
     items.push(item);
   };
 
@@ -299,6 +304,15 @@ export function parseReceipt(rows: string[], now: Date = new Date()): ParsedRece
       if (m && items.length && !/SOUS/.test(row)) total = toNumber(m[1]!);
       if (items.length && !/SOUS/.test(row)) ended = true;
       pendingLabel = null;
+      continue;
+    }
+
+    const qty = QTY_LINE.exec(row);
+    if (qty) {
+      const n = Number(qty[1] ?? qty[2]);
+      const last = items[items.length - 1];
+      if (pendingLabel) pendingCount = n;
+      else if (last && last.count === 1) last.count = n;
       continue;
     }
 
@@ -350,6 +364,12 @@ export function parseReceipt(rows: string[], now: Date = new Date()): ParsedRece
         last.price = round2(last.price - off);
         last.discount = round2(last.discount + off);
       }
+      pendingLabel = null;
+      continue;
+    }
+    // Prix seul sur sa ligne : il complète le libellé lu juste avant (récapitulatif drive).
+    if (price !== null && !hasLetters(label)) {
+      if (pendingLabel) push(`${pendingLabel} / ${original}`, pendingLabel, price);
       pendingLabel = null;
       continue;
     }

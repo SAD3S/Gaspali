@@ -47,6 +47,12 @@ export async function importFromPhotos(source: 'galerie' | 'camera'): Promise<Im
   if (!receiptOcrAvailable && !ocrAvailable) throw new Error('La lecture des photos fonctionne dans l’app installée.');
   const uris = await pickRecipePages(source);
   if (!uris.length) return null;
+  return importFromImageUris(uris);
+}
+
+/** Images déjà choisies (ou partagées vers Gaspalli) → texte lu sur le téléphone → recette. */
+export async function importFromImageUris(uris: string[]): Promise<ImportedRecipe> {
+  if (!receiptOcrAvailable && !ocrAvailable) throw new Error('La lecture des photos fonctionne dans l’app installée.');
   const lines: string[] = [];
   for (const uri of uris) {
     // Ordre de lecture de la reconnaissance (colonnes respectées), pas regroupé par hauteur comme un ticket.

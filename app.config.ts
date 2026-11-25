@@ -57,6 +57,37 @@ const config: ExpoConfig = {
     'expo-font',
     './plugins/withAndroidRelease',
     './plugins/withShareIntent',
+    [
+      'react-native-android-widget',
+      {
+        widgets: [
+          {
+            name: 'AConsommerVite',
+            label: 'À consommer vite',
+            description: 'Les produits qui arrivent à date',
+            minWidth: '250dp',
+            minHeight: '110dp',
+            targetCellWidth: 3,
+            targetCellHeight: 2,
+            resizeMode: 'horizontal|vertical',
+            previewImage: './assets/widgets/a-consommer-vite.png',
+            // Les jours restants changent à minuit : rafraîchissement toutes les heures.
+            updatePeriodMillis: 3600000,
+          },
+          {
+            name: 'ListeDeCourses',
+            label: 'Liste de courses',
+            description: 'Ce qu’il reste à acheter',
+            minWidth: '250dp',
+            minHeight: '110dp',
+            targetCellWidth: 3,
+            targetCellHeight: 2,
+            resizeMode: 'horizontal|vertical',
+            previewImage: './assets/widgets/liste-de-courses.png',
+          },
+        ],
+      },
+    ],
     'expo-apple-authentication',
     'expo-web-browser',
     ['expo-notifications', { icon: './assets/notification-icon.png', color: '#1F7A4D' }],

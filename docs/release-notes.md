@@ -9,6 +9,15 @@
 
 ## Nouveautés à tester
 
+- **Widgets** : appui long sur l'écran d'accueil du téléphone › Widgets › Gaspalli. « À consommer vite » et
+  « Liste de courses » se mettent à jour tout seuls ; les toucher ouvre l'app au bon endroit.
+- **Plusieurs tickets d'un coup** : onglet Ticket › « Photos / captures » (jusqu'à 5), ou « Ajouter d'autres tickets »
+  pendant la vérification. Les doublons de magasins et les totaux s'additionnent.
+- **Commande drive** : partage l'e-mail ou les captures du récapitulatif vers Gaspalli, ou « Coller une commande ».
+  Les frais de livraison et de préparation sont ignorés, les « Qté : 2 » sont comptés.
+- **Rappels par catégorie** (Réglages › Notifications › « Prévenir plus tôt selon le produit ») :
+  par exemple 3 jours avant pour la viande, le jour J pour les yaourts.
+- **Partager une image vers Gaspalli** : au choix, ticket/commande ou recette.
 - **Mode cuisine** (fiche recette › Mode cuisine) : étapes en grand, écran allumé. Touche une durée (« 25 min »)
   pour lancer le minuteur de l'horloge du téléphone.
 - **Partager vers Gaspalli** : dans Chrome ou l'app Marmiton, Partager › Gaspalli importe la recette.

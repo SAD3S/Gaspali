@@ -1,13 +1,15 @@
 package app.gaspalli.android
 
 import android.content.Intent
+import android.net.Uri
 import android.provider.AlarmClock
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 /**
  * Intégrations Android de Gaspalli :
- * - « Partager vers Gaspalli » : texte (lien de recette) reçu d'une autre app (ACTION_SEND) ;
+ * - « Partager vers Gaspalli » : lien de recette, texte d'un e-mail de commande drive,
+ *   ou image(s) (ticket, capture de commande, photo de recette) reçus d'une autre app ;
  * - minuteur de cuisine lancé dans l'horloge du téléphone (ACTION_SET_TIMER).
  */
 class GaspalliAndroidModule : Module() {
@@ -15,23 +17,20 @@ class GaspalliAndroidModule : Module() {
     Name("GaspalliAndroid")
     Events("onShare")
 
-    /** Texte partagé qui a ouvert l'app (lancement à froid), une seule fois. */
-    Function("takeSharedText") {
+    /** Partage qui a ouvert l'app (lancement à froid), une seule fois. */
+    Function("takeShared") {
       val activity = appContext.currentActivity
-      val text = sharedText(activity?.intent)
-      if (activity != null && text != null) {
-        activity.intent = Intent(activity.intent).apply {
-          action = Intent.ACTION_MAIN
-          removeExtra(Intent.EXTRA_TEXT)
-        }
+      val shared = payload(activity?.intent)
+      if (activity != null && shared != null) {
+        activity.intent = Intent(Intent.ACTION_MAIN)
       }
-      text
+      shared
     }
 
     /** Partage reçu alors que l'app est déjà ouverte. */
     OnNewIntent { intent ->
-      val text = sharedText(intent)
-      if (text != null) sendEvent("onShare", mapOf("text" to text))
+      val shared = payload(intent)
+      if (shared != null) sendEvent("onShare", shared)
     }
 
     /** Lance un minuteur dans l'horloge du téléphone, sans quitter l'app. false si aucune horloge compatible. */
@@ -55,9 +54,22 @@ class GaspalliAndroidModule : Module() {
     }
   }
 
-  private fun sharedText(intent: Intent?): String? {
-    if (intent == null || intent.action != Intent.ACTION_SEND) return null
-    if (intent.type?.startsWith("text/") != true) return null
-    return intent.getStringExtra(Intent.EXTRA_TEXT)
+  private fun payload(intent: Intent?): Map<String, Any?>? {
+    if (intent == null) return null
+    val action = intent.action
+    if (action != Intent.ACTION_SEND && action != Intent.ACTION_SEND_MULTIPLE) return null
+    val uris = ArrayList<String>()
+    if (action == Intent.ACTION_SEND) {
+      @Suppress("DEPRECATION")
+      val stream: Uri? = intent.getParcelableExtra(Intent.EXTRA_STREAM)
+      if (stream != null) uris.add(stream.toString())
+    } else {
+      @Suppress("DEPRECATION")
+      val streams: ArrayList<Uri>? = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM)
+      streams?.forEach { uris.add(it.toString()) }
+    }
+    val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+    if (text == null && uris.isEmpty()) return null
+    return mapOf("text" to text, "uris" to uris)
   }
 }

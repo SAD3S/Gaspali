@@ -4,31 +4,32 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text } from '@/components/ui';
 import { setImportDraft } from '@/features/recipes/importDraft';
-import { importFromUrl } from '@/services/recipeImport';
+import { importFromImageUris, importFromUrl } from '@/services/recipeImport';
 import { useTheme } from '@/theme/ThemeProvider';
 
-/** Import d'un lien partagé vers Gaspalli : lecture de la page, puis relecture dans l'éditeur. */
+/** Import d'un lien ou d'images partagés vers Gaspalli, puis relecture dans l'éditeur. */
 export default function ImporterRecette() {
   const { colors } = useTheme();
-  const { url } = useLocalSearchParams<{ url?: string }>();
+  const { url, photos } = useLocalSearchParams<{ url?: string; photos?: string }>();
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (!url) return;
+    if (!url && !photos) return;
     let alive = true;
     setError(null);
-    importFromUrl(url)
+    const uris = photos ? (JSON.parse(photos) as string[]) : [];
+    (url ? importFromUrl(url) : importFromImageUris(uris))
       .then((recipe) => {
         if (!alive) return;
-        setImportDraft(recipe, 'lien');
+        setImportDraft(recipe, url ? 'lien' : 'photo');
         router.replace({ pathname: '/recettes/editer', params: { brouillon: '1' } });
       })
       .catch((e: unknown) => alive && setError(e instanceof Error ? e.message : 'Import impossible.'));
     return () => {
       alive = false;
     };
-  }, [url, attempt]);
+  }, [url, photos, attempt]);
 
   return (
     <SafeAreaView style={[styles.flex, { backgroundColor: colors.background }]}>
@@ -44,7 +45,7 @@ export default function ImporterRecette() {
           <>
             <ActivityIndicator color={colors.primary} size="large" />
             <Text variant="bodyStrong" accessibilityLiveRegion="polite">Lecture de la recette…</Text>
-            <Text variant="label" tone="secondary" style={styles.text} numberOfLines={2}>{url}</Text>
+            {url && <Text variant="label" tone="secondary" style={styles.text} numberOfLines={2}>{url}</Text>}
           </>
         )}
       </View>
