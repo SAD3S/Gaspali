@@ -147,4 +147,12 @@ CREATE INDEX receipt_aliases_key_idx ON receipt_aliases (key);`,
 
   // v6 — recettes importées d'un site : lien vers la page d'origine
   `ALTER TABLE recipes ADD COLUMN source_url TEXT;`,
+
+  // v7 — listes de courses enregistrées
+  `CREATE TABLE shopping_lists (
+  ${sync},
+  name TEXT NOT NULL,
+  items TEXT NOT NULL,
+  position INTEGER NOT NULL
+);`,
 ];

@@ -9,6 +9,7 @@ import { saveMyProfile } from '@/db/dietaryRepo';
 import { searchIngredients } from '@/domain/ingredientMatch';
 import { DIET_LABELS, type Diet } from '@/domain/recipeEngine';
 import { useHouseholdPrefs } from '@/features/recipes/hooks';
+import { EquipmentPicker } from '@/features/settings/EquipmentPicker';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
@@ -104,6 +105,12 @@ export default function Preferences() {
             ))}
           </View>
         )}
+      </Card>
+
+      <Card style={{ gap: 12 }}>
+        <Text variant="bodyStrong">Ta cuisine</Text>
+        <Text variant="label" tone="secondary">Décoche ce que tu n’as pas : les recettes qui en ont besoin ne sont plus proposées (tes recettes perso restent toujours visibles).</Text>
+        <EquipmentPicker />
       </Card>
 
       {others.length > 0 && (

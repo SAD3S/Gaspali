@@ -1,6 +1,8 @@
 import type { AllergenId } from '@/data/allergens';
 import { INGREDIENTS_BY_ID, type Ingredient, type IngredientDiet } from '@/data/ingredients';
+import { substitutesFor } from '@/data/substitutions';
 import type { RecipeData, RecipeIngredient } from '@/data/recipes';
+import { missingEquipment, type EquipmentId } from './equipment';
 import { computeFreshness, urgencyRank, type Freshness } from './freshness';
 import { ingredientsForProduct, matchesIngredient, resolveIngredient } from './ingredientMatch';
 import type { Item } from './inventory';
@@ -94,6 +96,11 @@ export interface IngredientCheck {
   /** Allergènes déclarés par le foyer présents dans cet ingrédient. */
   allergens: AllergenId[];
   disliked: boolean;
+  /**
+   * Ingrédient manquant remplacé par un produit qu'on a (« pas de crème ? du yaourt »).
+   * stock et status décrivent alors le remplaçant.
+   */
+  substitute?: { id: string; name: string; note: string };
 }
 
 export interface Suggestion {
@@ -117,6 +124,8 @@ export const WEIGHTS = {
   toCheck: 3,
   available: 1,
   missing: -4,
+  /** Un ingrédient remplacé compte comme disponible, avec un léger malus. */
+  substitute: -1,
   allAvailable: 6,
   dislike: -6,
   dietConflict: -8,
@@ -127,6 +136,10 @@ export interface EngineContext {
   basics: Set<string>;
   members: MemberPrefs[];
   today?: Date;
+  /** Équipement du foyer : les recettes de la base qui demandent autre chose sont écartées. Absent = tout. */
+  equipment?: ReadonlySet<EquipmentId>;
+  /** Fiche recette : l'évaluer même si elle contient un allergène du foyer (on prévient à côté). */
+  keepAllergenic?: boolean;
 }
 
 /** Index « ingrédient → produits en stock », calculé une fois pour toutes les recettes. */
@@ -170,6 +183,37 @@ function statusOf(stock: StockMatch[], isBasic: boolean): IngredientStatus {
 }
 
 /**
+ * Cherche, pour un ingrédient manquant, un remplaçant en stock (le plus urgent d'abord, pour sauver
+ * ce qui périme) ou parmi les ingrédients de base. Jamais d'allergène du foyer ni d'ingrédient non aimé.
+ */
+function withSubstitute(
+  check: IngredientCheck,
+  ingredientId: string,
+  index: Map<string, StockMatch[]>,
+  basics: Set<string>,
+  householdAllergens: Set<AllergenId>,
+  dislikes: Set<string>,
+): IngredientCheck {
+  const options = substitutesFor(ingredientId)
+    .map((sub, order) => ({ sub, order, ing: INGREDIENTS_BY_ID[sub.id]!, stock: index.get(sub.id) ?? [] }))
+    .filter(({ ing, stock }) => !ing.allergens.some((a) => householdAllergens.has(a)) && !dislikes.has(ing.id) && (stock.length > 0 || basics.has(ing.id)));
+  if (!options.length) return check;
+  // En stock avant « de base », puis le plus urgent, puis l'ordre de préférence culinaire.
+  options.sort((a, b) =>
+    Number(b.stock.length > 0) - Number(a.stock.length > 0) ||
+    (a.stock[0] && b.stock[0] ? urgencyRank(a.stock[0].freshness) - urgencyRank(b.stock[0].freshness) : 0) ||
+    a.order - b.order,
+  );
+  const best = options[0]!;
+  return {
+    ...check,
+    stock: best.stock,
+    status: statusOf(best.stock, basics.has(best.ing.id)),
+    substitute: { id: best.ing.id, name: best.ing.name, note: best.sub.note },
+  };
+}
+
+/**
  * Évalue une recette pour le foyer. Renvoie null si elle contient un allergène déclaré
  * (filtre strict : jamais proposée).
  */
@@ -189,7 +233,8 @@ export function evaluateRecipe(recipe: Recipe, ctx: EngineContext, index = index
     const stock = stockFor(ri, index, ctx.items, today);
     const status = statusOf(stock, !!ing && ctx.basics.has(ing.id));
     const disliked = !!ing && dislikes.has(ing.id);
-    return { ri, label: ingredientLabel(ri), status, stock, allergens, disliked };
+    const check: IngredientCheck = { ri, label: ingredientLabel(ri), status, stock, allergens, disliked };
+    return status === 'manquant' && ing && !allergens.length ? withSubstitute(check, ing.id, index, ctx.basics, householdAllergens, dislikes) : check;
   });
 
   for (const c of checks) {
@@ -198,7 +243,7 @@ export function evaluateRecipe(recipe: Recipe, ctx: EngineContext, index = index
       if (c.status === 'urgent' && !c.allergens.length) score += WEIGHTS.soon;
       continue;
     }
-    if (c.allergens.length) return null;
+    if (c.allergens.length && !ctx.keepAllergenic) return null;
     switch (c.status) {
       case 'urgent':
         urgentUsed++;
@@ -221,6 +266,7 @@ export function evaluateRecipe(recipe: Recipe, ctx: EngineContext, index = index
       case 'base':
         break;
     }
+    if (c.substitute) score += WEIGHTS.substitute;
     if (c.disliked) {
       score += WEIGHTS.dislike;
       dislikedNames.push(c.label);
@@ -236,10 +282,13 @@ export function evaluateRecipe(recipe: Recipe, ctx: EngineContext, index = index
   return { recipe, score, checks, urgentUsed, soonUsed, missing, allAvailable, diet, dietConflicts, dislikes: dislikedNames };
 }
 
-/** Recettes classées : d'abord celles qui sauvent les produits urgents. Allergènes exclus. */
+/** Recettes classées : d'abord celles qui sauvent les produits urgents. Allergènes et équipement manquant exclus. */
 export function suggestRecipes(recipes: Recipe[], ctx: EngineContext): Suggestion[] {
   const index = indexStock(ctx.items, ctx.today);
+  const equipment = ctx.equipment;
   return recipes
+    // Ses propres recettes restent toujours visibles : on sait les faire avec ce qu'on a.
+    .filter((r) => !equipment || r.source === 'perso' || missingEquipment(r, equipment).length === 0)
     .map((r) => evaluateRecipe(r, ctx, index))
     .filter((s): s is Suggestion => s !== null)
     .sort((a, b) => b.score - a.score || a.missing - b.missing || a.recipe.minutes - b.recipe.minutes);
@@ -251,7 +300,8 @@ export function suggestionSummary(s: Suggestion): string {
   const urgent = s.urgentUsed + s.soonUsed;
   if (s.urgentUsed) parts.push(`utilise ${s.urgentUsed} de tes produits urgents`);
   else if (urgent) parts.push(`utilise ${urgent} produit${urgent > 1 ? 's' : ''} qui périme${urgent > 1 ? 'nt' : ''} bientôt`);
-  if (s.allAvailable) parts.push('tout est dispo');
+  const subs = s.checks.filter((c) => c.substitute && !c.ri.optional).length;
+  if (s.allAvailable) parts.push(subs ? `tout est dispo avec ${subs} remplacement${subs > 1 ? 's' : ''}` : 'tout est dispo');
   else parts.push(`${s.missing} manquant${s.missing > 1 ? 's' : ''}`);
   return parts.join(' · ');
 }

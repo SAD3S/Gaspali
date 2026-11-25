@@ -9,7 +9,7 @@ import { useSyncStatus } from '@/sync/engine';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const ENTRIES: { label: string; Icon: LucideIcon; href: '/reglages' | '/preferences' | '/planning' | '/statistiques' | '/confidentialite' | '/a-propos' }[] = [
-  { label: 'Préférences alimentaires', Icon: Salad, href: '/preferences' },
+  { label: 'Préférences alimentaires et cuisine', Icon: Salad, href: '/preferences' },
   { label: 'Planning des repas', Icon: CalendarDays, href: '/planning' },
   { label: 'Statistiques', Icon: ChartColumn, href: '/statistiques' },
   { label: 'Thème, rappels et ingrédients de base', Icon: Settings, href: '/reglages' },

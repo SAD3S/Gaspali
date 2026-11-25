@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type Nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text } from '@/components/ui';
 import { useAuth } from '@/features/account/AuthProvider';
+import { EquipmentPicker } from '@/features/settings/EquipmentPicker';
 import { updateSettings } from '@/features/settings/settings';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
@@ -27,14 +28,15 @@ const SLIDES: { Icon: LucideIcon; title: string; text: string }[] = [
   },
 ];
 
-/** Présentation du premier lancement (3 écrans), puis compte / foyer ou mode local. */
+/** Présentation du premier lancement (3 écrans), équipement de la cuisine, puis compte / foyer ou mode local. */
 export default function Bienvenue() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const auth = useAuth();
   const scroller = useRef<ScrollViewInstance>(null);
   const [page, setPage] = useState(0);
-  const last = SLIDES.length; // la dernière page est le choix du mode
+  // Après les présentations : l'équipement de la cuisine, puis le choix du mode.
+  const last = SLIDES.length + 1;
 
   const goTo = (p: number) => {
     scroller.current?.scrollTo({ x: p * width, animated: true });
@@ -82,6 +84,14 @@ export default function Bienvenue() {
           </View>
         ))}
 
+        <ScrollView style={{ width }} contentContainerStyle={[styles.page, styles.kitchen]}>
+          <Text variant="title1" style={styles.center}>Ta cuisine</Text>
+          <Text variant="body" tone="secondary" style={[styles.center, styles.text]}>
+            Décoche ce que tu n’as pas : on ne te proposera pas de recette impossible. Modifiable dans Paramètres › Préférences.
+          </Text>
+          <EquipmentPicker />
+        </ScrollView>
+
         <View style={[styles.page, { width }]}>
           <View style={[styles.visual, { backgroundColor: colors.primarySoft }]}>
             <Users size={84} color={colors.primaryText} strokeWidth={1.5} />
@@ -126,6 +136,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, minHeight: MIN_TOUCH + 8 },
   skip: { minHeight: MIN_TOUCH, justifyContent: 'center' },
   page: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, gap: 16 },
+  kitchen: { flexGrow: 1, paddingVertical: 12, gap: 12 },
   visual: { width: 180, height: 180, borderRadius: 56, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   text: { maxWidth: 340, fontSize: 16, lineHeight: 23 },
   bottom: { paddingHorizontal: 20, paddingBottom: 12, gap: 10 },

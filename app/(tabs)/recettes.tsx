@@ -1,25 +1,28 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Download, FolderPlus, Plus, Search, Sparkles } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheet, Button, Chip, Field, Text, useSnackbar } from '@/components/ui';
-import { createFolder } from '@/db/recipesRepo';
+import { createFolder, deleteFolder, renameFolder } from '@/db/recipesRepo';
+import { isNoCook, missingEquipment } from '@/domain/equipment';
 import { normalizeText } from '@/domain/inventory';
 import { recipeTags, type Suggestion } from '@/domain/recipeEngine';
 import { AI_RECIPES } from '@/config';
 import { AddRecipeSheet } from '@/features/recipes/AddRecipeSheet';
 import { RecipeCard } from '@/features/recipes/RecipeCard';
 import { useAllRecipes, useRecipeOrganization, useSuggestions } from '@/features/recipes/hooks';
+import { useSettings } from '@/features/settings/settings';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH, radius } from '@/theme/tokens';
 
-type Quick = 'pour-toi' | 'favoris' | 'mes-recettes' | 'rapide' | 'vegetarien' | 'sans-gluten';
+type Quick = 'pour-toi' | 'favoris' | 'mes-recettes' | 'rapide' | 'sans-cuisson' | 'vegetarien' | 'sans-gluten';
 const QUICK: { key: Quick; label: string }[] = [
   { key: 'pour-toi', label: 'Pour toi' },
   { key: 'favoris', label: 'Favoris' },
   { key: 'mes-recettes', label: 'Mes recettes' },
   { key: 'rapide', label: '≤ 30 min' },
+  { key: 'sans-cuisson', label: 'Sans cuisson' },
   { key: 'vegetarien', label: 'Végétarien' },
   { key: 'sans-gluten', label: 'Sans gluten' },
 ];
@@ -37,7 +40,16 @@ export default function Recettes() {
   const [tag, setTag] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [newFolder, setNewFolder] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+
+  const { equipment } = useSettings();
+  const hiddenByEquipment = useMemo(() => {
+    const owned = new Set(equipment);
+    return all.filter((r) => r.source !== 'perso' && missingEquipment(r, owned).length > 0).length;
+  }, [all, equipment]);
+
+  const currentFolder = org.folders.find((f) => f.id === folder) ?? null;
 
   const bySuggestion = useMemo(() => new Map(suggestions.map((s) => [s.recipe.id, s])), [suggestions]);
 
@@ -55,6 +67,7 @@ export default function Recettes() {
     if (quick === 'favoris') rows = rows.filter((r) => org.favorites.has(r.recipe.id));
     if (quick === 'mes-recettes') rows = rows.filter((r) => r.recipe.source !== 'base');
     if (quick === 'rapide') rows = rows.filter((r) => r.recipe.minutes <= 30);
+    if (quick === 'sans-cuisson') rows = rows.filter((r) => isNoCook(r.recipe));
     if (quick === 'vegetarien') rows = rows.filter((r) => recipeTags(r.recipe).includes('végétarien'));
     if (quick === 'sans-gluten') rows = rows.filter((r) => recipeTags(r.recipe).includes('sans gluten'));
     if (folder) rows = rows.filter((r) => org.byFolder.get(folder)?.has(r.recipe.id));
@@ -103,6 +116,36 @@ export default function Recettes() {
         </Pressable>
       </ScrollView>
 
+      {currentFolder && (
+        <View style={[styles.folderBar, { backgroundColor: colors.surface2 }]}>
+          <Text variant="label" style={[styles.bold, { flex: 1 }]} numberOfLines={1}>Dossier « {currentFolder.name} »</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Renommer le dossier ${currentFolder.name}`} onPress={() => setRenaming(currentFolder.name)} hitSlop={6} style={styles.folderAction}>
+            <Text variant="label" tone="primary" style={styles.bold}>Renommer</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Supprimer le dossier ${currentFolder.name}`}
+            onPress={() =>
+              Alert.alert(`Supprimer « ${currentFolder.name} » ?`, 'Les recettes ne sont pas supprimées, seulement retirées du dossier.', [
+                { text: 'Annuler', style: 'cancel' },
+                {
+                  text: 'Supprimer',
+                  style: 'destructive',
+                  onPress: () => {
+                    deleteFolder(currentFolder.id);
+                    setFolder(null);
+                  },
+                },
+              ])
+            }
+            hitSlop={6}
+            style={styles.folderAction}
+          >
+            <Text variant="label" tone="urgent" style={styles.bold}>Supprimer</Text>
+          </Pressable>
+        </View>
+      )}
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row} accessibilityLabel="Tags">
         {tags.map((t) => <Chip key={t} label={`#${t}`} selected={tag === t} onPress={() => setTag(tag === t ? null : t)} />)}
       </ScrollView>
@@ -137,6 +180,13 @@ export default function Recettes() {
             </Pressable>
           )}
           <Text variant="label" tone="secondary">Classées pour utiliser d’abord ce qui périme bientôt.</Text>
+          {hiddenByEquipment > 0 && (
+            <Pressable accessibilityRole="link" onPress={() => router.push('/preferences')} hitSlop={6}>
+              <Text variant="label" tone="primary">
+                {hiddenByEquipment} recette{hiddenByEquipment > 1 ? 's' : ''} masquée{hiddenByEquipment > 1 ? 's' : ''} faute de matériel · Modifier
+              </Text>
+            </Pressable>
+          )}
         </>
       )}
     </View>
@@ -162,7 +212,7 @@ export default function Recettes() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text variant="body" tone="secondary" style={{ textAlign: 'center' }}>
-              {quick === 'favoris' ? 'Pas encore de favoris : touche le cœur sur une recette.' : quick === 'mes-recettes' ? 'Ajoute ta première recette avec le bouton + : écrite, importée d’un site ou photographiée.' : 'Aucune recette ne correspond.'}
+              {currentFolder ? 'Ce dossier est vide : ouvre une recette et touche l’icône dossier pour l’y ranger.' : quick === 'favoris' ? 'Pas encore de favoris : touche le cœur sur une recette.' : quick === 'mes-recettes' ? 'Ajoute ta première recette avec le bouton + : écrite, importée d’un site ou photographiée.' : 'Aucune recette ne correspond.'}
             </Text>
             {quick === 'mes-recettes' && <Button label="Ajouter une recette" variant="soft" onPress={() => setAdding(true)} />}
           </View>
@@ -180,7 +230,21 @@ export default function Recettes() {
               const id = createFolder(newFolder!);
               setFolder(id);
               setNewFolder(null);
-              snackbar.show('Dossier créé : ajoute des recettes depuis leur fiche');
+              snackbar.show('Dossier créé : ouvre une recette et touche l’icône dossier pour l’y ranger');
+            }}
+          />
+        </View>
+      </BottomSheet>
+      <BottomSheet visible={renaming !== null} onClose={() => setRenaming(null)}>
+        <View style={{ gap: 14 }}>
+          <Text variant="title2">Renommer le dossier</Text>
+          <Field label="Nom" value={renaming ?? ''} onChangeText={setRenaming} maxLength={40} autoFocus />
+          <Button
+            label="Enregistrer"
+            disabled={!renaming?.trim()}
+            onPress={() => {
+              if (currentFolder && renaming) renameFolder(currentFolder.id, renaming);
+              setRenaming(null);
             }}
           />
         </View>
@@ -202,4 +266,6 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', gap: 12, marginTop: 40 },
   ai: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, padding: 14, minHeight: 64 },
   bold: { fontFamily: 'DMSans_700Bold' },
+  folderBar: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 14, paddingLeft: 14, paddingRight: 4 },
+  folderAction: { minHeight: MIN_TOUCH, justifyContent: 'center', paddingHorizontal: 10 },
 });

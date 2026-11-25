@@ -132,6 +132,18 @@ export const shoppingItems = sqliteTable('shopping_items', {
   addedBy: text('added_by'),
 });
 
+/**
+ * Listes de courses enregistrées (« Apéro », « Courses de base »), réutilisables en un geste.
+ * items : JSON [{ name, quantity, unit, ingredientId }].
+ */
+export const shoppingLists = sqliteTable('shopping_lists', {
+  ...syncColumns,
+  name: text('name').notNull(),
+  items: text('items').notNull(),
+  position: integer('position').notNull(),
+});
+export type ShoppingListRow = typeof shoppingLists.$inferSelect;
+
 /** Planning des repas (partagé par le foyer). */
 export const mealPlan = sqliteTable('meal_plan', {
   ...syncColumns,

@@ -37,8 +37,15 @@ export function IngredientChecks({ checks, ratio = 1 }: { checks: IngredientChec
             <View style={styles.flex}>
               <Text variant="body">
                 <Text variant="body" style={styles.bold}>{formatRecipeQuantity(c.ri.quantity != null ? c.ri.quantity * ratio : null, c.ri.unit)}</Text>
-                {c.ri.quantity != null ? ' ' : ''}{c.label}{c.ri.optional ? ' (facultatif)' : ''}
+                {c.ri.quantity != null ? ' ' : ''}
+                <Text variant="body" style={c.substitute ? styles.struck : undefined}>{c.label}</Text>
+                {c.ri.optional ? ' (facultatif)' : ''}
               </Text>
+              {c.substitute && (
+                <Text variant="label" tone="primary" style={styles.bold}>
+                  Remplacé par : {c.substitute.name} ({c.substitute.note})
+                </Text>
+              )}
               {product && c.status !== 'base' && (
                 <Text variant="label" tone="secondary" numberOfLines={1}>
                   {product.item.name} · {formatQuantity(product.item.quantity, product.item.unit)} · {product.freshness.label}
@@ -63,4 +70,5 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, paddingVertical: 6 },
   bold: { fontFamily: 'DMSans_700Bold' },
+  struck: { textDecorationLine: 'line-through' },
 });

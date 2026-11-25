@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router } from 'expo-router';
-import { Archive, Check, Plus, ReceiptText, ShoppingCart, X } from 'lucide-react-native';
+import { Archive, Check, ListChecks, Plus, ReceiptText, ShoppingCart, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Card, Screen, Text, useSnackbar } from '@/components/ui';
@@ -8,6 +8,7 @@ import { addItem } from '@/db/inventoryRepo';
 import type { ShoppingRow } from '@/db/schema';
 import { addShopping, clearChecked, removeShopping, setChecked, shoppingQuery } from '@/db/shoppingRepo';
 import { LOCATION_LABELS } from '@/domain/categories';
+import { SavedListsSheet } from '@/features/shopping/SavedListsSheet';
 import { categoryOf, defaultForm, StoreSheet } from '@/features/shopping/StoreSheet';
 import { resolveIngredient } from '@/domain/ingredientMatch';
 import { formatQuantity } from '@/domain/quantity';
@@ -21,6 +22,7 @@ export default function Courses() {
   const { data } = useLiveQuery(shoppingQuery());
   const [text, setText] = useState('');
   const [storing, setStoring] = useState<ShoppingRow | null>(null);
+  const [listsOpen, setListsOpen] = useState(false);
 
   const groups = useMemo(() => {
     const rows = data ?? [];
@@ -45,8 +47,20 @@ export default function Courses() {
   return (
     <Screen>
       <View style={styles.head}>
-        <Text variant="title1" accessibilityRole="header">Courses</Text>
-        {total > 0 && <Text variant="label" tone="secondary">{total - checkedCount} à acheter</Text>}
+        <View style={styles.flex}>
+          <Text variant="title1" accessibilityRole="header">Courses</Text>
+          {total > 0 && <Text variant="label" tone="secondary">{total - checkedCount} à acheter</Text>}
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Mes listes enregistrées"
+          accessibilityHint="Enregistre la liste sous un nom ou réutilise une liste"
+          onPress={() => setListsOpen(true)}
+          style={[styles.lists, { backgroundColor: colors.primarySoft }]}
+        >
+          <ListChecks size={18} color={colors.primaryText} />
+          <Text variant="label" tone="primary" style={styles.bold}>Mes listes</Text>
+        </Pressable>
       </View>
 
       <View style={styles.addRow}>
@@ -70,7 +84,8 @@ export default function Courses() {
         <View style={styles.empty}>
           <ShoppingCart size={40} color={colors.textSecondary} />
           <Text variant="bodyStrong">Ta liste est vide</Text>
-          <Text variant="body" tone="secondary" style={styles.center}>Ajoute des articles ici, ou les ingrédients manquants depuis une recette.</Text>
+          <Text variant="body" tone="secondary" style={styles.center}>Ajoute des articles ici, les ingrédients manquants depuis une recette, ou reprends une liste enregistrée.</Text>
+          <Button label="Reprendre une liste enregistrée" variant="soft" onPress={() => setListsOpen(true)} />
         </View>
       )}
 
@@ -142,6 +157,7 @@ export default function Courses() {
         />
       )}
 
+      <SavedListsSheet visible={listsOpen} onClose={() => setListsOpen(false)} current={data ?? []} />
       <StoreSheet
         key={storing?.id ?? 'aucun'}
         row={storing}
@@ -159,7 +175,9 @@ export default function Courses() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  lists: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, minHeight: MIN_TOUCH, borderRadius: 999 },
+  bold: { fontFamily: 'DMSans_700Bold' },
   addRow: { flexDirection: 'row', gap: 10 },
   input: { flex: 1, minHeight: 50, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, fontFamily: 'DMSans_400Regular', fontSize: 16 },
   addBtn: { width: 50, height: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },

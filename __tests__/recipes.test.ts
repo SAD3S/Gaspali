@@ -204,3 +204,71 @@ describe('« J’ai cuisiné ça »', () => {
     expect(convert(300, 'g', 'pièce')).toBeNull();
   });
 });
+
+describe('substitutions', () => {
+  const quiche: Recipe = {
+    id: 'test-sub', title: 'Gratin test', minutes: 30, servings: 2, kind: 'plat', tags: [], steps: ['Mélanger.'], source: 'perso',
+    ingredients: [
+      { ingredientId: 'courgette', quantity: 2, unit: 'pièce' },
+      { ingredientId: 'creme', quantity: 20, unit: 'cl' },
+    ],
+  };
+
+  it('remplace un ingrédient manquant par un produit en stock, le plus urgent d’abord', () => {
+    const items = [item('Courgettes', 1), item('Lait de coco', 30), item('Yaourt nature', 1)];
+    const s = evaluateRecipe(quiche, { items, basics, members: [me], today })!;
+    const creme = s.checks.find((c) => c.ri.ingredientId === 'creme')!;
+    expect(creme.substitute?.id).toBe('yaourt');
+    expect(creme.status).toBe('urgent');
+    expect(s.missing).toBe(0);
+    expect(s.allAvailable).toBe(true);
+    // Le remplaçant n'est pas ajouté aux courses, et sert au décompte « J'ai cuisiné ça ».
+    expect(missingIngredients(s, 2)).toEqual([]);
+    expect(cookProposals(s, 2, basics).map((p) => p.item.name)).toContain('Yaourt nature');
+  });
+
+  it('reste un peu derrière la même recette avec le vrai ingrédient', () => {
+    const withSub = evaluateRecipe(quiche, { items: [item('Courgettes', 10), item('Mascarpone', 10)], basics, members: [me], today })!;
+    const exact = evaluateRecipe(quiche, { items: [item('Courgettes', 10), item('Crème fraîche', 10)], basics, members: [me], today })!;
+    expect(exact.score).toBeGreaterThan(withSub.score);
+  });
+
+  it('ne propose jamais un allergène du foyer ni un ingrédient non aimé', () => {
+    const items = [item('Courgettes', 1), item('Yaourt nature', 1), item('Lait de coco', 5)];
+    const lactose: MemberPrefs = { ...me, allergens: ['lait'] };
+    // La crème elle-même contient du lait : la recette est exclue, pas « réparée ».
+    expect(evaluateRecipe(quiche, { items, basics, members: [lactose], today })).toBeNull();
+    const noYaourt: MemberPrefs = { ...me, dislikes: ['yaourt'] };
+    const s = evaluateRecipe(quiche, { items, basics, members: [noYaourt], today })!;
+    expect(s.checks.find((c) => c.ri.ingredientId === 'creme')?.substitute?.id).toBe('lait_coco');
+  });
+
+  it('rien à remplacer : l’ingrédient reste manquant', () => {
+    const s = evaluateRecipe(quiche, { items: [item('Courgettes', 1)], basics, members: [me], today })!;
+    expect(s.checks.find((c) => c.ri.ingredientId === 'creme')?.status).toBe('manquant');
+    expect(s.missing).toBe(1);
+  });
+});
+
+it('la table des substitutions ne cite que des ingrédients connus', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { SUBSTITUTIONS } = require('@/data/substitutions');
+  const bad = Object.entries(SUBSTITUTIONS as Record<string, { id: string }[]>).flatMap(([k, list]) =>
+    [k, ...list.map((s) => s.id)].filter((id) => !INGREDIENTS_BY_ID[id]),
+  );
+  expect(bad).toEqual([]);
+});
+
+describe('équipement du foyer', () => {
+  it('écarte les recettes de la base impossibles, jamais les recettes perso', () => {
+    const perso: Recipe = { ...byId(recipes.find((r) => r.title === 'Gratin dauphinois')!.id), id: 'mon-gratin', source: 'perso' };
+    const all = [...recipes, perso];
+    const sansFour = suggestRecipes(all, { items: [], basics, members: [me], today, equipment: new Set(['plaques', 'micro_ondes', 'mixeur'] as const) });
+    const titles = sansFour.map((s) => s.recipe.id);
+    expect(titles).not.toContain(recipes.find((r) => r.title === 'Gratin dauphinois')!.id);
+    expect(titles).toContain('mon-gratin');
+    expect(titles).toContain(recipes.find((r) => r.title === 'Crêpes')!.id);
+    // Sans réglage : tout est proposé.
+    expect(suggestRecipes(recipes, { items: [], basics, members: [me], today }).length).toBe(recipes.length);
+  });
+});

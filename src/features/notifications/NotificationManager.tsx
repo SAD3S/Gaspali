@@ -20,7 +20,7 @@ export function NotificationManager() {
 
 function NativeNotificationManager() {
   const items = useInventory();
-  const { notifications, loaded, basics } = useSettings();
+  const { notifications, loaded, basics, equipment } = useSettings();
   const recipes = useAllRecipes();
   const { members } = useHouseholdPrefs();
   const lastResponse = Notifications.useLastNotificationResponse();
@@ -33,7 +33,7 @@ function NativeNotificationManager() {
         const basicsSet = new Set(basics);
         // Recette du jour : la mieux classée pour ce jour-là, si elle sauve un produit urgent.
         const hint = (day: Date) => {
-          const top = suggestRecipes(recipes, { items, basics: basicsSet, members, today: day })[0];
+          const top = suggestRecipes(recipes, { items, basics: basicsSet, members, today: day, equipment: new Set(equipment) })[0];
           return top && top.urgentUsed > 0 ? top.recipe.title : null;
         };
         await reschedule(planNotifications(items, notifications, new Date(), 7, hint));
@@ -42,7 +42,7 @@ function NativeNotificationManager() {
       }
     }, 1500);
     return () => clearTimeout(t);
-  }, [items, notifications, loaded, basics, recipes, members]);
+  }, [items, notifications, loaded, basics, recipes, members, equipment]);
 
   useEffect(() => {
     const url = lastResponse?.notification.request.content.data?.url;

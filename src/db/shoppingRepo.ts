@@ -2,10 +2,11 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { INGREDIENTS_BY_ID } from '@/data/ingredients';
 import { getCategory } from '@/domain/categories';
 import { normalizeText } from '@/domain/inventory';
+import type { SavedListItem } from '@/domain/savedLists';
 import { ownership, trackInsert, trackPatch } from '@/sync/outbox';
 import { db } from './client';
 import { newId } from './ids';
-import { shoppingItems } from './schema';
+import { shoppingItems, shoppingLists } from './schema';
 
 export function shoppingQuery() {
   return db.select().from(shoppingItems).where(isNull(shoppingItems.deletedAt));
@@ -96,4 +97,50 @@ export function removeBought(bought: { name: string; ingredientId: string | null
     }
   }
   return removed;
+}
+
+// ─── Listes enregistrées ─────────────────────────────────────────────────────
+
+export function savedListsQuery() {
+  return db.select().from(shoppingLists).where(isNull(shoppingLists.deletedAt)).orderBy(shoppingLists.position, shoppingLists.name);
+}
+
+/** Enregistre des articles sous un nom ; un nom déjà pris remplace le contenu de cette liste. */
+export function saveList(name: string, items: SavedListItem[]): string {
+  const clean = name.trim().slice(0, 40);
+  const now = new Date();
+  const json = JSON.stringify(items);
+  const existing = savedListsQuery().all().find((l) => normalizeText(l.name) === normalizeText(clean));
+  if (existing) {
+    const patch = { items: json, updatedAt: now };
+    db.update(shoppingLists).set(patch).where(eq(shoppingLists.id, existing.id)).run();
+    trackPatch('shopping_lists', existing.id, patch);
+    return existing.id;
+  }
+  const position = db.select().from(shoppingLists).all().length;
+  const row = { id: newId(), householdId: ownership().householdId, createdAt: now, updatedAt: now, deletedAt: null, name: clean, items: json, position };
+  db.insert(shoppingLists).values(row).run();
+  trackInsert('shopping_lists', row);
+  return row.id;
+}
+
+export function updateSavedList(id: string, patch: { name?: string; items?: SavedListItem[] }): void {
+  const full = {
+    ...(patch.name !== undefined ? { name: patch.name.trim().slice(0, 40) } : {}),
+    ...(patch.items !== undefined ? { items: JSON.stringify(patch.items) } : {}),
+    updatedAt: new Date(),
+  };
+  db.update(shoppingLists).set(full).where(eq(shoppingLists.id, id)).run();
+  trackPatch('shopping_lists', id, full);
+}
+
+export function deleteSavedList(id: string): void {
+  const now = new Date();
+  db.update(shoppingLists).set({ deletedAt: now, updatedAt: now }).where(eq(shoppingLists.id, id)).run();
+  trackPatch('shopping_lists', id, { deletedAt: now, updatedAt: now });
+}
+
+/** Ajoute le contenu d'une liste enregistrée à la liste en cours. Renvoie le nombre d'articles nouveaux. */
+export function applySavedList(items: SavedListItem[]): number {
+  return addShopping(items).length;
 }

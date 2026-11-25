@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 import { DEFAULT_BASICS } from '@/data/ingredients';
+import { ALL_EQUIPMENT, type EquipmentId } from '@/domain/equipment';
 import { DEFAULT_NOTIFICATION_SETTINGS, type NotificationSettings } from '@/domain/notifications';
 
 /** Réglages propres à cet appareil (les notifications ne se synchronisent pas entre téléphones). */
@@ -16,6 +17,8 @@ export interface AppSettings {
   onboardingDone: boolean;
   /** Envoi des rapports de plantage anonymes (Sentry, si configuré). */
   crashReports: boolean;
+  /** Équipement de la cuisine : filtre les recettes proposées. */
+  equipment: EquipmentId[];
 }
 
 const KEY = 'gaspalli.settings';
@@ -26,6 +29,7 @@ const DEFAULTS: AppSettings = {
   autoRestock: true,
   onboardingDone: false,
   crashReports: true,
+  equipment: ALL_EQUIPMENT,
 };
 
 let current: AppSettings = DEFAULTS;

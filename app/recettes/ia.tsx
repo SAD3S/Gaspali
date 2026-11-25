@@ -56,7 +56,7 @@ export default function RecetteIA() {
   // Recette affichée, évaluée comme les autres (disponibilité des ingrédients).
   const preview = useMemo<Recipe | null>(() => (result ? { ...result.recipe, id: 'ia-apercu', source: 'ia' } : null), [result]);
   const evaluation = useMemo(
-    () => (preview ? evaluateRecipe(preview, { items, basics: new Set(basics), members: members.map((m) => ({ ...m, allergens: [] })) }) : null),
+    () => (preview ? evaluateRecipe(preview, { items, basics: new Set(basics), members, keepAllergenic: true }) : null),
     [preview, items, basics, members],
   );
   // Défense en profondeur : le serveur a déjà vérifié, on revérifie avant d'enregistrer.

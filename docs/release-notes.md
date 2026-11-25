@@ -9,6 +9,14 @@
 
 ## Nouveautés à tester
 
+- **Listes enregistrées** (Courses › « Mes listes ») : donne un nom à ta liste (« Apéro », « Courses de base »)
+  et remets-la dans tes courses en un geste plus tard. Partagées avec le foyer.
+- **Remplacements d'ingrédients** : pas de crème mais un yaourt qui périme ? La recette reste proposée,
+  avec « Remplacé par : yaourt nature (même quantité, hors du feu) ». Jamais un allergène du foyer.
+- **Ta cuisine** (présentation et Paramètres › Préférences) : décoche le four, le micro-ondes, le mixeur…
+  les recettes impossibles ne sont plus proposées. Nouveau filtre « Sans cuisson ».
+- **Dossiers de recettes** : depuis une recette, icône dossier › crée « Repas du 14 », « Desserts »… en un geste.
+  Dans l'onglet Recettes, un dossier ouvert se renomme ou se supprime.
 - **Widgets** : appui long sur l'écran d'accueil du téléphone › Widgets › Gaspalli. « À consommer vite » et
   « Liste de courses » se mettent à jour tout seuls ; les toucher ouvre l'app au bon endroit.
 - **Plusieurs tickets d'un coup** : onglet Ticket › « Photos / captures » (jusqu'à 5), ou « Ajouter d'autres tickets »

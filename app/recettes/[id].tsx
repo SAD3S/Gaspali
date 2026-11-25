@@ -1,14 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { CalendarDays, CalendarPlus, Check, ChefHat, ChevronLeft, Clock, ExternalLink, FolderPlus, Heart, Pencil, ShoppingBasket } from 'lucide-react-native';
+import { CalendarDays, CalendarPlus, Check, ChefHat, ChevronLeft, Clock, CookingPot, ExternalLink, FolderPlus, Heart, Pencil, ShoppingBasket } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BottomSheet, Button, Card, Chip, Stepper, Text, useSnackbar } from '@/components/ui';
+import { BottomSheet, Button, Card, Chip, Field, Stepper, Text, useSnackbar } from '@/components/ui';
 import { ALLERGEN_LABELS } from '@/data/allergens';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { consumePart } from '@/db/inventoryRepo';
 import { addMeal, updateMeal } from '@/db/mealPlanRepo';
-import { setFavorite, setInFolder } from '@/db/recipesRepo';
+import { createFolder, setFavorite, setInFolder } from '@/db/recipesRepo';
+import { EQUIPMENT_LABELS, recipeEquipment } from '@/domain/equipment';
 import { addShopping, shoppingQuery } from '@/db/shoppingRepo';
 import { mealPhrase, subtractShoppingList } from '@/domain/planner';
 import {
@@ -38,7 +39,7 @@ export default function RecetteFiche() {
   const snackbar = useSnackbar();
   const recipe = useRecipe(id);
   const items = useInventory();
-  const { basics } = useSettings();
+  const { basics, equipment } = useSettings();
   const { members } = useHouseholdPrefs();
   const org = useRecipeOrganization();
   const plan = usePlan();
@@ -50,10 +51,11 @@ export default function RecetteFiche() {
   const [scheduling, setScheduling] = useState(false);
   const [cooking, setCooking] = useState<CookProposal[] | null>(null);
   const [foldersOpen, setFoldersOpen] = useState(false);
+  const [folderName, setFolderName] = useState('');
 
   // Évaluation sans le filtre allergènes (on veut afficher la fiche et prévenir).
   const evaluation = useMemo(
-    () => (recipe ? evaluateRecipe(recipe, { items, basics: new Set(basics), members: members.map((m) => ({ ...m, allergens: [] })) }) : null),
+    () => (recipe ? evaluateRecipe(recipe, { items, basics: new Set(basics), members, keepAllergenic: true }) : null),
     [recipe, items, basics, members],
   );
 
@@ -73,6 +75,8 @@ export default function RecetteFiche() {
   const allergenConflicts = recipeAllergens(recipe).filter((a) => householdAllergens.has(a));
   const missing = subtractShoppingList(missingIngredients(evaluation, n), shopping ?? []);
   const basicsSet = new Set(basics);
+  const needed = recipeEquipment(recipe);
+  const lacking = needed.filter((e) => !equipment.includes(e));
 
   return (
     <SafeAreaView edges={['top']} style={[styles.flex, { backgroundColor: colors.background }]}>
@@ -107,6 +111,16 @@ export default function RecetteFiche() {
           <Clock size={16} color={colors.textSecondary} />
           <Text variant="label" tone="secondary">{recipe.minutes} min · {KIND_LABELS[recipe.kind]} · {DIET_LABELS[evaluation.diet]}</Text>
         </View>
+        {needed.length > 0 && (
+          <View style={styles.meta}>
+            <CookingPot size={16} color={lacking.length ? colors.urgent : colors.textSecondary} />
+            <Text variant="label" tone={lacking.length ? 'urgent' : 'secondary'} style={lacking.length ? styles.bold : undefined}>
+              {lacking.length
+                ? `Il te faut : ${lacking.map((e) => EQUIPMENT_LABELS[e].toLowerCase()).join(', ')} (absent de ta cuisine)`
+                : needed.map((e) => EQUIPMENT_LABELS[e]).join(' · ')}
+            </Text>
+          </View>
+        )}
         <View style={styles.wrap}>
           {recipeTags(recipe).map((t) => (
             <View key={t} style={[styles.tag, { backgroundColor: colors.surface2 }]}>
@@ -246,17 +260,42 @@ export default function RecetteFiche() {
         }}
       />
 
-      <BottomSheet visible={foldersOpen} onClose={() => setFoldersOpen(false)}>
+      <BottomSheet visible={foldersOpen} onClose={() => { setFoldersOpen(false); setFolderName(''); }}>
         <View style={{ gap: 12 }}>
           <Text variant="title2">Ranger dans…</Text>
-          {org.folders.length === 0 && <Text variant="body" tone="secondary">Crée d’abord un dossier depuis la liste des recettes.</Text>}
           <View style={styles.wrap}>
+            <Chip label="♥ Favoris" selected={favorite} onPress={() => setFavorite(recipe.id, !favorite)} />
             {org.folders.map((f) => {
               const inside = org.byFolder.get(f.id)?.has(recipe.id) ?? false;
               return <Chip key={f.id} label={f.name} selected={inside} onPress={() => setInFolder(recipe.id, f.id, !inside)} />;
             })}
           </View>
-          <Button label="Terminé" variant="outline" onPress={() => setFoldersOpen(false)} />
+          {org.folders.length === 0 && (
+            <>
+              <Text variant="label" tone="secondary">Idées de dossiers (touche pour créer et ranger) :</Text>
+              <View style={styles.wrap}>
+                {FOLDER_IDEAS.map((name) => (
+                  <Chip key={name} label={`+ ${name}`} onPress={() => setInFolder(recipe.id, createFolder(name), true)} />
+                ))}
+              </View>
+            </>
+          )}
+          <View style={styles.newFolder}>
+            <View style={styles.flex}>
+              <Field label="Nouveau dossier" value={folderName} onChangeText={setFolderName} placeholder="Repas du 14, apéro…" maxLength={40} />
+            </View>
+            <Button
+              label="Créer"
+              variant="soft"
+              disabled={!folderName.trim()}
+              onPress={() => {
+                setInFolder(recipe.id, createFolder(folderName), true);
+                snackbar.show(`Rangée dans « ${folderName.trim()} »`);
+                setFolderName('');
+              }}
+            />
+          </View>
+          <Button label="Terminé" variant="outline" onPress={() => { setFoldersOpen(false); setFolderName(''); }} />
         </View>
       </BottomSheet>
     </SafeAreaView>
@@ -298,7 +337,11 @@ function CookSheet({ proposals, onClose, onConfirm }: { proposals: CookProposal[
   );
 }
 
+/** Proposés au premier rangement, quand le foyer n'a encore aucun dossier. */
+const FOLDER_IDEAS = ['Desserts', 'Repas de fête', 'Rapide en semaine', 'Apéro'];
+
 const styles = StyleSheet.create({
+  newFolder: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
   flex: { flex: 1 },
   topBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8 },
   round: { width: MIN_TOUCH, height: MIN_TOUCH, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

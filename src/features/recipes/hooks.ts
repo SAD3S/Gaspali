@@ -87,9 +87,9 @@ export function useRecipesById(): Map<string, Recipe> {
 /** Contexte du moteur : stock, ingrédients de base et préférences du foyer. */
 export function useEngineContext(): EngineContext {
   const items = useInventory();
-  const { basics } = useSettings();
+  const { basics, equipment } = useSettings();
   const { members } = useHouseholdPrefs();
-  return useMemo(() => ({ items, basics: new Set(basics), members }), [items, basics, members]);
+  return useMemo(() => ({ items, basics: new Set(basics), members, equipment: new Set(equipment) }), [items, basics, members, equipment]);
 }
 
 /** Repas planifiés (toutes dates). */
