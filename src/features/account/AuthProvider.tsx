@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Session } from '@supabase/supabase-js';
+import { FunctionsHttpError, type Session } from '@supabase/supabase-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
+import { wipeLocalData } from '@/db/reset';
 import { normalizeInviteCode } from '@/domain/sync';
 import { supabase } from '@/services/supabase';
 import { setSyncContext } from '@/sync/context';
@@ -33,6 +34,8 @@ interface AuthValue {
   signInWithGoogle: () => Promise<boolean>;
   signInWithApple: () => Promise<boolean>;
   signOut: () => Promise<void>;
+  /** Supprime définitivement le compte (serveur) puis toutes les données de ce téléphone. */
+  deleteAccount: () => Promise<void>;
   setDisplayName: (name: string) => Promise<void>;
   createHousehold: (name: string, displayName: string) => Promise<{ adopted: number }>;
   joinHousehold: (code: string, displayName: string) => Promise<{ household: Household; adopted: number }>;
@@ -210,6 +213,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setHouseholds([]);
       setName('');
       await sb.auth.signOut();
+    },
+
+    async deleteAccount() {
+      const sb = need();
+      const { error } = await sb.functions.invoke('delete-account', { body: {} });
+      if (error) {
+        let message = 'La suppression a échoué. Vérifie ta connexion et réessaie.';
+        if (error instanceof FunctionsHttpError) {
+          const body = (await (error.context as Response).json().catch(() => null)) as { message?: string } | null;
+          if (body?.message) message = body.message;
+        }
+        throw new Error(message);
+      }
+      setActiveId(null);
+      setHouseholds([]);
+      setName('');
+      // Le compte n'existe plus côté serveur : on ferme seulement la session locale.
+      await sb.auth.signOut({ scope: 'local' }).catch(() => {});
+      await wipeLocalData();
     },
 
     async setDisplayName(name) {

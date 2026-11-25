@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { CalendarDays, ChartColumn, ChefHat, ChevronRight, Info, Salad, Settings, Users, type LucideIcon } from 'lucide-react-native';
+import { CalendarDays, ChartColumn, ChefHat, ChevronRight, Info, Salad, Settings, ShieldCheck, Users, type LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, Screen, Text, useSnackbar } from '@/components/ui';
 import { seedDemo } from '@/db/inventoryRepo';
@@ -8,13 +8,14 @@ import { useMembers } from '@/features/account/hooks';
 import { useSyncStatus } from '@/sync/engine';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const ENTRIES: { label: string; Icon: LucideIcon; href?: '/reglages' | '/recettes' | '/preferences' | '/planning' | '/statistiques'; soon?: string }[] = [
+const ENTRIES: { label: string; Icon: LucideIcon; href: '/reglages' | '/recettes' | '/preferences' | '/planning' | '/statistiques' | '/confidentialite' | '/a-propos' }[] = [
   { label: 'Recettes', Icon: ChefHat, href: '/recettes' },
   { label: 'Préférences alimentaires', Icon: Salad, href: '/preferences' },
   { label: 'Planning des repas', Icon: CalendarDays, href: '/planning' },
   { label: 'Statistiques', Icon: ChartColumn, href: '/statistiques' },
   { label: 'Réglages', Icon: Settings, href: '/reglages' },
-  { label: 'À propos', Icon: Info, soon: 'Étape 10' },
+  { label: 'Confidentialité et données', Icon: ShieldCheck, href: '/confidentialite' },
+  { label: 'À propos', Icon: Info, href: '/a-propos' },
 ];
 
 /** Résumé du compte : foyer, membres, état de la synchro. */
@@ -60,19 +61,17 @@ export default function Plus() {
       <AccountCard />
 
       <Card style={{ paddingVertical: 6 }}>
-        {ENTRIES.map(({ label, Icon, href, soon }, i) => (
+        {ENTRIES.map(({ label, Icon, href }, i) => (
           <Pressable
             key={label}
             accessibilityRole="button"
-            accessibilityLabel={soon ? `${label}, bientôt disponible` : label}
-            accessibilityState={{ disabled: !href }}
-            disabled={!href}
-            onPress={() => href && router.push(href)}
+            accessibilityLabel={label}
+            onPress={() => router.push(href)}
             style={[styles.row, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}
           >
-            <Icon size={22} color={href ? colors.primaryText : colors.textSecondary} />
-            <Text variant="body" style={{ flex: 1 }} color={href ? colors.text : colors.textSecondary}>{label}</Text>
-            {href ? <ChevronRight size={20} color={colors.textSecondary} /> : <Text variant="label" tone="secondary">Bientôt</Text>}
+            <Icon size={22} color={colors.primaryText} />
+            <Text variant="body" style={{ flex: 1 }}>{label}</Text>
+            <ChevronRight size={20} color={colors.textSecondary} />
           </Pressable>
         ))}
       </Card>

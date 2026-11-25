@@ -12,10 +12,21 @@ export interface AppSettings {
   basics: string[];
   /** Produit habituel terminé → ajouté automatiquement aux courses. */
   autoRestock: boolean;
+  /** Présentation du premier lancement vue (ou passée). */
+  onboardingDone: boolean;
+  /** Envoi des rapports de plantage anonymes (Sentry, si configuré). */
+  crashReports: boolean;
 }
 
 const KEY = 'gaspalli.settings';
-const DEFAULTS: AppSettings = { notifications: DEFAULT_NOTIFICATION_SETTINGS, notificationPromptDone: false, basics: DEFAULT_BASICS, autoRestock: true };
+const DEFAULTS: AppSettings = {
+  notifications: DEFAULT_NOTIFICATION_SETTINGS,
+  notificationPromptDone: false,
+  basics: DEFAULT_BASICS,
+  autoRestock: true,
+  onboardingDone: false,
+  crashReports: true,
+};
 
 let current: AppSettings = DEFAULTS;
 let loaded = false;
@@ -31,7 +42,13 @@ export async function loadSettings(): Promise<void> {
     const raw = await AsyncStorage.getItem(KEY);
     if (raw) {
       const saved = JSON.parse(raw) as Partial<AppSettings>;
-      current = { ...DEFAULTS, ...saved, notifications: { ...DEFAULTS.notifications, ...saved.notifications } };
+      current = {
+        ...DEFAULTS,
+        // Installation existante (réglages enregistrés avant la présentation) : on ne la montre pas.
+        onboardingDone: true,
+        ...saved,
+        notifications: { ...DEFAULTS.notifications, ...saved.notifications },
+      };
     }
   } catch {
     // réglages par défaut
@@ -49,6 +66,12 @@ export function updateSettings(patch: Partial<AppSettings> | ((s: AppSettings) =
   current = { ...current, ...p };
   emit();
   AsyncStorage.setItem(KEY, JSON.stringify(current)).catch(() => {});
+}
+
+/** Retour aux réglages d'origine (après effacement des données) : la présentation réapparaît. */
+export function resetSettings(): void {
+  current = DEFAULTS;
+  emit();
 }
 
 export function updateNotificationSettings(patch: Partial<NotificationSettings>): void {

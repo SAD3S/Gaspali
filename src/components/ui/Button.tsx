@@ -4,7 +4,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH, radius } from '@/theme/tokens';
 import { Text } from './Text';
 
-type Variant = 'primary' | 'soft' | 'outline' | 'onPrimary';
+type Variant = 'primary' | 'soft' | 'outline' | 'onPrimary' | 'danger';
 
 interface Props {
   label: string;
@@ -24,6 +24,7 @@ export function Button({ label, onPress, variant = 'primary', icon, size = 'md',
     soft: { bg: colors.primarySoft, fg: colors.primaryText, border: colors.primarySoft },
     outline: { bg: colors.surface, fg: colors.text, border: colors.border },
     onPrimary: { bg: colors.surface, fg: colors.primaryText, border: colors.surface },
+    danger: { bg: colors.danger, fg: colors.onDanger, border: colors.danger },
   }[variant];
 
   return (

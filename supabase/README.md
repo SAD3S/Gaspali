@@ -12,7 +12,7 @@ L'app fonctionne sans serveur (mode local). Pour activer comptes, foyers et sync
 Au choix :
 - **SQL Editor** : colle et exécute, dans l'ordre, les fichiers de `migrations/`
   (`…_foyers_et_inventaire.sql`, `…_recettes_preferences_courses.sql`, `…_recettes_ia.sql`,
-  `…_planning_repas.sql`, puis `…_ticket_de_caisse.sql`) ;
+  `…_planning_repas.sql`, `…_ticket_de_caisse.sql`, puis `…_suppression_compte.sql`) ;
 - **CLI** : `supabase link --project-ref <ref>` puis `supabase db push`.
 
 Le schéma crée : profils, foyers, membres (rôles admin / membre), inventaire, produits, historique,
@@ -78,6 +78,25 @@ baisser `AI_EFFORT` à `low`, ou choisir un modèle moins cher avec `AI_MODEL`.
 
 Tests : `npx tsc -p supabase/functions` (types contre les SDK épinglés dans `deno.json`) et
 `npx jest __tests__/aiRecipe.test.ts` (schéma, validation, allergènes, prompt).
+
+## 6. Suppression de compte (Edge Function `delete-account`)
+
+Exigée par Apple et par le RGPD (droit à l'effacement), depuis Plus › Confidentialité › « Supprimer mon compte ».
+
+```bash
+supabase functions deploy delete-account
+```
+
+Aucun secret à ajouter : la fonction utilise `SUPABASE_SERVICE_ROLE_KEY`, fournie automatiquement aux fonctions.
+Elle appelle `delete_account_data` (réservée à la clé service role) puis supprime l'utilisateur de Supabase Auth :
+foyers dont il est le seul membre supprimés avec leurs données ; dans un foyer partagé, l'administration passe
+au membre le plus ancien et ce qu'il avait ajouté reste, sans auteur ; profil et préférences alimentaires effacés.
+
+## 7. E-mails de connexion (avant d'inviter d'autres personnes)
+
+L'envoi d'e-mails intégré à Supabase est limité à quelques messages par heure : suffisant pour tester à deux,
+pas pour une publication. *Authentication › Emails › SMTP Settings* : branche un service d'envoi (Brevo, Resend…
+offrent une formule gratuite de quelques milliers d'e-mails par mois) avec une adresse d'expédition à ton nom de domaine.
 
 ## Fonctionnement de la synchronisation
 

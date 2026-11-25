@@ -16,8 +16,8 @@ test('supabase/functions/_shared/ingredients.json est à jour', () => {
   expect(readFileSync(PATH, 'utf8')).toBe(expected);
 });
 
-test('les versions épinglées dans deno.json correspondent à celles vérifiées localement', () => {
-  const deno = JSON.parse(readFileSync('supabase/functions/generate-recipe/deno.json', 'utf8')) as { imports: Record<string, string> };
+test.each(['generate-recipe', 'delete-account'])('%s : versions épinglées dans deno.json = versions vérifiées localement', (fn) => {
+  const deno = JSON.parse(readFileSync(`supabase/functions/${fn}/deno.json`, 'utf8')) as { imports: Record<string, string> };
   for (const [pkg, spec] of Object.entries(deno.imports)) {
     const version = spec.replace(`npm:${pkg}@`, '');
     const installed = (JSON.parse(readFileSync(`node_modules/${pkg}/package.json`, 'utf8')) as { version: string }).version;

@@ -16,6 +16,7 @@ import {
   sendTest,
   type PermissionState,
 } from '@/services/notifications';
+import { crashReportingAvailable } from '@/services/crashReporting';
 import { useTheme, type ThemePreference } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
@@ -46,7 +47,7 @@ function Row({ label, hint, value, onChange, disabled }: { label: string; hint: 
 export default function Reglages() {
   const { colors, preference, setPreference } = useTheme();
   const snackbar = useSnackbar();
-  const { notifications: n, basics, autoRestock } = useSettings();
+  const { notifications: n, basics, autoRestock, crashReports } = useSettings();
   const items = useInventory();
   const [permission, setPermission] = useState<PermissionState>('undetermined');
 
@@ -112,6 +113,20 @@ export default function Reglages() {
           onChange={(v) => updateSettings({ autoRestock: v })}
         />
       </Card>
+
+      {crashReportingAvailable && (
+        <>
+          <Text variant="overline" tone="secondary">Aide au développement</Text>
+          <Card>
+            <Row
+              label="Rapports de plantage"
+              hint="Si l’app plante, envoie un rapport technique anonyme (sans ton inventaire, ni ton nom) pour corriger le problème."
+              value={crashReports}
+              onChange={(v) => updateSettings({ crashReports: v })}
+            />
+          </Card>
+        </>
+      )}
 
       <Text variant="overline" tone="secondary">Notifications</Text>
       <Card style={{ gap: 16 }}>

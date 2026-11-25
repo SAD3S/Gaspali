@@ -309,6 +309,7 @@ function SignOutButton() {
   const auth = useAuth();
   const status = useSyncStatus();
   return (
+    <>
     <Button
       label="Se déconnecter"
       variant="outline"
@@ -325,6 +326,10 @@ function SignOutButton() {
         )
       }
     />
+    <Pressable accessibilityRole="link" onPress={() => router.push('/compte/supprimer')} style={styles.textBtn}>
+      <Text variant="label" tone="secondary" style={styles.center}>Supprimer mon compte</Text>
+    </Pressable>
+    </>
   );
 }
 

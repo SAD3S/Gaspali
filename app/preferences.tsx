@@ -50,6 +50,9 @@ export default function Preferences() {
       <Card style={{ gap: 12 }}>
         <Text variant="bodyStrong">Allergies et intolérances</Text>
         <Text variant="label" tone="secondary">Les 14 allergènes réglementaires (UE). Le scan te prévient aussi si un produit en contient.</Text>
+        <Text variant="label" tone="secondary">
+          Facultatif. En les cochant, tu acceptes qu’elles servent à écarter des recettes et soient visibles par les membres de ton foyer. Décoche-les pour les retirer.
+        </Text>
         <View style={styles.wrap}>
           {ALLERGENS.map((a) => {
             const on = mine.allergens.includes(a.id);

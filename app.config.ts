@@ -46,6 +46,15 @@ const config: ExpoConfig = {
       },
     ],
     [
+      '@sentry/react-native/expo',
+      {
+        // Envoi des « source maps » seulement si la CI a un jeton Sentry (sinon : build normal).
+        organization: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        disableAutoUpload: !process.env.SENTRY_AUTH_TOKEN,
+      },
+    ],
+    [
       'expo-splash-screen',
       {
         image: './assets/splash-icon.png',

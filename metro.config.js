@@ -1,6 +1,7 @@
-const { getDefaultConfig } = require('expo/metro-config');
+// Config Expo + identifiants de debug Sentry (pile d'appels lisible dans les rapports de plantage).
+const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 
-const config = getDefaultConfig(__dirname);
+const config = getSentryExpoConfig(__dirname);
 
 // expo-sqlite sur le web : fichiers wasm + en-têtes requis par SharedArrayBuffer.
 config.resolver.assetExts.push('wasm');

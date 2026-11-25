@@ -14,6 +14,9 @@ export interface Palette {
   primaryText: string;
   primarySoft: string;
   urgent: string;
+  /** Actions irréversibles (suppression de compte) : contraste AA avec `onDanger`. */
+  danger: string;
+  onDanger: string;
   navBar: string;
   /** Graphiques : produits sauvés / jetés (paire vérifiée pour le daltonisme, cf. statistiques). */
   chartSaved: string;
@@ -35,6 +38,8 @@ export const palettes: Record<ColorScheme, Palette> = {
     primaryText: '#17603C',
     primarySoft: '#DDEFE3',
     urgent: '#E8573A',
+    danger: '#B3261E',
+    onDanger: '#FFFFFF',
     navBar: '#FFFFFF',
     chartSaved: '#1F7A4D',
     chartWasted: '#E97E50',
@@ -52,6 +57,8 @@ export const palettes: Record<ColorScheme, Palette> = {
     primaryText: '#7DDBA8',
     primarySoft: '#1D3A2B',
     urgent: '#FF7A5C',
+    danger: '#FFB4AB',
+    onDanger: '#690005',
     navBar: '#141D19',
     chartSaved: '#34A872',
     chartWasted: '#E0703F',

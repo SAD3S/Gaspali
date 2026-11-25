@@ -281,4 +281,41 @@ do $$ begin
   assert (select count(*) from public.inventory_items) = 0, 'données supprimées avec le foyer';
 end $$;
 
+-- 8. Suppression de compte (migration 6)
+\set dave '''d0000000-0000-4000-8000-000000000004'''
+\set erin '''e0000000-0000-4000-8000-000000000005'''
+insert into auth.users (id, email, raw_user_meta_data) values (:dave, 'dave@example.test', '{}'), (:erin, 'erin@example.test', '{}');
+select pg_temp.as_user(:dave);
+create temp table t_h2 as select * from public.create_household('Coloc', 'Dave');
+grant select on t_h2 to authenticated, service_role;
+create temp table t_h3 as select * from public.create_household('Chez Dave', 'Dave');
+grant select on t_h3 to authenticated, service_role;
+do $$ declare res jsonb; hid uuid := (select id from t_h2); begin
+  res := public.sync_push('inventory_items', jsonb_build_array(jsonb_build_object('id', 'f0000000-0000-4000-8000-000000000080', 'household_id', hid,
+    'fields', jsonb_build_object('created_at', 1, 'updated_at', 1, 'name', 'Lait', 'category', 'laitier', 'quantity', 1, 'unit', 'L',
+      'location', 'frigo', 'date_type', 'DLC', 'expires_at', 1, 'expiry_estimated', false, 'status', 'en_stock', 'added_by', auth.uid()), 'ts', '{}'::jsonb)));
+  assert (res ->> 'applied')::int = 1, 'article de Dave : ' || res::text;
+end $$;
+reset role;
+select pg_temp.as_user(:erin);
+select public.join_household(invite_code, 'Erin') from t_h2;
+do $$ begin
+  begin
+    perform public.delete_account_data(auth.uid());
+    raise exception 'aurait dû échouer';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+reset role;
+set role service_role;
+select public.delete_account_data(:dave);
+reset role;
+do $$ begin
+  assert not exists (select 1 from public.profiles where id = 'd0000000-0000-4000-8000-000000000004'), 'profil de Dave supprimé';
+  assert not exists (select 1 from public.households where id = (select id from t_h3)), 'foyer dont Dave était seul membre supprimé';
+  assert (select role from public.household_members where household_id = (select id from t_h2) and user_id = 'e0000000-0000-4000-8000-000000000005') = 'admin',
+    'Erin devient admin de la coloc';
+  assert (select added_by from public.inventory_items where id = 'f0000000-0000-4000-8000-000000000080') is null, 'article gardé, sans auteur';
+end $$;
+
 \echo '✔ Tous les tests SQL passent'
