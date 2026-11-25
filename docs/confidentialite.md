@@ -25,7 +25,7 @@ L’éditeur de l’application Gaspalli. Pour toute question ou demande, contac
 
 ## Les services utilisés
 
-- Supabase (hébergement des comptes et des foyers, serveurs dans l’Union européenne) : seulement si tu crées un compte.
+- Supabase (hébergement des comptes et des foyers, serveurs en Europe) : seulement si tu crées un compte.
 - Open Food Facts (base de données ouverte des produits alimentaires) : quand tu scannes un code-barres que Gaspalli ne connaît pas, ce code est envoyé pour trouver le produit. Aucune donnée personnelle n’est envoyée.
 - Anthropic (intelligence artificielle Claude) : seulement quand tu demandes une idée de recette par IA. Sont envoyés les produits à utiliser, ton envie, le temps et le nombre de portions, ainsi que les régimes, allergies et aliments évités de ton foyer ; jamais ton nom ni ton e-mail. Anthropic agit comme sous-traitant, n’utilise pas ces données pour entraîner ses modèles, et peut les traiter aux États-Unis avec les garanties prévues par le RGPD.
 - Sentry (rapports de plantage) : si l’app plante, un rapport technique est envoyé (modèle et système du téléphone, version de l’app, endroit du code concerné), sans ton nom, ton e-mail ni le contenu de ton inventaire. Tu peux le désactiver dans Réglages.

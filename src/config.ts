@@ -12,3 +12,5 @@ export const PRIVACY_URL = clean(process.env.EXPO_PUBLIC_PRIVACY_URL);
 export const SENTRY_DSN = clean(process.env.EXPO_PUBLIC_SENTRY_DSN);
 /** development | preview | production (profils EAS / CI). */
 export const APP_ENV = clean(process.env.EXPO_PUBLIC_APP_ENV) ?? 'development';
+/** Connexion Google : à activer seulement quand le fournisseur Google est configuré dans Supabase. */
+export const GOOGLE_SIGN_IN = process.env.EXPO_PUBLIC_AUTH_GOOGLE === '1';

@@ -25,18 +25,21 @@ Tests : `supabase/tests/run.sh` (Postgres nu, rejoué en CI par `supabase-tests.
 
 *Authentication › Sign In / Providers*
 
-- **Email** : activé. Dans *Authentication › Emails › Magic Link*, remplace le contenu par un modèle
-  qui affiche le **code** (l'app demande un code à 6 chiffres, pas un lien) :
+- **Email** : activé, **Email OTP Length = 6**. Par défaut, l'e-mail contient un **lien** : touché depuis le
+  téléphone, il ouvre l'app (`gaspalli://auth/callback`) qui termine la connexion. Sur le plan gratuit, les
+  modèles d'e-mail ne sont modifiables qu'avec un serveur d'envoi personnalisé (étape 7) ; on peut alors y
+  ajouter le code à 6 chiffres, que l'app accepte aussi :
   ```html
   <h2>Ton code Gaspalli</h2>
   <p>Saisis ce code dans l'app : <strong style="font-size:24px">{{ .Token }}</strong></p>
   <p>Il expire dans une heure.</p>
   ```
 - **Google** : crée un client OAuth « Web application » dans Google Cloud Console, avec l'URI de redirection
-  `https://<ref>.supabase.co/auth/v1/callback`, puis colle l'ID et le secret dans Supabase.
-- **Apple** (iOS) : nécessite le compte Apple Developer — à faire à l'étape publication.
+  `https://<ref>.supabase.co/auth/v1/callback`, puis colle l'ID et le secret dans Supabase, et ajoute la variable
+  GitHub `AUTH_GOOGLE` = `1` pour afficher le bouton dans l'app.
+- **Apple** (iOS) : nécessite le compte Apple Developer — à faire à la publication iOS.
 
-*Authentication › URL Configuration › Redirect URLs* : ajoute `gaspalli://auth/callback`.
+*Authentication › URL Configuration* : Site URL `gaspalli://`, Redirect URLs `gaspalli://auth/callback` et `gaspalli://**`.
 
 ## 4. Brancher l'app
 

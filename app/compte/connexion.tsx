@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Field, Text } from '@/components/ui';
+import { GOOGLE_SIGN_IN } from '@/config';
 import { useAuth } from '@/features/account/AuthProvider';
 import { frenchError } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -13,7 +14,7 @@ import { MIN_TOUCH } from '@/theme/tokens';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_DELAY = 60;
 
-/** Connexion sans mot de passe : code à 6 chiffres par e-mail, Google, ou Apple (iOS). */
+/** Connexion sans mot de passe : lien (ou code à 6 chiffres) par e-mail, Google, ou Apple (iOS). */
 export default function Connexion() {
   const { colors, scheme } = useTheme();
   const auth = useAuth();
@@ -37,6 +38,11 @@ export default function Connexion() {
   }, [cooldown]);
 
   const done = () => router.replace((next || '/compte') as Href);
+
+  // Connexion terminée par le lien de l'e-mail (écran auth/callback) pendant que celui-ci est ouvert.
+  useEffect(() => {
+    if (auth.session && step === 'code') done();
+  }, [auth.session]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const attempt = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -79,7 +85,7 @@ export default function Connexion() {
 
           {step === 'email' ? (
             <>
-              <Text variant="body" tone="secondary">Pas de mot de passe : on t’envoie un code à 6 chiffres par e-mail.</Text>
+              <Text variant="body" tone="secondary">Pas de mot de passe : on t’envoie un lien de connexion par e-mail.</Text>
               <Field
                 label="Adresse e-mail"
                 value={email}
@@ -94,15 +100,16 @@ export default function Connexion() {
                 onSubmitEditing={() => EMAIL_RE.test(email.trim()) && void sendCode()}
                 error={error}
               />
-              <Button label="Recevoir un code" onPress={sendCode} disabled={busy || !EMAIL_RE.test(email.trim())} />
+              <Button label="Recevoir le lien" onPress={sendCode} disabled={busy || !EMAIL_RE.test(email.trim())} />
             </>
           ) : (
             <>
               <Text variant="body" tone="secondary">
-                Code envoyé à <Text variant="body" style={styles.bold}>{email.trim()}</Text>. Pense à regarder dans les spams.
+                E-mail envoyé à <Text variant="body" style={styles.bold}>{email.trim()}</Text>. Ouvre-le sur ce téléphone et touche le
+                lien : l’app s’ouvre et te connecte. Pense à regarder dans les spams.
               </Text>
               <Field
-                label="Code reçu par e-mail"
+                label="Ou saisis le code, si l’e-mail en contient un"
                 value={code}
                 onChangeText={(v) => {
                   const digits = v.replace(/\D/g, '').slice(0, 6);
@@ -113,14 +120,13 @@ export default function Connexion() {
                 keyboardType="number-pad"
                 autoComplete="one-time-code"
                 textContentType="oneTimeCode"
-                autoFocus
                 maxLength={6}
                 style={styles.codeInput}
                 error={error}
               />
-              <Button label="Valider" onPress={() => verify()} disabled={busy || code.length !== 6} />
+              {code.length > 0 && <Button label="Valider le code" onPress={() => verify()} disabled={busy || code.length !== 6} />}
               <Button
-                label={cooldown > 0 ? `Renvoyer le code (${cooldown} s)` : 'Renvoyer le code'}
+                label={cooldown > 0 ? `Renvoyer l’e-mail (${cooldown} s)` : 'Renvoyer l’e-mail'}
                 variant="outline"
                 onPress={sendCode}
                 disabled={busy || cooldown > 0}
@@ -128,22 +134,26 @@ export default function Connexion() {
             </>
           )}
 
-          <View style={styles.or}>
-            <View style={[styles.line, { backgroundColor: colors.border }]} />
-            <Text variant="label" tone="secondary">ou</Text>
-            <View style={[styles.line, { backgroundColor: colors.border }]} />
-          </View>
+          {(GOOGLE_SIGN_IN || appleAvailable) && (
+            <View style={styles.or}>
+              <View style={[styles.line, { backgroundColor: colors.border }]} />
+              <Text variant="label" tone="secondary">ou</Text>
+              <View style={[styles.line, { backgroundColor: colors.border }]} />
+            </View>
+          )}
 
-          <Button
-            label="Continuer avec Google"
-            variant="outline"
-            disabled={busy}
-            onPress={() =>
-              attempt(async () => {
-                if (await auth.signInWithGoogle()) done();
-              })
-            }
-          />
+          {GOOGLE_SIGN_IN && (
+            <Button
+              label="Continuer avec Google"
+              variant="outline"
+              disabled={busy}
+              onPress={() =>
+                attempt(async () => {
+                  if (await auth.signInWithGoogle()) done();
+                })
+              }
+            />
+          )}
           {appleAvailable && (
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}

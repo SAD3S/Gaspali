@@ -43,6 +43,8 @@ jobs:
       EXPO_PUBLIC_CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
       EXPO_PUBLIC_PRIVACY_URL: ${{ vars.PRIVACY_URL }}
       EXPO_PUBLIC_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+      # « 1 » quand le fournisseur Google est configuré dans Supabase (sinon le bouton est masqué).
+      EXPO_PUBLIC_AUTH_GOOGLE: ${{ vars.AUTH_GOOGLE }}
     steps:
       - uses: actions/checkout@v5
 

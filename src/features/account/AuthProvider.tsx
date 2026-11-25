@@ -31,6 +31,8 @@ interface AuthValue {
   active: Household | null;
   sendEmailCode: (email: string) => Promise<void>;
   verifyEmailCode: (email: string, code: string) => Promise<void>;
+  /** Retour du lien de connexion reçu par e-mail (gaspalli://auth/callback?code=…). */
+  completeEmailLink: (code: string) => Promise<void>;
   signInWithGoogle: () => Promise<boolean>;
   signInWithApple: () => Promise<boolean>;
   signOut: () => Promise<void>;
@@ -158,13 +160,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     active,
 
     async sendEmailCode(email) {
-      const { error } = await need().auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
+      // L'e-mail contient un lien (modèle Supabase par défaut) et, si le modèle est personnalisé, un code.
+      const { error } = await need().auth.signInWithOtp({
+        email: email.trim(),
+        options: { shouldCreateUser: true, emailRedirectTo: Linking.createURL('auth/callback') },
+      });
       if (error) throw error;
     },
 
     async verifyEmailCode(email, code) {
       const { error } = await need().auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'email' });
       if (error) throw error;
+      await afterSignIn();
+    },
+
+    async completeEmailLink(code) {
+      const sb = need();
+      const { error } = await sb.auth.exchangeCodeForSession(code);
+      if (error) {
+        // Lien déjà utilisé (ou ouvert deux fois) : si la session existe, tout va bien.
+        const { data } = await sb.auth.getSession();
+        if (!data.session) throw error;
+      }
       await afterSignIn();
     },
 
