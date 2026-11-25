@@ -55,6 +55,9 @@ describe('rendu des widgets', () => {
     expect(text(buildWidgetTree(urgent.dark))).toContain('gaspalli://inventaire');
     const shopping = renderGaspalliWidget(SHOPPING_WIDGET, snap);
     expect(text(buildWidgetTree(shopping.light))).toContain('2 L');
-    expect(text(buildWidgetTree(renderGaspalliWidget(SHOPPING_WIDGET, buildSnapshot([], [])).light))).toContain('La liste est vide.');
+    const empty = text(buildWidgetTree(renderGaspalliWidget(SHOPPING_WIDGET, buildSnapshot([], [])).light));
+    expect(empty).toContain('La liste est vide.');
+    // Pépin est dessiné dans l'en-tête et dans la liste vide.
+    expect(empty.match(/<svg/g)?.length).toBe(2);
   });
 });

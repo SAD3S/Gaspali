@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
-import { BellOff, ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Card, ProductCard, Screen, Text } from '@/components/ui';
+import { ProductCard, Screen, Text } from '@/components/ui';
 import { queryInventory } from '@/domain/inventory';
 import { itemSubtitle } from '@/features/inventory/format';
 import { useInventory } from '@/features/inventory/hooks';
+import { EmptyState } from '@/components/brand/EmptyState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
@@ -33,11 +34,7 @@ export default function Alertes() {
       </View>
 
       {groups.length === 0 && (
-        <Card style={styles.empty}>
-          <BellOff size={32} color={colors.textSecondary} />
-          <Text variant="bodyStrong">Rien d’urgent</Text>
-          <Text variant="body" tone="secondary" style={styles.center}>Aucun produit à consommer dans les 5 prochains jours.</Text>
-        </Card>
+        <EmptyState mood="joie" title="Rien d’urgent" text="Aucun produit à consommer dans les 5 prochains jours. Bravo !" />
       )}
 
       {groups.map((g) => (

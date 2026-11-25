@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router } from 'expo-router';
-import { Archive, Check, ListChecks, Plus, ReceiptText, ShoppingCart, X } from 'lucide-react-native';
+import { Archive, Check, ListChecks, Plus, ReceiptText, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Card, Screen, Text, useSnackbar } from '@/components/ui';
@@ -12,6 +12,7 @@ import { SavedListsSheet } from '@/features/shopping/SavedListsSheet';
 import { categoryOf, defaultForm, StoreSheet } from '@/features/shopping/StoreSheet';
 import { resolveIngredient } from '@/domain/ingredientMatch';
 import { formatQuantity } from '@/domain/quantity';
+import { EmptyState } from '@/components/brand/EmptyState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
@@ -82,10 +83,9 @@ export default function Courses() {
 
       {total === 0 && (
         <View style={styles.empty}>
-          <ShoppingCart size={40} color={colors.textSecondary} />
-          <Text variant="bodyStrong">Ta liste est vide</Text>
-          <Text variant="body" tone="secondary" style={styles.center}>Ajoute des articles ici, les ingrédients manquants depuis une recette, ou reprends une liste enregistrée.</Text>
-          <Button label="Reprendre une liste enregistrée" variant="soft" onPress={() => setListsOpen(true)} />
+          <EmptyState title="Ta liste est vide" text="Ajoute des articles ici, les ingrédients manquants depuis une recette, ou reprends une liste enregistrée.">
+            <Button label="Reprendre une liste enregistrée" variant="soft" onPress={() => setListsOpen(true)} />
+          </EmptyState>
         </View>
       )}
 

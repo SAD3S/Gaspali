@@ -14,6 +14,7 @@ import { RecipeCard } from '@/features/recipes/RecipeCard';
 import { useAllRecipes, useRecipeOrganization, useSuggestions } from '@/features/recipes/hooks';
 import { useSettings } from '@/features/settings/settings';
 import { ThreadBackground } from '@/components/brand/ThreadBackground';
+import { EmptyState } from '@/components/brand/EmptyState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH, radius } from '@/theme/tokens';
 
@@ -225,10 +226,17 @@ export default function Recettes() {
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text variant="body" tone="secondary" style={{ textAlign: 'center' }}>
-              {currentFolder ? 'Ce dossier est vide : ouvre une recette et touche l’icône dossier pour l’y ranger.' : quick === 'favoris' ? 'Pas encore de favoris : touche le cœur sur une recette.' : quick === 'mes-recettes' ? 'Ajoute ta première recette avec le bouton + : écrite, importée d’un site ou photographiée.' : 'Aucune recette ne correspond.'}
-            </Text>
-            {quick === 'mes-recettes' && <Button label="Ajouter une recette" variant="soft" onPress={() => setAdding(true)} />}
+            {currentFolder ? (
+              <EmptyState mood="clin" title="Ce dossier est vide" text="Ouvre une recette et touche l’icône dossier pour l’y ranger." />
+            ) : quick === 'favoris' ? (
+              <EmptyState mood="clin" title="Pas encore de favoris" text="Touche le cœur sur une recette pour la retrouver ici." />
+            ) : quick === 'mes-recettes' ? (
+              <EmptyState title="Pas encore de recette perso" text="Écris-la, importe-la d’un site ou prends-la en photo.">
+                <Button label="Ajouter une recette" variant="soft" onPress={() => setAdding(true)} />
+              </EmptyState>
+            ) : (
+              <EmptyState mood="oups" size={90} title="Aucune recette ne correspond" text="Essaie un autre mot ou retire un filtre." />
+            )}
           </View>
         }
       />

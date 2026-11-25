@@ -1,5 +1,7 @@
-import { FlexWidget, ListWidget, TextWidget } from 'react-native-android-widget';
+import { FlexWidget, ListWidget, SvgWidget, TextWidget } from 'react-native-android-widget';
 import type { HexColor } from 'react-native-android-widget';
+import { pepinSvg } from '@/components/brand/pepinSvg';
+import type { PepinMood } from '@/components/brand/Pepin';
 import { palettes } from '@/theme/tokens';
 import { urgentRows, type WidgetSnapshot } from './snapshot';
 
@@ -9,8 +11,12 @@ export const SHOPPING_WIDGET = 'ListeDeCourses';
 
 type Mode = 'light' | 'dark';
 const hex = (c: string) => c as HexColor;
+const pepin = (mode: Mode, mood: PepinMood) => {
+  const c = palettes[mode];
+  return pepinSvg(mood, { primary: c.primary, soft: c.primarySoft, ink: c.text });
+};
 
-function Frame({ mode, title, subtitle, uri, children }: { mode: Mode; title: string; subtitle: string; uri: string; children: React.ReactNode }) {
+function Frame({ mode, title, subtitle, uri, mood, children }: { mode: Mode; title: string; subtitle: string; uri: string; mood: PepinMood; children: React.ReactNode }) {
   const c = palettes[mode];
   return (
     <FlexWidget
@@ -19,6 +25,7 @@ function Frame({ mode, title, subtitle, uri, children }: { mode: Mode; title: st
       style={{ height: 'match_parent', width: 'match_parent', backgroundColor: hex(c.surface), borderRadius: 22, padding: 14, flexDirection: 'column' }}
     >
       <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', width: 'match_parent', marginBottom: 8 }}>
+        <SvgWidget svg={pepin(mode, mood)} style={{ width: 30, height: 30, marginRight: 6 }} />
         <TextWidget text={title} style={{ fontSize: 16, fontWeight: 'bold', color: hex(c.text) }} />
         <FlexWidget style={{ flex: 1 }} />
         <TextWidget text={subtitle} style={{ fontSize: 13, color: hex(c.primaryText) }} />
@@ -28,8 +35,14 @@ function Frame({ mode, title, subtitle, uri, children }: { mode: Mode; title: st
   );
 }
 
+/** Liste vide : Pépin content, en grand, avec le message. */
 function Empty({ mode, text }: { mode: Mode; text: string }) {
-  return <TextWidget text={text} style={{ fontSize: 14, color: hex(palettes[mode].textSecondary) }} />;
+  return (
+    <FlexWidget style={{ flex: 1, width: 'match_parent', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+      <SvgWidget svg={pepin(mode, 'joie')} style={{ width: 64, height: 64, marginRight: 10 }} />
+      <TextWidget text={text} style={{ fontSize: 15, fontWeight: '600', color: hex(palettes[mode].textSecondary) }} />
+    </FlexWidget>
+  );
 }
 
 function Row({ mode, name, detail, detailColor, uri }: { mode: Mode; name: string; detail: string | null; detailColor?: string; uri: string }) {
@@ -59,7 +72,7 @@ function Urgent({ snapshot, mode, today }: { snapshot: WidgetSnapshot; mode: Mod
   const rows = urgentRows(snapshot, today);
   const uri = 'gaspalli://inventaire';
   return (
-    <Frame mode={mode} title="À consommer vite" subtitle={rows.length ? String(rows.length) : ''} uri={uri}>
+    <Frame mode={mode} title="À consommer vite" subtitle={rows.length ? String(rows.length) : ''} uri={uri} mood={rows.some((r) => r.state === 'urgent' || r.state === 'perime') ? 'oups' : 'sourire'}>
       {rows.length === 0 ? (
         <Empty mode={mode} text="Rien d’urgent. Bravo !" />
       ) : (
@@ -77,7 +90,7 @@ function Shopping({ snapshot, mode }: { snapshot: WidgetSnapshot; mode: Mode }) 
   const uri = 'gaspalli://courses';
   const more = snapshot.shoppingTotal - snapshot.shopping.length;
   return (
-    <Frame mode={mode} title="Courses" subtitle={snapshot.shoppingTotal ? `${snapshot.shoppingTotal} à acheter` : ''} uri={uri}>
+    <Frame mode={mode} title="Courses" subtitle={snapshot.shoppingTotal ? `${snapshot.shoppingTotal} à acheter` : ''} uri={uri} mood="clin">
       {snapshot.shopping.length === 0 ? (
         <Empty mode={mode} text="La liste est vide." />
       ) : (

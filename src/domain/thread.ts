@@ -48,15 +48,16 @@ function seeded(seed: number) {
  */
 export function screenThread(width: number, height: number, variant = 1): { d: string; length: number } {
   const rnd = seeded(variant * 7919 + 13);
-  const rows = Math.max(4, Math.round(height / 130));
+  // Peu de virages et de grandes boucles espacées : un fil aérien, pas un ressort.
+  const rows = Math.max(3, Math.round(height / 220));
   const spine: Pt[] = [[-30, height * 0.08]];
   for (let i = 1; i < rows; i++) {
     const left = i % 2 === (variant % 2);
     spine.push([width * (left ? 0.12 + rnd() * 0.2 : 0.68 + rnd() * 0.2), (height * i) / rows + (rnd() - 0.5) * 40]);
   }
   spine.push([width + 30, height * 0.98]);
-  const loops = Math.round(height / 42);
-  const pts = loopThread(spine, loops, Math.min(30, width / 12), 3);
+  const loops = Math.max(5, Math.round(height / 95));
+  const pts = loopThread(spine, loops, Math.min(58, width / 6.5), 2);
   let length = 0;
   for (let i = 1; i < pts.length; i++) length += Math.hypot(pts[i]![0] - pts[i - 1]![0], pts[i]![1] - pts[i - 1]![1]);
   const d = 'M' + pts.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('L');

@@ -16,6 +16,7 @@ import { suggestionSummary } from '@/domain/recipeEngine';
 import { updateSettings, useSettings } from '@/features/settings/settings';
 import { getPermission, notificationsSupported, requestPermission, type PermissionState } from '@/services/notifications';
 import { RecipeVisual } from '@/features/recipes/RecipeCard';
+import { Pepin } from '@/components/brand/Pepin';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius } from '@/theme/tokens';
 
@@ -180,9 +181,12 @@ export default function Accueil() {
           />
         ))}
         {urgent.length === 0 && (
-          <Text variant="body" tone="secondary" style={{ paddingVertical: 8 }}>
-            {items.length === 0 ? 'Scanne tes courses pour commencer.' : 'Rien d’urgent, tout est frais !'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 }}>
+            <Pepin size={64} mood={items.length === 0 ? 'sourire' : 'joie'} />
+            <Text variant="body" tone="secondary" style={{ flex: 1 }}>
+              {items.length === 0 ? 'Scanne tes courses pour commencer : je te dirai quoi finir en premier.' : 'Rien d’urgent, tout est frais !'}
+            </Text>
+          </View>
         )}
       </Card>
 

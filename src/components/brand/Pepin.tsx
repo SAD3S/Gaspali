@@ -2,8 +2,9 @@ import { useEffect } from 'react';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useTheme } from '@/theme/ThemeProvider';
+import { PEPIN_PATHS } from './pepinSvg';
 
-export type PepinMood = 'sourire' | 'joie' | 'clin';
+export type PepinMood = 'sourire' | 'joie' | 'clin' | 'oups';
 
 const CHEEK = '#F4A38E';
 
@@ -26,20 +27,27 @@ export function Pepin({ size = 160, mood = 'sourire', float = false }: { size?: 
   const style = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
 
   const stroke = { stroke: colors.primary, strokeWidth: 3.2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' };
-  const body = 'M60 40C36 30 22 52 26 72C30 96 48 105 60 99C72 105 90 96 94 72C98 52 84 30 60 40Z';
+  const body = PEPIN_PATHS.body;
 
   return (
     <Animated.View style={[{ width: size, height: size }, style]} accessible accessibilityRole="image" accessibilityLabel="Pépin, la pomme mascotte de Gaspalli">
       <Svg width={size} height={size} viewBox="0 0 120 120">
         <Path d={body} fill={colors.primarySoft} />
         <Path d={body} {...stroke} />
-        <Path d="M60 40C60 32 61 26 65 20" {...stroke} />
-        <Path d="M63 28C70 17 84 17 88 23C80 30 70 31 63 28Z" {...stroke} fill={colors.primarySoft} />
-        <Path d="M60 99C58 108 50 114 42 110C36 106 42 98 48 104C52 108 46 116 34 116" {...stroke} strokeWidth={2.4} />
+        <Path d={PEPIN_PATHS.stalk} {...stroke} />
+        <Path d={PEPIN_PATHS.leaf} {...stroke} fill={colors.primarySoft} />
+        <Path d={PEPIN_PATHS.string} {...stroke} strokeWidth={2.4} />
         {mood === 'joie' ? (
           <>
             <Path d="M46 67Q50 62 54 67M66 67Q70 62 74 67" {...stroke} stroke={colors.text} strokeWidth={2.6} />
             <Path d="M53 75Q60 86 67 75Z" fill={colors.text} />
+          </>
+        ) : mood === 'oups' ? (
+          <>
+            <Circle cx={50} cy={65} r={3.4} fill={colors.text} />
+            <Circle cx={70} cy={65} r={3.4} fill={colors.text} />
+            <Path d="M45 57L53 59M75 57L67 59" {...stroke} stroke={colors.text} strokeWidth={2.2} />
+            <Circle cx={60} cy={78} r={3.6} {...stroke} strokeWidth={2.4} />
           </>
         ) : mood === 'clin' ? (
           <>

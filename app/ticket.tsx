@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Camera, Check, Image as ImageIcon, ReceiptText, TriangleAlert, X } from 'lucide-react-native';
+import { Camera, Check, Image as ImageIcon, TriangleAlert, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import { LineSheet } from '@/features/receipt/LineSheet';
 import { takePendingReceiptText } from '@/features/receipt/pendingText';
 import { pickReceiptPhoto, pickReceiptPhotos } from '@/services/photos';
 import { ocrAvailable, receiptOcrAvailable, recognizeLines, recognizeText } from '@/services/textRecognition';
+import { EmptyState } from '@/components/brand/EmptyState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH, radius } from '@/theme/tokens';
 
@@ -174,13 +175,11 @@ export default function Ticket() {
 
       {phase === 'vide' && (
         <ScrollView contentContainerStyle={styles.content}>
-          <Card style={{ gap: 10 }}>
-            <ReceiptText size={32} color={colors.textSecondary} />
-            <Text variant="bodyStrong">Aucun article reconnu</Text>
-            <Text variant="body" tone="secondary">
-              Pose le ticket bien à plat, sans pli, avec de la lumière et sans reflet. Pour un long ticket, prends-le en plusieurs fois.
-            </Text>
-          </Card>
+          <EmptyState
+            mood="oups"
+            title="Aucun article reconnu"
+            text="Pose le ticket bien à plat, sans pli, avec de la lumière et sans reflet. Pour un long ticket, prends-le en plusieurs fois."
+          />
           <Button label="Reprendre la photo" icon={<Camera size={18} color={colors.onPrimary} />} onPress={() => router.replace({ pathname: '/scan', params: { onglet: 'ticket' } })} />
           <Button label="Saisir le texte du ticket" variant="outline" onPress={() => setPhase('saisie')} />
         </ScrollView>

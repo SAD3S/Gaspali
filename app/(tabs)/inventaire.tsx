@@ -11,6 +11,7 @@ import { useInventory } from '@/features/inventory/hooks';
 import { useReservations } from '@/features/recipes/hooks';
 import { SwipeableItem } from '@/features/inventory/SwipeableItem';
 import { ThreadBackground } from '@/components/brand/ThreadBackground';
+import { EmptyState } from '@/components/brand/EmptyState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH, radius } from '@/theme/tokens';
 
@@ -112,13 +113,11 @@ export default function Inventaire() {
         ListEmptyComponent={
           <View style={styles.empty}>
             {items.length === 0 ? (
-              <>
-                <Text variant="bodyStrong">Ton inventaire est vide</Text>
-                <Text variant="body" tone="secondary" style={styles.center}>Scanne tes courses ou ajoute un produit frais.</Text>
+              <EmptyState title="Ton inventaire est vide" text="Scanne tes courses ou ajoute un produit frais : je te dirai quoi finir en premier.">
                 <Button label="Ajouter un produit" variant="soft" onPress={() => router.push('/ajout')} />
-              </>
+              </EmptyState>
             ) : (
-              <Text variant="body" tone="secondary" style={styles.center}>Aucun produit ne correspond.</Text>
+              <EmptyState mood="oups" size={90} title="Aucun produit ne correspond" />
             )}
           </View>
         }
