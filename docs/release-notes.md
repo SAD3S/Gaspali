@@ -9,6 +9,10 @@
 
 ## Nouveautés à tester
 
+- **Nouvelle icône** aux couleurs de Gaspalli.
+- **Confidentialité** (Plus › Confidentialité et données) : exporte toutes tes données dans un fichier, restaure-les
+  sur un autre téléphone, ou efface tout. **À propos** : version, crédits Open Food Facts.
+- **Présentation** au premier lancement (à revoir depuis À propos).
 - **Ticket de caisse** : bouton central › onglet « Ticket » (ou Courses › « Scanner le ticket de caisse »).
   Pose le ticket à plat, bien éclairé. Vérifie les lignes, corrige-en une en la touchant, puis « Ajouter ».
   Au premier usage, Android peut mettre quelques secondes à télécharger le module de lecture.

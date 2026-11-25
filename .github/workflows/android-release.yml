@@ -1,25 +1,33 @@
 name: Android – build & release
 
 # - Tag « v* » (ex. v0.1.0) : construit l'APK et le publie dans une Release GitHub.
+# - Lancement manuel (Actions › Run workflow) avec une version (ex. 0.3.0) : même chose, le tag
+#   v0.3.0 est créé sur le commit choisi. Sans version : simple build de test.
 # - Push sur une branche : construit l'APK (artefact téléchargeable), sans Release.
+# - Avec la clé d'upload (secrets ANDROID_*), une release contient aussi l'AAB pour le Play Store.
 #
 # Caches : GitHub ne partage un cache qu'avec la même branche/tag ou avec la branche par défaut.
 # Les builds de branche sont donc rapides dès le 2e passage ; ceux des tags le deviennent
 # une fois que la branche par défaut (main) a été construite.
-# - Lancement manuel possible (onglet Actions).
 on:
   push:
     tags: ['v*']
     branches: ['**']
     paths-ignore: ['**/*.md', 'docs/**', 'design/**']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version à publier (ex. 0.3.0). Vide : build de test sans release.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
 
 concurrency:
-  group: android-${{ github.ref }}
-  cancel-in-progress: true
+  # Un nouveau push annule le build de branche en cours, jamais une release lancée à la main.
+  group: android-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'push' && github.ref_type == 'branch' }}
 
 jobs:
   android:
@@ -31,6 +39,10 @@ jobs:
       # Vides → l'APK fonctionne en mode local, sans compte ni partage.
       EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+      # Facultatif : contact, page de confidentialité, rapports de plantage (vides → masqués / désactivés).
+      EXPO_PUBLIC_CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
+      EXPO_PUBLIC_PRIVACY_URL: ${{ vars.PRIVACY_URL }}
+      EXPO_PUBLIC_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
     steps:
       - uses: actions/checkout@v5
 
@@ -70,11 +82,27 @@ jobs:
           max-size: 2G
 
       - name: Version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
-            echo "APP_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+            VERSION="${GITHUB_REF_NAME#v}"
+          elif [[ -n "$INPUT_VERSION" ]]; then
+            VERSION="${INPUT_VERSION#v}"
+          fi
+          if [[ -n "${VERSION:-}" ]]; then
+            if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Version invalide « $VERSION » (attendu : 1.2.3)"
+              exit 1
+            fi
+            {
+              echo "APP_VERSION=$VERSION"
+              echo "RELEASE_TAG=v$VERSION"
+              echo "EXPO_PUBLIC_APP_ENV=production"
+            } >> "$GITHUB_ENV"
           else
             echo "APP_VERSION=0.0.0-dev.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+            echo "EXPO_PUBLIC_APP_ENV=preview" >> "$GITHUB_ENV"
           fi
           # versionCode Android : doit toujours augmenter pour installer par-dessus.
           echo "APP_VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
@@ -93,6 +121,7 @@ jobs:
               echo "GASPALLI_UPLOAD_STORE_PASSWORD=$STORE_PASSWORD"
               echo "GASPALLI_UPLOAD_KEY_ALIAS=$KEY_ALIAS"
               echo "GASPALLI_UPLOAD_KEY_PASSWORD=${KEY_PASSWORD:-$STORE_PASSWORD}"
+              echo "HAS_UPLOAD_KEY=true"
             } >> "$GITHUB_ENV"
             echo "Signature avec la clé du dépôt."
           else
@@ -100,6 +129,11 @@ jobs:
           fi
 
       - name: Projet natif (expo prebuild)
+        env:
+          # Sentry : envoi des « source maps » seulement si un jeton est configuré (sinon désactivé).
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: npx expo prebuild --platform android --no-install --clean
 
       - name: Compilation APK
@@ -112,12 +146,36 @@ jobs:
           CCACHE_BASEDIR: ${{ github.workspace }}
           CCACHE_NOHASHDIR: 'true'
           CCACHE_SLOPPINESS: include_file_mtime,include_file_ctime,time_macros,file_stat_matches,pch_defines
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_ALLOW_FAILURE: 'true'
         # arm64-v8a : tous les téléphones Android récents ; compile ~4× plus vite que toutes les ABI.
         # --build-cache : réutilise les sorties Java/Kotlin/dex déjà produites.
         # Mémoire : R8 manquait de Metaspace avec les 2 Go / 512 Mo par défaut.
         # -x lintVitalRelease : le lint n'apporte rien à un APK de test (~15 s).
         run: >
           ./gradlew assembleRelease
+          -PreactNativeArchitectures=arm64-v8a
+          --build-cache --no-daemon
+          -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError"
+          -x lintVitalRelease
+
+      # Play Store : un « Android App Bundle » signé avec la clé d'upload (releases seulement).
+      - name: Bundle Play Store (AAB)
+        if: env.RELEASE_TAG && env.HAS_UPLOAD_KEY == 'true'
+        working-directory: android
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+          CCACHE_BASEDIR: ${{ github.workspace }}
+          CCACHE_NOHASHDIR: 'true'
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_ALLOW_FAILURE: 'true'
+        run: >
+          ./gradlew bundleRelease
           -PreactNativeArchitectures=arm64-v8a
           --build-cache --no-daemon
           -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError"
@@ -131,18 +189,25 @@ jobs:
         run: |
           mkdir -p dist
           cp android/app/build/outputs/apk/release/app-release.apk "dist/gaspalli-${APP_VERSION}.apk"
+          if [[ -f android/app/build/outputs/bundle/release/app-release.aab ]]; then
+            cp android/app/build/outputs/bundle/release/app-release.aab "dist/gaspalli-${APP_VERSION}-play-store.aab"
+          fi
           ls -lh dist
 
       - uses: actions/upload-artifact@v5
         with:
           name: gaspalli-${{ env.APP_VERSION }}
-          path: dist/*.apk
+          path: dist/*
 
       - name: Release GitHub
-        if: github.ref_type == 'tag'
+        if: env.RELEASE_TAG
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.apk
-          prerelease: ${{ startsWith(github.ref_name, 'v0.') }}
+          # Lancement manuel : le tag est créé sur le commit construit.
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ env.RELEASE_TAG }}
+          files: dist/*
+          prerelease: ${{ startsWith(env.RELEASE_TAG, 'v0.') }}
           body_path: docs/release-notes.md
           generate_release_notes: true

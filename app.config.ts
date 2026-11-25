@@ -5,8 +5,16 @@ const version = process.env.APP_VERSION ?? '0.1.0';
 /** Doit augmenter à chaque build Android pour pouvoir installer par-dessus. */
 const versionCode = Number(process.env.APP_VERSION_CODE ?? 1);
 
+/**
+ * Variante : seul le profil EAS « development » (client de développement) a un identifiant à part,
+ * pour cohabiter avec l'app installée. Les builds de test et de production gardent `app.gaspalli`
+ * (sinon on ne pourrait plus installer par-dessus les versions déjà distribuées).
+ */
+const isDevClient = process.env.APP_ENV === 'development';
+const appId = isDevClient ? 'app.gaspalli.dev' : 'app.gaspalli';
+
 const config: ExpoConfig = {
-  name: 'Gaspalli',
+  name: isDevClient ? 'Gaspalli (dev)' : 'Gaspalli',
   slug: 'gaspalli',
   scheme: 'gaspalli',
   version,
@@ -14,15 +22,27 @@ const config: ExpoConfig = {
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
   ios: {
-    bundleIdentifier: 'app.gaspalli',
+    bundleIdentifier: appId,
     supportsTablet: false,
     usesAppleSignIn: true,
-    infoPlist: { NSCameraUsageDescription: 'Gaspalli utilise la caméra pour scanner tes produits et tickets.' },
+    infoPlist: {
+      NSCameraUsageDescription: 'Gaspalli utilise la caméra pour scanner tes produits et tickets.',
+      NSPhotoLibraryUsageDescription: 'Gaspalli accède à tes photos pour ajouter une photo de recette ou de ticket de caisse.',
+    },
   },
   android: {
-    package: 'app.gaspalli',
+    package: appId,
     versionCode,
-    blockedPermissions: ['android.permission.RECORD_AUDIO'],
+    // Rien de plus que nécessaire (exigence des stores) : le sélecteur de photos et de fichiers
+    // d'Android ne demande aucun accès au stockage ; la superposition ne sert qu'au débogage.
+    blockedPermissions: [
+      'android.permission.RECORD_AUDIO',
+      'android.permission.READ_EXTERNAL_STORAGE',
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+      'android.permission.READ_MEDIA_IMAGES',
+      'android.permission.READ_MEDIA_VIDEO',
+      'android.permission.SYSTEM_ALERT_WINDOW',
+    ],
     adaptiveIcon: {
       foregroundImage: './assets/android-icon-foreground.png',
       backgroundImage: './assets/android-icon-background.png',
@@ -37,6 +57,14 @@ const config: ExpoConfig = {
     'expo-apple-authentication',
     'expo-web-browser',
     ['expo-notifications', { icon: './assets/notification-icon.png', color: '#1F7A4D' }],
+    [
+      'expo-image-picker',
+      {
+        photosPermission: 'Gaspalli accède à tes photos pour ajouter une photo de recette ou de ticket de caisse.',
+        cameraPermission: 'Gaspalli utilise la caméra pour scanner tes produits et tickets.',
+        microphonePermission: false,
+      },
+    ],
     [
       'expo-camera',
       {
