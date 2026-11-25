@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { CalendarDays, CalendarPlus, Check, ChevronLeft, Clock, FolderPlus, Heart, Pencil, ShoppingBasket } from 'lucide-react-native';
+import { CalendarDays, CalendarPlus, Check, ChevronLeft, Clock, ExternalLink, FolderPlus, Heart, Pencil, ShoppingBasket } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheet, Button, Card, Chip, Stepper, Text, useSnackbar } from '@/components/ui';
 import { ALLERGEN_LABELS } from '@/data/allergens';
@@ -114,6 +114,21 @@ export default function RecetteFiche() {
             </View>
           ))}
         </View>
+
+        {recipe.sourceUrl && (
+          <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(recipe.sourceUrl!)} hitSlop={8} style={styles.source}>
+            <ExternalLink size={16} color={colors.primaryText} />
+            <Text variant="label" tone="primary" style={styles.bold} numberOfLines={1}>
+              Recette de {(() => {
+                try {
+                  return new URL(recipe.sourceUrl).hostname.replace(/^www\./, '');
+                } catch {
+                  return 'la page d’origine';
+                }
+              })()}
+            </Text>
+          </Pressable>
+        )}
 
         {meal && (
           <View style={[styles.planned, { backgroundColor: colors.primarySoft }]}>
@@ -284,6 +299,7 @@ const styles = StyleSheet.create({
   step: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   stepNum: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   cookRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  source: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 32 },
   planned: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   bold: { fontFamily: 'DMSans_700Bold' },
 });

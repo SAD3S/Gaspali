@@ -96,4 +96,5 @@ docs/captures/       captures à chaque étape
 - [x] 7. IA recettes (Edge Function Supabase + API Claude, quota et cache, revalidation des allergènes)
 - [x] 8. Courses (rangement dans l'inventaire, produits habituels), planning des repas (semaine anti-gaspi, réservations, manquants), statistiques
 - [x] 9. Scan du ticket (OCR avec positions des lignes, abréviations, remises, pesées, apprentissage par foyer, prix pour les statistiques)
+- [x] Import de recettes : lien d'un site (schema.org/Recipe), photo d'un livre ou d'une fiche (OCR), fichier
 - [x] 10. Publication (présentation, confidentialité RGPD, export/suppression, suppression de compte, À propos, Sentry, icônes, CI de release, fiche Play Store)

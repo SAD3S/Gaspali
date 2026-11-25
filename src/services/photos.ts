@@ -40,3 +40,15 @@ export async function pickReceiptPhoto(source: 'galerie' | 'camera'): Promise<st
   }
   return result.canceled ? null : (result.assets[0]?.uri ?? null);
 }
+
+/** Pages d'une recette (livre, fiche) : une photo, ou jusqu'à 4 pages choisies dans la galerie. */
+export async function pickRecipePages(source: 'galerie' | 'camera'): Promise<string[]> {
+  if (source === 'camera') {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) return [];
+    const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
+    return res.canceled ? [] : res.assets.map((a) => a.uri);
+  }
+  const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9, allowsMultipleSelection: true, selectionLimit: 4, orderedSelection: true });
+  return res.canceled ? [] : res.assets.map((a) => a.uri);
+}

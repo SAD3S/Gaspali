@@ -144,4 +144,7 @@ CREATE INDEX meal_plan_date_idx ON meal_plan (date);`,
   unit TEXT
 );
 CREATE INDEX receipt_aliases_key_idx ON receipt_aliases (key);`,
+
+  // v6 — recettes importées d'un site : lien vers la page d'origine
+  `ALTER TABLE recipes ADD COLUMN source_url TEXT;`,
 ];

@@ -19,7 +19,9 @@ export function formatRecipeQuantity(q: number | null, unit: string | null): str
   if (q == null) return '';
   const v = roundForDisplay(q, unit);
   if (!unit || unit === 'pièce') return formatNumber(v);
-  return `${formatNumber(v)} ${unit}`;
+  // « 2 gousses », « 3 tranches » ; les abréviations (g, cl, c. à s.) restent invariables.
+  const plural = v > 1 && /^(gousse|tranche|pincée|pot|boîte|sachet|botte|cube|filet)$/.test(unit) ? `${unit}s` : unit;
+  return `${formatNumber(v)} ${plural}`;
 }
 
 /** Ingrédients d'une recette avec leur disponibilité dans l'inventaire. */

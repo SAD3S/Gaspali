@@ -25,6 +25,7 @@ export function rowToRecipe(r: RecipeRow): Recipe {
     ingredients: parse<RecipeIngredient[]>(r.ingredients, []),
     steps: parse<string[]>(r.steps, []),
     photoUri: r.photoUri,
+    sourceUrl: r.sourceUrl,
     source: r.source,
     authorId: r.authorId,
   };
@@ -44,6 +45,8 @@ export interface RecipeInput {
   ingredients: RecipeIngredient[];
   steps: string[];
   photoUri: string | null;
+  /** Page d'origine (import depuis un site) ; absent = inchangé. */
+  sourceUrl?: string | null;
   source?: 'perso' | 'ia';
 }
 
@@ -59,6 +62,7 @@ export function saveRecipe(input: RecipeInput): string {
     ingredients: JSON.stringify(input.ingredients),
     steps: JSON.stringify(input.steps.map((s) => s.trim()).filter(Boolean)),
     photoUri: input.photoUri,
+    ...(input.sourceUrl !== undefined ? { sourceUrl: input.sourceUrl } : {}),
     updatedAt: now,
   };
   if (input.id) {

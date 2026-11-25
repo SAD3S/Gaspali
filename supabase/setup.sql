@@ -910,3 +910,8 @@ end $$;
 
 revoke all on function public.delete_account_data(uuid) from public, anon, authenticated;
 grant execute on function public.delete_account_data(uuid) to service_role;
+
+-- ═══ 20261125150000_recettes_importees.sql ═══
+
+-- Gaspalli — recettes importées d'un site : lien vers la page d'origine.
+alter table public.recipes add column source_url text check (char_length(source_url) <= 2000);

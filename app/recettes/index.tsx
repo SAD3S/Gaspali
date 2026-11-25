@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, FolderPlus, Plus, Search, Sparkles } from 'lucide-react-native';
+import { ChevronLeft, Download, FolderPlus, Plus, Search, Sparkles } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +7,8 @@ import { BottomSheet, Button, Chip, Field, Text, useSnackbar } from '@/component
 import { createFolder } from '@/db/recipesRepo';
 import { normalizeText } from '@/domain/inventory';
 import { recipeTags, type Suggestion } from '@/domain/recipeEngine';
+import { AI_RECIPES } from '@/config';
+import { AddRecipeSheet } from '@/features/recipes/AddRecipeSheet';
 import { RecipeCard } from '@/features/recipes/RecipeCard';
 import { useAllRecipes, useRecipeOrganization, useSuggestions } from '@/features/recipes/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -35,6 +37,7 @@ export default function Recettes() {
   const [tag, setTag] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [newFolder, setNewFolder] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
 
   const bySuggestion = useMemo(() => new Map(suggestions.map((s) => [s.recipe.id, s])), [suggestions]);
 
@@ -67,7 +70,7 @@ export default function Recettes() {
           <ChevronLeft size={22} color={colors.text} />
         </Pressable>
         <Text variant="title1" accessibilityRole="header" style={{ flex: 1 }}>Recettes</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Créer une recette" onPress={() => router.push('/recettes/editer')} style={[styles.round, { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Ajouter une recette" onPress={() => setAdding(true)} style={[styles.round, { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }]}>
           <Plus size={22} color={colors.primaryText} />
         </Pressable>
       </View>
@@ -109,18 +112,33 @@ export default function Recettes() {
 
       {quick === 'pour-toi' && !folder && !tag && !query && (
         <>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Invente-moi une recette avec l’IA"
-            onPress={() => router.push('/recettes/ia')}
-            style={[styles.ai, { backgroundColor: colors.primarySoft }]}
-          >
-            <Sparkles size={22} color={colors.primaryText} />
-            <View style={{ flex: 1 }}>
-              <Text variant="bodyStrong" tone="primary">Invente-moi une recette</Text>
-              <Text variant="label" tone="primary">Une idée sur mesure avec ce qui périme bientôt</Text>
-            </View>
-          </Pressable>
+          {AI_RECIPES ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Invente-moi une recette avec l’IA"
+              onPress={() => router.push('/recettes/ia')}
+              style={[styles.ai, { backgroundColor: colors.primarySoft }]}
+            >
+              <Sparkles size={22} color={colors.primaryText} />
+              <View style={{ flex: 1 }}>
+                <Text variant="bodyStrong" tone="primary">Invente-moi une recette</Text>
+                <Text variant="label" tone="primary">Une idée sur mesure avec ce qui périme bientôt</Text>
+              </View>
+            </Pressable>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Importer une recette depuis un site, une photo ou un fichier"
+              onPress={() => setAdding(true)}
+              style={[styles.ai, { backgroundColor: colors.primarySoft }]}
+            >
+              <Download size={22} color={colors.primaryText} />
+              <View style={{ flex: 1 }}>
+                <Text variant="bodyStrong" tone="primary">Importer une recette</Text>
+                <Text variant="label" tone="primary">Depuis un site, une photo de livre ou un fichier</Text>
+              </View>
+            </Pressable>
+          )}
           <Text variant="label" tone="secondary">Classées pour utiliser d’abord ce qui périme bientôt.</Text>
         </>
       )}
@@ -147,9 +165,9 @@ export default function Recettes() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text variant="body" tone="secondary" style={{ textAlign: 'center' }}>
-              {quick === 'favoris' ? 'Pas encore de favoris : touche le cœur sur une recette.' : quick === 'mes-recettes' ? 'Crée ta première recette avec le bouton +.' : 'Aucune recette ne correspond.'}
+              {quick === 'favoris' ? 'Pas encore de favoris : touche le cœur sur une recette.' : quick === 'mes-recettes' ? 'Ajoute ta première recette avec le bouton + : écrite, importée d’un site ou photographiée.' : 'Aucune recette ne correspond.'}
             </Text>
-            {quick === 'mes-recettes' && <Button label="Créer une recette" variant="soft" onPress={() => router.push('/recettes/editer')} />}
+            {quick === 'mes-recettes' && <Button label="Ajouter une recette" variant="soft" onPress={() => setAdding(true)} />}
           </View>
         }
       />
@@ -170,6 +188,7 @@ export default function Recettes() {
           />
         </View>
       </BottomSheet>
+      <AddRecipeSheet visible={adding} onClose={() => setAdding(false)} />
     </SafeAreaView>
   );
 }

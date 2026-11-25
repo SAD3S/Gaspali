@@ -14,3 +14,5 @@ export const SENTRY_DSN = clean(process.env.EXPO_PUBLIC_SENTRY_DSN);
 export const APP_ENV = clean(process.env.EXPO_PUBLIC_APP_ENV) ?? 'development';
 /** Connexion Google : à activer seulement quand le fournisseur Google est configuré dans Supabase. */
 export const GOOGLE_SIGN_IN = process.env.EXPO_PUBLIC_AUTH_GOOGLE === '1';
+/** Idées de recettes par IA : masquées tant que la fonction n'est pas déployée avec une clé (EXPO_PUBLIC_AI_RECIPES=1). */
+export const AI_RECIPES = process.env.EXPO_PUBLIC_AI_RECIPES === '1';

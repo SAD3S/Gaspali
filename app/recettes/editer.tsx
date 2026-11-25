@@ -10,6 +10,7 @@ import { deleteRecipe, saveRecipe, setInFolder } from '@/db/recipesRepo';
 import { resolveIngredient, searchIngredients } from '@/domain/ingredientMatch';
 import { KIND_LABELS } from '@/features/recipes/RecipeCard';
 import { useRecipe, useRecipeOrganization } from '@/features/recipes/hooks';
+import { clearImportDraft, peekImportDraft } from '@/features/recipes/importDraft';
 import { pickRecipePhoto } from '@/services/photos';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH, radius } from '@/theme/tokens';
@@ -40,23 +41,40 @@ function toRow(ri: RecipeIngredient): Row {
   };
 }
 
+/** « www.marmiton.org » → « marmiton.org » */
+function hostOf(url: string | null): string {
+  if (!url) return 'un site';
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return 'un site';
+  }
+}
+
 /** Création / modification d'une recette perso (avec tags et dossiers). */
 export default function EditerRecette() {
   const { colors } = useTheme();
   const snackbar = useSnackbar();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, brouillon } = useLocalSearchParams<{ id?: string; brouillon?: string }>();
   const existing = useRecipe(id ?? '');
   const org = useRecipeOrganization();
   const editing = !!(id && existing && existing.source !== 'base');
+  // Recette importée (site, photo, fichier) à relire avant d'enregistrer.
+  const [imported] = useState(() => (brouillon ? peekImportDraft() : null));
+  const base = imported?.recipe;
 
-  const [title, setTitle] = useState(existing?.title ?? '');
-  const [kind, setKind] = useState<RecipeKind>(existing?.kind ?? 'plat');
-  const [minutes, setMinutes] = useState(existing?.minutes ?? 30);
-  const [servings, setServings] = useState(existing?.servings ?? 4);
-  const [photo, setPhoto] = useState<string | null>(existing?.photoUri ?? null);
-  const [rows, setRows] = useState<Row[]>(() => (existing?.ingredients.length ? existing.ingredients.map(toRow) : [toRow({ ingredientId: null, name: '', quantity: null, unit: null })]));
-  const [steps, setSteps] = useState<string[]>(existing?.steps.length ? existing.steps : ['']);
-  const [tags, setTags] = useState<string[]>(existing?.tags ?? []);
+  const [title, setTitle] = useState(existing?.title ?? base?.title ?? '');
+  const [kind, setKind] = useState<RecipeKind>(existing?.kind ?? base?.kind ?? 'plat');
+  const [minutes, setMinutes] = useState(existing?.minutes ?? base?.minutes ?? 30);
+  const [servings, setServings] = useState(existing?.servings ?? base?.servings ?? 4);
+  const [photo, setPhoto] = useState<string | null>(existing?.photoUri ?? base?.imageUrl ?? null);
+  const [sourceUrl] = useState<string | null>(existing?.sourceUrl ?? base?.sourceUrl ?? null);
+  const [rows, setRows] = useState<Row[]>(() => {
+    const list = existing?.ingredients.length ? existing.ingredients : base?.ingredients ?? [];
+    return list.length ? list.map(toRow) : [toRow({ ingredientId: null, name: '', quantity: null, unit: null })];
+  });
+  const [steps, setSteps] = useState<string[]>(existing?.steps.length ? existing.steps : base?.steps.length ? base.steps : ['']);
+  const [tags, setTags] = useState<string[]>(existing?.tags ?? base?.tags ?? []);
   const [tagInput, setTagInput] = useState('');
   const [folders, setFolders] = useState<Set<string>>(
     () => new Set(org.folders.filter((f) => id && org.byFolder.get(f.id)?.has(id)).map((f) => f.id)),
@@ -88,7 +106,8 @@ export default function EditerRecette() {
       });
     if (!title.trim()) return setError('Donne un titre à ta recette.');
     if (!ingredients.length) return setError('Ajoute au moins un ingrédient.');
-    const savedId = saveRecipe({ id: editing ? id : undefined, title, kind, minutes, servings, photoUri: photo, tags, ingredients, steps });
+    const savedId = saveRecipe({ id: editing ? id : undefined, title, kind, minutes, servings, photoUri: photo, sourceUrl, tags, ingredients, steps });
+    clearImportDraft();
     for (const f of org.folders) setInFolder(savedId, f.id, folders.has(f.id));
     snackbar.show(editing ? 'Recette mise à jour' : 'Recette créée');
     router.replace({ pathname: '/recettes/[id]', params: { id: savedId } });
@@ -106,10 +125,22 @@ export default function EditerRecette() {
         <Pressable accessibilityRole="button" accessibilityLabel="Annuler" onPress={() => router.back()} style={[styles.round, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <ChevronLeft size={22} color={colors.text} />
         </Pressable>
-        <Text variant="title2" accessibilityRole="header" style={styles.flex}>{editing ? 'Modifier la recette' : 'Nouvelle recette'}</Text>
+        <Text variant="title2" accessibilityRole="header" style={styles.flex}>{editing ? 'Modifier la recette' : imported ? 'Recette importée' : 'Nouvelle recette'}</Text>
       </View>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          {imported && (
+            <Card style={{ gap: 4, backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }}>
+              <Text variant="bodyStrong" tone="primary">
+                {imported.origin === 'photo' ? 'Lue sur ta photo' : imported.origin === 'lien' ? `Importée de ${hostOf(sourceUrl)}` : 'Importée d’un fichier'}
+              </Text>
+              <Text variant="label" tone="primary">
+                {imported.origin === 'photo'
+                  ? 'La lecture peut se tromper : vérifie les quantités et les étapes, puis enregistre.'
+                  : 'Vérifie les ingrédients (ceux reconnus servent aux suggestions anti-gaspi), puis enregistre.'}
+              </Text>
+            </Card>
+          )}
           <Field label="Titre" value={title} onChangeText={setTitle} placeholder="Tarte aux pommes de mamie" maxLength={120} />
 
           {photo ? (

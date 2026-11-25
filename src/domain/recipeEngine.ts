@@ -13,6 +13,8 @@ export type RecipeSource = 'base' | 'perso' | 'ia';
 export interface Recipe extends RecipeData {
   source: RecipeSource;
   photoUri?: string | null;
+  /** Page d'origine (recette importée d'un site). */
+  sourceUrl?: string | null;
   authorId?: string | null;
 }
 

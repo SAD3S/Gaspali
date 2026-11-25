@@ -83,6 +83,8 @@ export const recipes = sqliteTable('recipes', {
   /** JSON : string[] */
   steps: text('steps').notNull(),
   photoUri: text('photo_uri'),
+  /** Page d'origine d'une recette importée depuis un site. */
+  sourceUrl: text('source_url'),
   source: text('source', { enum: ['perso', 'ia'] }).notNull(),
   authorId: text('author_id'),
 });

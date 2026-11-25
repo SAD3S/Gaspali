@@ -9,6 +9,10 @@
 
 ## Nouveautés à tester
 
+- **Partage du frigo** : Plus › Compte et foyer › ton e-mail, puis touche le lien reçu **depuis ce téléphone**
+  (l'e-mail de Supabase est en anglais : « Your sign-in link »). Crée le foyer ; l'autre personne le rejoint avec le code.
+- **Importer une recette** (Recettes › +) : depuis un site (colle le lien), une photo de livre ou de fiche
+  (jusqu'à 4 pages), ou un fichier. Tout est modifiable avant d'enregistrer ; la fiche garde le lien du site.
 - **Nouvelle icône** aux couleurs de Gaspalli.
 - **Confidentialité** (Plus › Confidentialité et données) : exporte toutes tes données dans un fichier, restaure-les
   sur un autre téléphone, ou efface tout. **À propos** : version, crédits Open Food Facts.
