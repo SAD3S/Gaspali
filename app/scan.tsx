@@ -7,7 +7,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleShee
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text, useSnackbar } from '@/components/ui';
 import { addItem, lastPaidPrice } from '@/db/inventoryRepo';
-import { lookupBarcode, saveManualProduct } from '@/db/productsRepo';
+import { lookupBarcode, saveManualProduct, updateProductDetails } from '@/db/productsRepo';
 import { normalizeBarcode } from '@/domain/barcode';
 import { getCategory, LOCATION_LABELS, type CategoryId, type Location } from '@/domain/categories';
 import { parsePackageDates, type DateCandidate } from '@/domain/dateOcr';
@@ -16,7 +16,7 @@ import { defaultExpiry } from '@/domain/inventory';
 import type { ScannedProduct } from '@/domain/offProduct';
 import type { PriceHint } from '@/domain/prices';
 import type { ItemFormValue } from '@/features/inventory/ItemForm';
-import { ConfirmSheet, type SheetProduct } from '@/features/scan/ConfirmSheet';
+import { ConfirmSheet, type ProductDetails, type SheetProduct } from '@/features/scan/ConfirmSheet';
 import { DateResultSheet } from '@/features/scan/DateResultSheet';
 import { ManualCodeSheet } from '@/features/scan/ManualCodeSheet';
 import { fetchOpenPrice } from '@/services/openPrices';
@@ -57,8 +57,9 @@ export default function Scan() {
   const [target, setTarget] = useState<SheetProduct | null>(null);
   const [form, setForm] = useState<ItemFormValue>(() => initialForm('autre'));
   const [dateTouched, setDateTouched] = useState(false);
-  const [unknownName, setUnknownName] = useState('');
-  const [unknownCategory, setUnknownCategory] = useState<CategoryId>('autre');
+  // Nom, catégorie et contenance affichés dans la feuille, modifiables.
+  const [details, setDetails] = useState<ProductDetails>({ name: '', category: 'autre', packQuantity: 1, packUnit: 'pièce' });
+  const [sheetKey, setSheetKey] = useState(0);
   const [candidates, setCandidates] = useState<DateCandidate[] | null>(null);
 
   // Prix suggérés pour UN exemplaire : dernier prix payé, puis prix relevés par la communauté.
@@ -82,7 +83,7 @@ export default function Scan() {
   const lastCode = useRef<{ code: string; at: number } | null>(null);
   const busy = useRef(false);
 
-  const currentCategory: CategoryId = target?.kind === 'found' ? target.product.category : unknownCategory;
+  const currentCategory: CategoryId = details.category;
 
   const handleCode = useCallback(async (raw: string) => {
     const code = normalizeBarcode(raw);
@@ -97,16 +98,17 @@ export default function Scan() {
       const r = await lookupBarcode(code);
       if (r.status === 'found') {
         setTarget({ kind: 'found', product: r.product, source: r.source, productId: r.productId });
+        setDetails({ name: r.product.name, category: r.product.category, packQuantity: r.product.packQuantity, packUnit: r.product.packUnit });
         setForm(initialForm(r.product.category));
         loadPriceHints(r.productId, r.product);
       } else {
         setTarget({ kind: 'unknown', barcode: code, offline: r.offline });
-        setUnknownName('');
-        setUnknownCategory('autre');
+        setDetails({ name: '', category: 'autre', packQuantity: 1, packUnit: 'pièce' });
         setForm(initialForm('autre'));
         setUnitHints([]);
       }
       setDateTouched(false);
+      setSheetKey((k) => k + 1);
       setMode('confirm');
     } finally {
       busy.current = false;
@@ -124,14 +126,20 @@ export default function Scan() {
 
   const add = () => {
     if (!target) return;
+    const pack = { quantity: details.packQuantity, unit: details.packUnit };
     let productId: string | null = target.kind === 'found' ? target.productId : null;
-    let product = target.kind === 'found' ? target.product : null;
+    let product: ScannedProduct;
     if (target.kind === 'unknown') {
-      const saved = saveManualProduct(target.barcode, unknownName, unknownCategory);
+      const saved = saveManualProduct(target.barcode, details.name, details.category, pack);
       productId = saved.id;
       product = saved.product;
+    } else {
+      const p = target.product;
+      // Corrections retenues pour ce code-barres (prochain scan, autres téléphones du foyer).
+      const changed = details.name.trim() !== p.name || details.category !== p.category || details.packQuantity !== p.packQuantity || details.packUnit !== p.packUnit;
+      if (changed) updateProductDetails(target.productId, { name: details.name, category: details.category, packQuantity: details.packQuantity, packUnit: details.packUnit });
+      product = { ...p, name: details.name.trim(), category: details.category, packQuantity: details.packQuantity, packUnit: details.packUnit };
     }
-    if (!product) return;
     addItem({
       name: product.name,
       category: product.category,
@@ -162,9 +170,10 @@ export default function Scan() {
   const onLocationChange = (location: Location) =>
     setForm((f) => ({ ...f, location, ...(dateTouched ? {} : { expiresAt: defaultExpiry(currentCategory, location) }) }));
 
-  const onUnknownCategory = (c: CategoryId) => {
-    setUnknownCategory(c);
-    if (!dateTouched) setForm(initialForm(c));
+  const onCategory = (c: CategoryId) => {
+    setDetails((d) => ({ ...d, category: c }));
+    // Date et emplacement par défaut de la nouvelle catégorie, en gardant le nombre et le prix.
+    if (!dateTouched) setForm((f) => ({ ...initialForm(c), quantity: f.quantity, price: f.price }));
   };
 
   const startReadDate = () => {
@@ -390,10 +399,10 @@ export default function Scan() {
             onFormChange={onFormChange}
             onLocationChange={onLocationChange}
             onReadDate={startReadDate}
-            unknownName={unknownName}
-            onUnknownName={setUnknownName}
-            unknownCategory={unknownCategory}
-            onUnknownCategory={onUnknownCategory}
+            key={sheetKey}
+            details={details}
+            onDetails={(patch) => setDetails((d) => ({ ...d, ...patch }))}
+            onCategory={onCategory}
             burst={burst}
             priceHints={priceHints}
             onAdd={add}

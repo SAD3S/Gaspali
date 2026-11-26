@@ -67,3 +67,21 @@ export function finishMessage(name: string, status: 'consomme' | 'jete', item: {
   const w = itemWorth(item);
   return `${name} : ${status === 'consomme' ? 'consommé' : 'jeté'} · ${moneyPhrase(w.value, w.estimated, status === 'consomme' ? 'sauve' : 'perdu')}`;
 }
+
+/**
+ * Prix ramené au kilo, au litre ou à l'unité, pour comparer : 3,10 € pour 2 × 250 g → « 6,20 €/kg ».
+ * null si le prix ou la contenance manque.
+ */
+export function unitPriceLabel(total: number | null | undefined, count: number, packQuantity: number, packUnit: string): string | null {
+  if (total == null || total <= 0 || count <= 0 || packQuantity <= 0) return null;
+  const amount = count * packQuantity;
+  const per = (v: number, unit: string) => `${formatEuros(Math.round(v * 100) / 100)}/${unit}`;
+  switch (packUnit) {
+    case 'g': return per((total / amount) * 1000, 'kg');
+    case 'kg': return per(total / amount, 'kg');
+    case 'cl': return per((total / amount) * 100, 'L');
+    case 'ml': return per((total / amount) * 1000, 'L');
+    case 'L': return per(total / amount, 'L');
+    default: return amount > 1 ? `${formatEuros(Math.round((total / amount) * 100) / 100)} l’unité` : null;
+  }
+}

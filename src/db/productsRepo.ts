@@ -57,9 +57,14 @@ function upsert(p: ScannedProduct, source: 'off' | 'manuel'): string {
 }
 
 /** Produit inconnu saisi à la main : on mémorise le code-barres pour la prochaine fois. */
-export function saveManualProduct(barcode: string, name: string, category: CategoryId): { id: string; product: ScannedProduct } {
+export function saveManualProduct(
+  barcode: string,
+  name: string,
+  category: CategoryId,
+  pack: { quantity: number; unit: string } = { quantity: 1, unit: 'pièce' },
+): { id: string; product: ScannedProduct } {
   const product: ScannedProduct = {
-    barcode, name: name.trim(), brand: null, category, packQuantity: 1, packUnit: 'pièce', imageUrl: null, nutriscore: null, allergens: [],
+    barcode, name: name.trim(), brand: null, category, packQuantity: pack.quantity, packUnit: pack.unit, imageUrl: null, nutriscore: null, allergens: [],
   };
   return { id: upsert(product, 'manuel'), product };
 }
@@ -71,4 +76,17 @@ export async function lookupBarcode(barcode: string): Promise<LookupResult> {
   const off = await fetchOffProduct(barcode);
   if (off.kind === 'found') return { status: 'found', product: off.product, productId: upsert(off.product, 'off'), source: 'off' };
   return { status: 'unknown', barcode, offline: off.kind === 'offline' };
+}
+
+/** Corrections faites au scan (nom, catégorie, contenance) : retenues pour ce code-barres. */
+export function updateProductDetails(id: string, patch: { name?: string; category?: CategoryId; packQuantity?: number; packUnit?: string }): void {
+  const values = {
+    ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
+    ...(patch.category !== undefined ? { category: patch.category } : {}),
+    ...(patch.packQuantity !== undefined ? { defaultQuantity: patch.packQuantity } : {}),
+    ...(patch.packUnit !== undefined ? { defaultUnit: patch.packUnit } : {}),
+    updatedAt: new Date(),
+  };
+  db.update(products).set(values).where(eq(products.id, id)).run();
+  trackPatch('products', id, values);
 }

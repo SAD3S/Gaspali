@@ -9,6 +9,8 @@
 
 ## Nouveautés à tester
 
+- **Scan plus précis** : nom, contenance (g, kg, cl, L, pièce), catégorie, nombre d'exemplaires et prix modifiables
+  avant d'ajouter, avec le prix au kilo ou au litre. Les corrections sont retenues pour ce code-barres.
 - **Planning libre** (onglet Recettes › « Ma semaine ») : « + » sur chaque repas pour chercher la recette voulue
   (favoris, mes recettes, dossiers, rapide, sans cuisson, desserts), plusieurs plats par repas, repas sans recette
   (« Restes », « Resto »). Appui long sur un plat puis toucher l'endroit voulu pour le déplacer. Les idées

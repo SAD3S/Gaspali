@@ -34,10 +34,14 @@ interface Props {
   /** Affiche le champ « Prix payé » (avec ses suggestions). */
   showPrice?: boolean;
   priceHints?: PriceHint[];
+  /** « Quantité » par défaut ; « Nombre » au scan (exemplaires du produit). */
+  quantityLabel?: string;
+  /** Texte sous le prix (« soit 6,20 €/kg »). */
+  priceNote?: string | null;
 }
 
 /** Bloc date / quantité / emplacement, partagé par le scan, l'ajout manuel et la fiche produit. */
-export function ItemForm({ value, onChange, onLocationChange, onReadDate, showUnits = true, showPrice = false, priceHints = [] }: Props) {
+export function ItemForm({ value, onChange, onLocationChange, onReadDate, showUnits = true, showPrice = false, priceHints = [], quantityLabel = 'Quantité', priceNote }: Props) {
   const { colors } = useTheme();
   const [calendar, setCalendar] = useState(false);
   const set = (patch: Partial<ItemFormValue>) => onChange({ ...value, ...patch });
@@ -93,9 +97,9 @@ export function ItemForm({ value, onChange, onLocationChange, onReadDate, showUn
       </View>
 
       <View style={styles.between}>
-        <Text variant="bodyStrong" style={styles.h}>Quantité</Text>
+        <Text variant="bodyStrong" style={styles.h}>{quantityLabel}</Text>
         <Stepper
-          label="quantité"
+          label={quantityLabel.toLowerCase()}
           value={value.quantity}
           step={stepFor(value.unit)}
           min={stepFor(value.unit) < 1 ? stepFor(value.unit) : 1}
@@ -121,7 +125,7 @@ export function ItemForm({ value, onChange, onLocationChange, onReadDate, showUn
         </ScrollView>
       )}
 
-      {showPrice && <PriceField value={value.price ?? null} hints={priceHints} onChange={(price) => set({ price })} />}
+      {showPrice && <PriceField value={value.price ?? null} hints={priceHints} note={priceNote} onChange={(price) => set({ price })} />}
 
       <OptionTiles<Location>
         accessibilityLabel="Emplacement"
@@ -145,7 +149,7 @@ export function ItemForm({ value, onChange, onLocationChange, onReadDate, showUn
 }
 
 /** Prix payé : saisie libre (« 3,49 ») et suggestions à toucher (dernier prix, prix relevés). */
-function PriceField({ value, hints, onChange }: { value: number | null; hints: PriceHint[]; onChange: (v: number | null) => void }) {
+function PriceField({ value, hints, note, onChange }: { value: number | null; hints: PriceHint[]; note?: string | null; onChange: (v: number | null) => void }) {
   const { colors } = useTheme();
   const [text, setText] = useState(priceInput(value));
   // Valeur changée de l'extérieur (suggestion, nouveau produit scanné) : on la reflète.
@@ -159,7 +163,7 @@ function PriceField({ value, hints, onChange }: { value: number | null; hints: P
       <View style={styles.between}>
         <View style={styles.flex}>
           <Text variant="bodyStrong" style={styles.h}>Prix payé</Text>
-          <Text variant="label" tone="secondary">Facultatif : pour compter ce que tu sauves</Text>
+          <Text variant="label" tone={note ? 'primary' : 'secondary'}>{note ? `Soit ${note}` : 'Facultatif : pour compter ce que tu sauves'}</Text>
         </View>
         <View style={[styles.priceBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
           <TextInput

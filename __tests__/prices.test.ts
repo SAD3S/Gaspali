@@ -40,3 +40,14 @@ it('valeur d’un produit et message de fin', () => {
   expect(finishMessage('Steak haché', 'consomme', { price: 4.2, category: 'viande' })).toBe('Steak haché : consommé · 4,20 € sauvés');
   expect(finishMessage('Yaourts', 'jete', { price: null, category: 'laitier' })).toBe('Yaourts : jeté · ≈ 1,80 € perdus');
 });
+
+it('prix au kilo, au litre ou à l’unité', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { unitPriceLabel } = require('@/domain/prices');
+  expect(unitPriceLabel(3.1, 2, 250, 'g')).toBe('6,20 €/kg');
+  expect(unitPriceLabel(1.5, 1, 1.5, 'L')).toBe('1,00 €/L');
+  expect(unitPriceLabel(2.4, 1, 20, 'cl')).toBe('12,00 €/L');
+  expect(unitPriceLabel(3, 6, 1, 'pièce')).toBe('0,50 € l’unité');
+  expect(unitPriceLabel(3, 1, 1, 'pièce')).toBeNull();
+  expect(unitPriceLabel(null, 1, 250, 'g')).toBeNull();
+});
