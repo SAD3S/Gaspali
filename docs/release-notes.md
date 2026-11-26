@@ -9,6 +9,7 @@
 
 ## Nouveautés à tester
 
+- **« Entamé » annulable** : « Annuler » juste après, ou « Pas entamé » plus tard sur la fiche (la date d'origine revient).
 - **Congèle-le !** : Pépin propose de congeler un produit qui arrive à sa date (accueil et fiche produit).
 - **Décongélation sûre** : sortir un produit du congélateur lui donne une date courte (24 h pour la viande, le
   poisson, les plats et les restes ; 2 jours sinon), avec l'étiquette « Décongelé » ; pas de recongélation proposée,

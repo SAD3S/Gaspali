@@ -1,10 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { CalendarDays, Check, ChevronLeft, ChevronRight, PackageOpen, Pencil, Snowflake, Trash2 } from 'lucide-react-native';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, PackageOpen, Pencil, Snowflake, Trash2, Undo2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheet, Button, Card, Chip, Field, FreshnessBadge, ProductAvatar, showDialog, Stepper, Text, useSnackbar } from '@/components/ui';
-import { consumePart, markOpened, moveTo, setStatus, updateItem } from '@/db/inventoryRepo';
+import { consumePart, markOpened, moveTo, setStatus, unmarkOpened, updateItem } from '@/db/inventoryRepo';
 import type { EventRow } from '@/db/schema';
 import { CATEGORY_LIST, getCategory, type CategoryId, type Location } from '@/domain/categories';
 import { formatLongDate, relativeDayLabel, daysBetween } from '@/domain/dates';
@@ -220,13 +220,26 @@ export default function Produit() {
                 }}
                 style={styles.flex}
               />
-              {!item.openedAt && (
+              {item.openedAt ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Pas entamé : annuler la marque « entamé »"
+                  onPress={() => {
+                    const restored = unmarkOpened(item.id);
+                    snackbar.show(restored ? 'Plus marqué comme entamé : date d’origine remise' : 'Plus marqué comme entamé');
+                  }}
+                  style={[styles.openedBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                >
+                  <Undo2 size={18} color={colors.text} />
+                  <Text variant="label" style={styles.bold}>Pas entamé</Text>
+                </Pressable>
+              ) : (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Marquer comme entamé"
                   onPress={() => {
-                    markOpened(item.id);
-                    snackbar.show(category.openedDays ? `Entamé : à finir d’ici ${formatDuration(category.openedDays)}` : 'Marqué comme entamé');
+                    const undo = markOpened(item.id);
+                    snackbar.show(category.openedDays ? `Entamé : à finir d’ici ${formatDuration(category.openedDays)}` : 'Marqué comme entamé', undo);
                   }}
                   style={[styles.iconBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 >
@@ -323,6 +336,8 @@ const styles = StyleSheet.create({
   hero: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   badges: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   actions: { flexDirection: 'row', gap: 10 },
+  openedBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 52, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1 },
+  bold: { fontFamily: 'DMSans_700Bold' },
   iconBtn: { width: 52, height: 52, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   histRow: { flexDirection: 'row', alignItems: 'center', minHeight: 46, gap: 8 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

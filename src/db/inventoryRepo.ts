@@ -157,13 +157,42 @@ export function consumePart(id: string, remaining: number): () => void {
   };
 }
 
-/** Marque « entamé » (raccourcit la date si la catégorie le prévoit). */
-export function markOpened(id: string): void {
+/** Marque « entamé » (raccourcit la date si la catégorie le prévoit). Renvoie l'annulation. */
+export function markOpened(id: string): () => void {
   const before = getItem(id);
-  if (!before || before.openedAt) return;
+  if (!before || before.openedAt) return () => {};
   const r = openItem(rowToItem(before));
   updateItem(id, r);
-  logEvent(before, 'entame', null);
+  // L'ancienne date est gardée dans l'événement : « Pas entamé » pourra la remettre plus tard.
+  logEvent(before, 'entame', null, JSON.stringify({ expiresAt: before.expiresAt.getTime(), dateType: before.dateType }));
+  return () => unmarkOpened(id);
+}
+
+/**
+ * « Pas entamé » (erreur de manipulation) : retire la marque et remet la date d'avant si elle est
+ * connue. Renvoie true si la date a été remise.
+ */
+export function unmarkOpened(id: string): boolean {
+  const before = getItem(id);
+  if (!before || !before.openedAt) return false;
+  const last = db
+    .select()
+    .from(events)
+    .where(and(eq(events.itemId, id), eq(events.type, 'entame'), isNull(events.deletedAt)))
+    .orderBy(desc(events.createdAt))
+    .get();
+  let previous: { expiresAt: number; dateType: DateType } | null = null;
+  try {
+    previous = last?.detail ? (JSON.parse(last.detail) as { expiresAt: number; dateType: DateType }) : null;
+  } catch {
+    previous = null;
+  }
+  updateItem(id, {
+    openedAt: null,
+    ...(previous && Number.isFinite(previous.expiresAt) ? { expiresAt: new Date(previous.expiresAt), dateType: previous.dateType } : {}),
+  });
+  if (last) cancelEvent(last.id);
+  return !!previous;
 }
 
 export function moveTo(id: string, location: Location, extendForFreezer: boolean): () => void {
