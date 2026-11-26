@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from 'react';
+import { shoppingNews, type ShoppingNews, type ShoppingState } from '@/domain/householdNews';
 import { chunk, coalesceOutbox, pendingFields } from '@/domain/sync';
+import { sqlite } from '@/db/client';
 import { frenchError, isNetworkError, supabase } from '@/services/supabase';
 import { applyRemoteRows } from './apply';
 import { getSyncContext } from './context';
@@ -16,6 +18,26 @@ export interface SyncStatus {
 }
 
 const PAGE = 500;
+
+// ─── Nouvelles du foyer (liste de courses modifiée sur un autre téléphone) ───
+
+type NewsListener = (news: ShoppingNews) => void;
+const newsListeners = new Set<NewsListener>();
+
+/** Abonnement aux changements de la liste de courses venus des autres membres. */
+export function onHouseholdNews(listener: NewsListener): () => void {
+  newsListeners.add(listener);
+  return () => newsListeners.delete(listener);
+}
+
+function shoppingSnapshot(householdId: string): ShoppingState[] {
+  return sqlite
+    .getAllSync<{ id: string; name: string; checked: number; deleted_at: number | null; added_by: string | null }>(
+      'SELECT id, name, checked, deleted_at, added_by FROM shopping_items WHERE household_id = ?',
+      householdId,
+    )
+    .map((r) => ({ id: r.id, name: r.name, checked: !!r.checked, deleted: r.deleted_at != null, addedBy: r.added_by }));
+}
 let status: SyncStatus = { phase: 'local', lastSyncAt: null, pending: 0, error: null };
 const listeners = new Set<() => void>();
 
@@ -77,7 +99,15 @@ async function pull(householdId: string): Promise<void> {
       if (error) throw error;
       const rows = (data ?? []) as Record<string, unknown>[];
       if (!rows.length) break;
+      // Liste de courses : ce qui change ici vient forcément d'un autre téléphone (les modifications
+      // locales sont déjà appliquées). Pas de nouvelles au tout premier chargement.
+      const watch = name === 'shopping_items' && cursor > 0 && newsListeners.size > 0;
+      const before = watch ? shoppingSnapshot(householdId) : null;
       applyRemoteRows(name, rows, pending);
+      if (before) {
+        const news = shoppingNews(before, shoppingSnapshot(householdId), getSyncContext().userId);
+        if (news.added.length || news.finished) newsListeners.forEach((l) => l(news));
+      }
       cursor = Number(rows[rows.length - 1]!.server_seq);
       setState(key, String(cursor));
       if (rows.length < PAGE) break;

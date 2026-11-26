@@ -123,3 +123,26 @@ describe('formatQuantity', () => {
 describe('formatDuration', () => {
   it.each([[3, '3 j'], [14, '2 sem.'], [60, '2 mois']])('%i → %s', (d, s) => expect(formatDuration(d)).toBe(s));
 });
+
+describe('Congèle-le !', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { freezeCandidates } = require('@/domain/inventory');
+  const today = new Date(2026, 10, 26, 10);
+  const mk = (name: string, category: string, days: number, location = 'frigo', status = 'en_stock') => ({
+    id: name, name, category, quantity: 1, unit: 'pièce', location, dateType: 'DLC', status,
+    expiresAt: new Date(2026, 10, 26 + days, 12), addedAt: today, openedAt: null,
+  });
+  it('propose les produits congelables qui arrivent à date, le plus pressé d’abord', () => {
+    const list = freezeCandidates([
+      mk('Steak haché', 'viande', 1),
+      mk('Poulet', 'viande', 0),
+      mk('Yaourts', 'laitier', 0),
+      mk('Pain', 'boulangerie', 5),
+      mk('Saucisses', 'viande', 1, 'congelo'),
+      mk('Jambon', 'viande', -1),
+      mk('Lardons', 'viande', 1, 'frigo', 'consomme'),
+    ], today);
+    expect(list.map((c: { item: { name: string } }) => c.item.name)).toEqual(['Poulet', 'Yaourts', 'Steak haché']);
+    expect(list[2].days).toBeGreaterThan(60);
+  });
+});

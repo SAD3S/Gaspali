@@ -1,17 +1,18 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { CalendarDays, Check, ChevronLeft, ChevronRight, PackageOpen, Snowflake, Trash2 } from 'lucide-react-native';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, PackageOpen, Pencil, Snowflake, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BottomSheet, Button, Card, FreshnessBadge, ProductAvatar, Stepper, Text, useSnackbar } from '@/components/ui';
+import { BottomSheet, Button, Card, Chip, Field, FreshnessBadge, ProductAvatar, Stepper, Text, useSnackbar } from '@/components/ui';
 import { consumePart, markOpened, moveTo, setStatus, updateItem } from '@/db/inventoryRepo';
 import type { EventRow } from '@/db/schema';
-import { getCategory, type Location } from '@/domain/categories';
+import { CATEGORY_LIST, getCategory, type CategoryId, type Location } from '@/domain/categories';
 import { formatLongDate, relativeDayLabel, daysBetween } from '@/domain/dates';
 import { computeFreshness } from '@/domain/freshness';
 import { formatDuration, freezerExtension, remainingOptions } from '@/domain/inventory';
 import { formatQuantity, roundQuarter, stepFor } from '@/domain/quantity';
 import { roundForDisplay } from '@/domain/units';
+import { FreezeTip } from '@/features/inventory/FreezeTip';
 import { ItemForm } from '@/features/inventory/ItemForm';
 import { finishMessage, itemWorth } from '@/domain/prices';
 import { formatEuros } from '@/domain/stats';
@@ -41,6 +42,7 @@ export default function Produit() {
   const [partialOpen, setPartialOpen] = useState(false);
   const [remaining, setRemaining] = useState(0);
   const [freezeAsk, setFreezeAsk] = useState<null | { days: number }>(null);
+  const [renaming, setRenaming] = useState<{ name: string; category: CategoryId } | null>(null);
 
   if (!item) {
     return (
@@ -86,7 +88,40 @@ export default function Produit() {
               {[item.row.brand, category.label].filter(Boolean).join(' · ')}
             </Text>
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Modifier le nom et la catégorie"
+            onPress={() => setRenaming({ name: item.name, category: item.category as CategoryId })}
+            style={[styles.iconBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
+            <Pencil size={18} color={colors.text} />
+          </Pressable>
         </View>
+        {renaming && (
+          <Card style={{ gap: 10 }}>
+            <Field label="Nom" value={renaming.name} onChangeText={(name) => setRenaming({ ...renaming, name })} maxLength={80} autoFocus />
+            <Text variant="label" tone="secondary">Catégorie</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} keyboardShouldPersistTaps="handled">
+              {[getCategory(renaming.category), ...CATEGORY_LIST.filter((c) => c.id !== renaming.category)].map((c) => (
+                <Chip key={c.id} label={c.label} selected={renaming.category === c.id} onPress={() => setRenaming({ ...renaming, category: c.id })} />
+              ))}
+            </ScrollView>
+            <View style={styles.actions}>
+              <Button label="Annuler" variant="outline" onPress={() => setRenaming(null)} style={styles.flex} />
+              <Button
+                label="Enregistrer"
+                disabled={!renaming.name.trim()}
+                onPress={() => {
+                  const before = { name: item.name, category: item.category };
+                  updateItem(item.id, { name: renaming.name.trim(), category: renaming.category });
+                  setRenaming(null);
+                  snackbar.show('Produit modifié', () => updateItem(item.id, before));
+                }}
+                style={styles.flex}
+              />
+            </View>
+          </Card>
+        )}
         <View style={styles.badges}>
           {inStock ? (
             <FreshnessBadge state={f.state} label={f.label} />
@@ -103,6 +138,7 @@ export default function Produit() {
               : `Vaut ${formatEuros(worth.value)}${f.state === 'urgent' || f.state === 'perime' ? ' : à ne pas laisser perdre !' : ''}`}
           </Text>
         )}
+        {inStock && <FreezeTip items={[item]} />}
         {inStock && item.row.expiryEstimated && (
           <View style={styles.estimatedRow}>
             <Text variant="label" tone="secondary" style={styles.flex}>

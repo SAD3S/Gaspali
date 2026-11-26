@@ -70,6 +70,14 @@ export async function reschedule(plan: PlannedNotification[]): Promise<void> {
   }
 }
 
+/** Notification immédiate (nouvelles du foyer). */
+export async function notifyNow(title: string, body: string, url: string): Promise<void> {
+  if (!notificationsSupported) return;
+  if ((await getPermission()) !== 'granted') return;
+  await ensureChannel();
+  await Notifications.scheduleNotificationAsync({ content: { title, body, data: { url } }, trigger: null });
+}
+
 /** Notification de test dans 5 secondes (Réglages). */
 export async function sendTest(title: string, body: string): Promise<void> {
   if (!notificationsSupported) return;

@@ -95,6 +95,19 @@ export function freezerExtension(item: Item, today: Date = new Date()): { expire
   return { expiresAt, days };
 }
 
+/**
+ * « Congèle-le ! » : produits encore bons qui arrivent à leur date (aujourd'hui à dans 2 jours),
+ * pas encore au congélateur et qui gagnent à y aller (viande, pain, fromage râpé…). Le plus pressé d'abord.
+ */
+export function freezeCandidates<T extends Item>(items: T[], today: Date = new Date()): { item: T; days: number; daysLeft: number }[] {
+  return items
+    .filter((i) => i.status === 'en_stock')
+    .map((item) => ({ item, ext: freezerExtension(item, today), f: computeFreshness(item.expiresAt, item.dateType, today) }))
+    .filter(({ ext, f }) => ext && f.state === 'urgent' && f.daysLeft >= 0)
+    .sort((a, b) => a.f.daysLeft - b.f.daysLeft)
+    .map(({ item, ext, f }) => ({ item, days: ext!.days, daysLeft: f.daysLeft }));
+}
+
 /** « 4 mois », « 2 sem. », « 10 j » */
 export function formatDuration(days: number): string {
   if (days >= 30) return `${Math.round(days / 30)} mois`;

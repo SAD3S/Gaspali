@@ -9,6 +9,12 @@
 
 ## Nouveautés à tester
 
+- **Congèle-le !** : Pépin propose de congeler un produit qui arrive à sa date (accueil et fiche produit).
+- **Restes** : après « J'ai cuisiné ça », « Il en reste ? » les note au frigo (3 j) ou au congélateur (3 mois).
+- **Accueil allégé** : à consommer vite, le repas de ce midi ou ce soir (ou une idée à prévoir en un geste),
+  les défis ; les chiffres sont repliés dans « Mon frigo en chiffres ».
+- **Notifications du foyer** : « Léa a ajouté 3 articles aux courses », « Les courses sont faites » (Réglages › Courses).
+- **Modifier le nom et la catégorie** d'un produit : crayon sur sa fiche.
 - **Scan plus précis** : nom, contenance (g, kg, cl, L, pièce), catégorie, nombre d'exemplaires et prix modifiables
   avant d'ajouter, avec le prix au kilo ou au litre. Les corrections sont retenues pour ce code-barres.
 - **Planning libre** (onglet Recettes › « Ma semaine ») : « + » sur chaque repas pour chercher la recette voulue

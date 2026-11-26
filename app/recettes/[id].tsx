@@ -29,6 +29,7 @@ import { KIND_LABELS, RecipeVisual } from '@/features/recipes/RecipeCard';
 import { useMembers } from '@/features/account/hooks';
 import { SlotPicker } from '@/features/planning/pickers';
 import { useHouseholdPrefs, usePlan, useRecipe, useRecipeOrganization } from '@/features/recipes/hooks';
+import { LeftoversSheet } from '@/features/recipes/LeftoversSheet';
 import { useSettings } from '@/features/settings/settings';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
@@ -50,6 +51,7 @@ export default function RecetteFiche() {
   const [servings, setServings] = useState<number | null>(portions ? Number(portions) || null : null);
   const [scheduling, setScheduling] = useState(false);
   const [cooking, setCooking] = useState<CookProposal[] | null>(null);
+  const [leftovers, setLeftovers] = useState(false);
   const [foldersOpen, setFoldersOpen] = useState(false);
   const [folderName, setFolderName] = useState('');
 
@@ -203,10 +205,13 @@ export default function RecetteFiche() {
             onPress={() => {
               const p = cookProposals(evaluation, n, basicsSet);
               if (p.length) setCooking(p);
-              else if (meal && !meal.done) {
-                updateMeal(meal.id, { done: true });
-                snackbar.show('Repas marqué comme cuisiné', () => updateMeal(meal.id, { done: false }));
-              } else snackbar.show('Aucun produit de l’inventaire n’est utilisé par cette recette.');
+              else {
+                if (meal && !meal.done) {
+                  updateMeal(meal.id, { done: true });
+                  snackbar.show('Repas marqué comme cuisiné', () => updateMeal(meal.id, { done: false }));
+                }
+                setLeftovers(true);
+              }
             }}
           />
           {missing.length > 0 && (
@@ -244,8 +249,11 @@ export default function RecetteFiche() {
           setCooking(null);
           const used = final.filter((p) => p.remaining < p.item.quantity).length;
           snackbar.show(`Inventaire mis à jour · ${used} produit${used > 1 ? 's' : ''}`, () => undos.reverse().forEach((u) => u()));
+          setLeftovers(true);
         }}
       />
+
+      <LeftoversSheet key={leftovers ? 'ouvert' : 'ferme'} title={recipe.title} visible={leftovers} onClose={() => setLeftovers(false)} />
 
       <SlotPicker
         visible={scheduling}

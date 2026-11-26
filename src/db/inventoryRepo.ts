@@ -172,6 +172,14 @@ export function moveTo(id: string, location: Location, extendForFreezer: boolean
   updateItem(id, { location, ...(ext ? { expiresAt: ext.expiresAt, dateType: 'DDM' as const } : {}) });
 }
 
+/** « Congèle-le ! » : au congélateur avec sa nouvelle date. Renvoie l'annulation. */
+export function freezeItem(id: string): () => void {
+  const before = getItem(id);
+  if (!before) return () => {};
+  moveTo(id, 'congelo', true);
+  return () => updateItem(id, { location: before.location, expiresAt: before.expiresAt, dateType: before.dateType });
+}
+
 export function historyQuery(itemId: string) {
   return db.select().from(events).where(and(eq(events.itemId, itemId), isNull(events.deletedAt))).orderBy(desc(events.createdAt));
 }

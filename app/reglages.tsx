@@ -56,7 +56,7 @@ function Row({ label, hint, value, onChange, disabled }: { label: string; hint: 
 export default function Reglages() {
   const { colors, preference, setPreference } = useTheme();
   const snackbar = useSnackbar();
-  const { notifications: n, basics, autoRestock, crashReports } = useSettings();
+  const { notifications: n, basics, autoRestock, crashReports, householdAlerts } = useSettings();
   const items = useInventory();
   const [permission, setPermission] = useState<PermissionState>('undetermined');
 
@@ -120,6 +120,12 @@ export default function Reglages() {
           hint="Quand un produit acheté régulièrement est terminé, il est ajouté à la liste de courses."
           value={autoRestock}
           onChange={(v) => updateSettings({ autoRestock: v })}
+        />
+        <Row
+          label="Prévenir des changements du foyer"
+          hint="Notification quand quelqu’un d’autre ajoute des articles ou termine la liste."
+          value={householdAlerts}
+          onChange={(v) => updateSettings({ householdAlerts: v })}
         />
       </Card>
 

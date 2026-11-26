@@ -32,6 +32,7 @@ import {
 import { suggestionSummary, type Recipe } from '@/domain/recipeEngine';
 import { roundForShopping } from '@/domain/units';
 import { useMembers } from '@/features/account/hooks';
+import { LeftoversSheet } from '@/features/recipes/LeftoversSheet';
 import { RecipeVisual } from '@/features/recipes/RecipeCard';
 import { useAllRecipes, useEngineContext, usePlan, useRecipesById } from '@/features/recipes/hooks';
 import { updateSettings, useSettings } from '@/features/settings/settings';
@@ -66,6 +67,7 @@ export function WeekPlanner() {
   const [picking, setPicking] = useState<{ date: string; slot: Slot; replacing?: string } | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [moving, setMoving] = useState<PlanEntry | null>(null);
+  const [leftoversFor, setLeftoversFor] = useState<string | null>(null);
 
   const monday = addDays(startOfWeek(now), 7 * week);
   // Semaine en cours : on commence à aujourd'hui (les jours passés sans repas n'apportent rien).
@@ -351,7 +353,13 @@ export function WeekPlanner() {
                 label={selected.done ? 'Ce n’est pas encore cuisiné' : 'C’est cuisiné'}
                 variant="outline"
                 icon={selected.done ? undefined : <Check size={18} color={colors.text} />}
-                onPress={() => updateMeal(selected.id, { done: !selected.done })}
+                onPress={() => {
+                  updateMeal(selected.id, { done: !selected.done });
+                  if (!selected.done) {
+                    setSelectedId(null);
+                    setLeftoversFor(titleOf(selected));
+                  }
+                }}
               />
             )}
             <Button
@@ -368,6 +376,8 @@ export function WeekPlanner() {
           </View>
         )}
       </BottomSheet>
+
+      <LeftoversSheet key={leftoversFor ?? 'ferme'} title={leftoversFor ?? ''} visible={!!leftoversFor} onClose={() => setLeftoversFor(null)} />
 
       <RecipePicker
         visible={!!picking}

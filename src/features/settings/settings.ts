@@ -25,6 +25,12 @@ export interface AppSettings {
   celebratedChallenge: string | null;
   /** Planning : idées anti-gaspi affichées dans les créneaux libres. */
   planIdeas: boolean;
+  /** « Congèle-le ! » refusé : produit → jour (« 2026-11-26 »), pour ne pas insister le même jour. */
+  freezeDismissed: Record<string, string>;
+  /** Prévenir quand quelqu'un du foyer modifie la liste de courses. */
+  householdAlerts: boolean;
+  /** Accueil : section « Mon frigo en chiffres » dépliée. */
+  homeNumbersOpen: boolean;
 }
 
 const KEY = 'gaspalli.settings';
@@ -39,6 +45,9 @@ const DEFAULTS: AppSettings = {
   seenBadges: null,
   celebratedChallenge: null,
   planIdeas: true,
+  freezeDismissed: {},
+  householdAlerts: true,
+  homeNumbersOpen: false,
 };
 
 let current: AppSettings = DEFAULTS;

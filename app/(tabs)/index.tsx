@@ -1,18 +1,21 @@
 import { router } from 'expo-router';
-import { Bell, BellRing, Settings, CalendarDays, ChevronRight, Package, Refrigerator, Snowflake, type LucideIcon } from 'lucide-react-native';
+import { Bell, BellRing, CalendarDays, ChevronDown, ChevronRight, ChevronUp, Package, Refrigerator, Settings, Snowflake, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, ProductCard, Screen, Text, useSnackbar } from '@/components/ui';
 import type { Location } from '@/domain/categories';
 import { formatHeaderDate } from '@/domain/dates';
 import { countByLocation, queryInventory } from '@/domain/inventory';
-import { formatTime, joinNames } from '@/domain/notifications';
-import { dayKey } from '@/domain/planner';
+import { formatTime } from '@/domain/notifications';
+import { addMeal, removeMeal } from '@/db/mealPlanRepo';
+import { dayKey, type Slot } from '@/domain/planner';
 import { formatEuros } from '@/domain/stats';
 import { itemSubtitle } from '@/features/inventory/format';
 import { useInventory, useMonthStats } from '@/features/inventory/hooks';
 import { usePlan, useRecipesById, useReservations, useSuggestions } from '@/features/recipes/hooks';
-import { suggestionSummary } from '@/domain/recipeEngine';
+import { suggestionSummary, type Suggestion } from '@/domain/recipeEngine';
+import { useMembers } from '@/features/account/hooks';
+import { FreezeTip } from '@/features/inventory/FreezeTip';
 import { updateSettings, useSettings } from '@/features/settings/settings';
 import { getPermission, notificationsSupported, requestPermission, type PermissionState } from '@/services/notifications';
 import { RecipeVisual } from '@/features/recipes/RecipeCard';
@@ -69,47 +72,87 @@ function NotificationPrompt({ hasItems }: { hasItems: boolean }) {
   );
 }
 
-/** Repas planifié pour ce midi ou ce soir, sinon un accès au planning. */
-function MenuCard() {
+/**
+ * Le repas du moment : ce qui est prévu ce midi ou ce soir ; sinon une idée anti-gaspi à planifier
+ * en un geste ; sinon un accès à la semaine.
+ */
+function TodayCard({ idea }: { idea: Suggestion | null }) {
   const { colors } = useTheme();
+  const snackbar = useSnackbar();
   const plan = usePlan();
   const byId = useRecipesById();
+  const members = useMembers();
   const now = new Date();
   const today = dayKey(now);
   // Le midi reste affiché jusqu'à 15 h, ensuite on montre le soir.
+  const slot: Slot = now.getHours() < 15 ? 'midi' : 'soir';
+  const moment = slot === 'midi' ? 'ce midi' : 'ce soir';
   const meal = plan
     .filter((e) => e.date === today && !e.done && byId.has(e.recipeId) && (e.slot === 'soir' || now.getHours() < 15))
     .sort((a, b) => (a.slot === b.slot ? 0 : a.slot === 'midi' ? -1 : 1))[0];
   const recipe = meal ? byId.get(meal.recipeId) : undefined;
+  const slotTaken = plan.some((e) => e.date === today && e.slot === slot);
 
-  if (!meal || !recipe) {
+  if (meal && recipe) {
     return (
-      <Pressable accessibilityRole="button" onPress={() => router.push('/planning')}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Au menu ${meal.slot === 'midi' ? 'ce midi' : 'ce soir'} : ${recipe.title}, ${meal.servings} personnes`}
+        onPress={() => router.push({ pathname: '/recettes/[id]', params: { id: recipe.id, plan: meal.id, portions: String(meal.servings) } })}
+      >
         <Card style={styles.menuRow}>
-          <View style={[styles.promptIcon, { backgroundColor: colors.primarySoft }]}>
-            <CalendarDays size={22} color={colors.primaryText} />
-          </View>
+          <RecipeVisual recipe={recipe} size={52} rounded={14} />
           <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">Planning des repas</Text>
-            <Text variant="label" tone="secondary">Planifie ta semaine avec ce qui est dans ton frigo</Text>
+            <Text variant="overline" tone="secondary">Au menu {meal.slot === 'midi' ? 'ce midi' : 'ce soir'}</Text>
+            <Text variant="bodyStrong" numberOfLines={1}>{recipe.title}</Text>
+            <Text variant="label" tone="secondary">{meal.servings} pers. · {recipe.minutes} min</Text>
           </View>
           <ChevronRight size={20} color={colors.textSecondary} />
         </Card>
       </Pressable>
     );
   }
+
+  if (idea) {
+    return (
+      <Card tone="primary" style={{ gap: 8 }}>
+        <Text variant="overline" tone="onPrimary" style={{ opacity: 0.85 }}>Idée pour {moment}</Text>
+        <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/recettes/[id]', params: { id: idea.recipe.id } })} style={styles.menuRow}>
+          <View style={{ flex: 1 }}>
+            <Text variant="title2" tone="onPrimary">{idea.recipe.title}</Text>
+            <Text variant="body" tone="onPrimary">{idea.recipe.minutes} min · {suggestionSummary(idea)}</Text>
+          </View>
+          <ChevronRight size={20} color={colors.onPrimary} />
+        </Pressable>
+        <View style={styles.ideaActions}>
+          {!slotTaken && (
+            <Button
+              label={`Prévoir pour ${moment}`}
+              variant="onPrimary"
+              style={styles.recipeBtn}
+              onPress={() => {
+                const id = addMeal(today, slot, idea.recipe.id, Math.max(2, members.length));
+                snackbar.show(`${idea.recipe.title} : ${moment}`, () => removeMeal(id));
+              }}
+            />
+          )}
+          <Pressable accessibilityRole="link" onPress={() => router.navigate({ pathname: '/recettes', params: { vue: 'semaine' } })} hitSlop={10} style={styles.otherIdeas}>
+            <Text variant="label" tone="onPrimary" style={styles.bold}>Ma semaine</Text>
+          </Pressable>
+        </View>
+      </Card>
+    );
+  }
+
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Au menu ${meal.slot === 'midi' ? 'ce midi' : 'ce soir'} : ${recipe.title}, ${meal.servings} personnes`}
-      onPress={() => router.push({ pathname: '/recettes/[id]', params: { id: recipe.id, plan: meal.id, portions: String(meal.servings) } })}
-    >
+    <Pressable accessibilityRole="button" onPress={() => router.navigate({ pathname: '/recettes', params: { vue: 'semaine' } })}>
       <Card style={styles.menuRow}>
-        <RecipeVisual recipe={recipe} size={52} rounded={14} />
+        <View style={[styles.promptIcon, { backgroundColor: colors.primarySoft }]}>
+          <CalendarDays size={22} color={colors.primaryText} />
+        </View>
         <View style={{ flex: 1 }}>
-          <Text variant="overline" tone="secondary">Au menu {meal.slot === 'midi' ? 'ce midi' : 'ce soir'}</Text>
-          <Text variant="bodyStrong" numberOfLines={1}>{recipe.title}</Text>
-          <Text variant="label" tone="secondary">{meal.servings} pers. · {recipe.minutes} min</Text>
+          <Text variant="bodyStrong">Ma semaine</Text>
+          <Text variant="label" tone="secondary">Prévois tes repas avec ce qui est dans ton frigo</Text>
         </View>
         <ChevronRight size={20} color={colors.textSecondary} />
       </Card>
@@ -117,11 +160,79 @@ function MenuCard() {
   );
 }
 
+/** Repliable : nombre de produits par endroit et bilan du mois. */
+function Numbers({ counts }: { counts: Record<Location, number> }) {
+  const { colors } = useTheme();
+  const stats = useMonthStats();
+  const { homeNumbersOpen } = useSettings();
+  const total = counts.frigo + counts.congelo + counts.placard;
+  return (
+    <Card style={{ gap: 12 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: homeNumbersOpen }}
+        onPress={() => updateSettings({ homeNumbersOpen: !homeNumbersOpen })}
+        style={styles.cardHead}
+      >
+        <View style={{ flex: 1 }}>
+          <Text variant="bodyStrong">Mon frigo en chiffres</Text>
+          <Text variant="label" tone="secondary">
+            {total} produit{total > 1 ? 's' : ''}
+            {stats.savedPct !== null ? ` · ${stats.savedPct} % sauvés ce mois-ci` : ''}
+          </Text>
+        </View>
+        {homeNumbersOpen ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
+      </Pressable>
+      {homeNumbersOpen && (
+        <>
+          <View style={styles.tiles}>
+            {TILES.map(({ loc, label, Icon }) => (
+              <Pressable
+                key={loc}
+                accessibilityRole="button"
+                accessibilityLabel={`${label} : ${counts[loc]} produit${counts[loc] > 1 ? 's' : ''}`}
+                onPress={() => router.navigate({ pathname: '/inventaire', params: { lieu: loc } })}
+                style={[styles.tile, { backgroundColor: colors.surface2, borderColor: colors.surface2 }]}
+              >
+                <Icon size={22} color={colors.primaryText} />
+                <Text variant="title2" style={styles.tileCount}>{counts[loc]}</Text>
+                <Text variant="label" tone="secondary">{label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          {stats.savedPct === null ? (
+            <Text variant="label" tone="secondary">
+              Pas encore de données : glisse tes produits consommés ou jetés dans l’inventaire pour suivre tes progrès.
+            </Text>
+          ) : (
+            <View style={{ gap: 6 }}>
+              <View
+                accessibilityRole="progressbar"
+                accessibilityLabel="Produits sauvés ce mois-ci"
+                accessibilityValue={{ min: 0, max: 100, now: stats.savedPct }}
+                style={[styles.track, { backgroundColor: colors.surface2 }]}
+              >
+                <View style={[styles.fill, { width: `${stats.savedPct}%`, backgroundColor: colors.primary }]} />
+              </View>
+              <Text variant="label" tone="secondary">
+                Ce mois-ci : {stats.consumed} consommé{stats.consumed > 1 ? 's' : ''}, {stats.discarded} jeté{stats.discarded > 1 ? 's' : ''}
+                {stats.discarded ? ` (${stats.wastedEstimated ? '≈ ' : ''}${formatEuros(stats.wastedValue)})` : ''}
+              </Text>
+            </View>
+          )}
+          <Pressable accessibilityRole="link" onPress={() => router.push('/statistiques')} hitSlop={8}>
+            <Text variant="label" tone="primary" style={styles.bold}>Toutes les statistiques</Text>
+          </Pressable>
+        </>
+      )}
+    </Card>
+  );
+}
+
 export default function Accueil() {
   const { colors } = useTheme();
   const today = new Date();
   const items = useInventory();
-  const stats = useMonthStats();
   const suggestions = useSuggestions();
   const reservations = useReservations();
   // Recette du jour : la mieux classée, si elle sauve au moins un produit qui périme bientôt.
@@ -131,7 +242,6 @@ export default function Accueil() {
   const idea = suggestions.find((sg) => sg.urgentUsed + sg.soonUsed > 0 && !planned.has(sg.recipe.id)) ?? null;
   const sorted = queryInventory(items, { today });
   const urgent = sorted.filter(({ freshness: f }) => f.state === 'urgent' || f.state === 'bientot').slice(0, 3);
-  const veryUrgent = sorted.filter(({ freshness: f }) => f.state === 'urgent');
   const counts = countByLocation(items);
   const alerts = sorted.filter(({ freshness: f }) => f.state === 'urgent' || f.state === 'perime').length;
 
@@ -170,6 +280,7 @@ export default function Accueil() {
             <Text variant="label" tone="primary" style={styles.bold}>Tout voir</Text>
           </Pressable>
         </View>
+        <FreezeTip items={items} />
         {urgent.map(({ item, freshness: f }) => (
           <ProductCard
             key={item.id}
@@ -193,85 +304,11 @@ export default function Accueil() {
 
       <NotificationPrompt hasItems={items.length > 0} />
 
-      <View style={styles.tiles}>
-        {TILES.map(({ loc, label, Icon }) => (
-          <Pressable
-            key={loc}
-            accessibilityRole="button"
-            accessibilityLabel={`${label} : ${counts[loc]} produit${counts[loc] > 1 ? 's' : ''}`}
-            onPress={() => router.navigate({ pathname: '/inventaire', params: { lieu: loc } })}
-            style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          >
-            <Icon size={22} color={colors.primaryText} />
-            <Text variant="title2" style={styles.tileCount}>{counts[loc]}</Text>
-            <Text variant="label" tone="secondary">{label}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <MenuCard />
-
-      <Card tone="primary" style={{ gap: 6 }}>
-        <Text variant="overline" tone="onPrimary" style={{ opacity: 0.85 }}>Idée anti-gaspi</Text>
-        {idea ? (
-          <>
-            <Text variant="title2" tone="onPrimary">{idea.recipe.title}</Text>
-            <Text variant="body" tone="onPrimary">{idea.recipe.minutes} min · {suggestionSummary(idea)}</Text>
-            <View style={styles.ideaActions}>
-              <Button label="Voir la recette" variant="onPrimary" style={styles.recipeBtn} onPress={() => router.push({ pathname: '/recettes/[id]', params: { id: idea.recipe.id } })} />
-              <Pressable accessibilityRole="link" onPress={() => router.push('/recettes')} hitSlop={10} style={styles.otherIdeas}>
-                <Text variant="label" tone="onPrimary" style={styles.bold}>Autres idées</Text>
-              </Pressable>
-            </View>
-          </>
-        ) : veryUrgent.length > 0 ? (
-          <>
-            <Text variant="title2" tone="onPrimary">À cuisiner en priorité</Text>
-            <Text variant="body" tone="onPrimary">
-              {joinNames(veryUrgent.map((r) => r.item.name))} : pense à {veryUrgent.length > 1 ? 'les ' : 'l’'}utiliser dans ton prochain repas.
-            </Text>
-            <Button label="Chercher une recette" variant="onPrimary" style={styles.recipeBtn} onPress={() => router.push('/recettes')} />
-          </>
-        ) : (
-          <>
-            <Text variant="title2" tone="onPrimary">Tout est sous contrôle</Text>
-            <Text variant="body" tone="onPrimary">Aucun produit à finir en urgence. Envie de cuisiner quand même ?</Text>
-            <Button label="Voir les recettes" variant="onPrimary" style={styles.recipeBtn} onPress={() => router.push('/recettes')} />
-          </>
-        )}
-      </Card>
-
-      <Card style={{ gap: 10 }}>
-        <View style={styles.cardHead}>
-          <Text variant="bodyStrong">Ce mois-ci</Text>
-          {stats.savedPct !== null && (
-            <Text variant="label" tone="secondary" accessibilityLabel={`${stats.wastedEstimated ? 'environ ' : ''}${formatEuros(stats.wastedValue)} jetés`}>
-              {stats.wastedEstimated ? '≈ ' : ''}{formatEuros(stats.wastedValue)} jetés
-            </Text>
-          )}
-        </View>
-        {stats.savedPct === null ? (
-          <Text variant="label" tone="secondary">
-            Pas encore de données : glisse tes produits consommés ou jetés dans l’inventaire pour suivre tes progrès.
-          </Text>
-        ) : (
-          <>
-            <View
-              accessibilityRole="progressbar"
-              accessibilityLabel="Produits sauvés ce mois-ci"
-              accessibilityValue={{ min: 0, max: 100, now: stats.savedPct }}
-              style={[styles.track, { backgroundColor: colors.surface2 }]}
-            >
-              <View style={[styles.fill, { width: `${stats.savedPct}%`, backgroundColor: colors.primary }]} />
-            </View>
-            <Text variant="label" tone="secondary">
-              {stats.savedPct} % de tes produits sauvés ({stats.consumed} consommé{stats.consumed > 1 ? 's' : ''}, {stats.discarded} jeté{stats.discarded > 1 ? 's' : ''})
-            </Text>
-          </>
-        )}
-      </Card>
+      <TodayCard idea={idea} />
 
       <ChallengeCard />
+
+      <Numbers counts={counts} />
     </Screen>
   );
 }
