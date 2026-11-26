@@ -31,6 +31,7 @@ export function FreezeTip({ items, compact = false }: { items: Item[]; compact?:
           <Text variant="body">
             {item.name} périme {when}. Au congélateur, il tiendra encore {formatDuration(days)}.
           </Text>
+          <Text variant="label" tone="secondary">À congeler avant la date. Une fois décongelé : au frigo, à manger sous 24 h, sans le recongeler.</Text>
         </View>
       </View>
       <View style={styles.actions}>

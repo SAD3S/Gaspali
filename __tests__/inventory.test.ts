@@ -146,3 +146,25 @@ describe('Congèle-le !', () => {
     expect(list[2].days).toBeGreaterThan(60);
   });
 });
+
+describe('décongélation', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { thawPlan, freezerExtension, freezeCandidates } = require('@/domain/inventory');
+  const today = new Date(2026, 10, 26, 10);
+  const steak = { id: 's', name: 'Steak', category: 'viande', quantity: 1, unit: 'pièce', location: 'congelo', dateType: 'DDM', status: 'en_stock', expiresAt: new Date(2027, 2, 1), addedAt: today, openedAt: null };
+  it('date courte en sortant du congélateur : 24 h pour la viande, 2 jours pour le pain', () => {
+    expect(thawPlan(steak, today)).toEqual({ expiresAt: new Date(2026, 10, 27), days: 1 });
+    expect(thawPlan({ ...steak, category: 'boulangerie' }, today)?.days).toBe(2);
+    expect(thawPlan({ ...steak, location: 'frigo' }, today)).toBeNull();
+    // Jamais plus loin que la date d'origine.
+    expect(thawPlan({ ...steak, expiresAt: new Date(2026, 10, 26, 20) }, today)?.expiresAt).toEqual(new Date(2026, 10, 26, 20));
+  });
+  it('un produit décongelé ne se recongèle pas', () => {
+    const thawed = { ...steak, location: 'frigo', dateType: 'DLC', expiresAt: new Date(2026, 10, 27), thawedAt: today };
+    expect(freezerExtension(thawed, today)).toBeNull();
+    expect(freezeCandidates([thawed], today)).toEqual([]);
+    expect(freezerExtension({ ...thawed, thawedAt: null }, today)).not.toBeNull();
+    // DLC dépassée : pas de nouvelle date au congélateur.
+    expect(freezerExtension({ ...thawed, thawedAt: null, expiresAt: new Date(2026, 10, 24) }, today)).toBeNull();
+  });
+});

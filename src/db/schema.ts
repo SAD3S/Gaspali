@@ -42,6 +42,8 @@ export const inventoryItems = sqliteTable('inventory_items', {
   /** Date estimée (ticket de caisse, préréglage) tant que l'utilisateur ne l'a pas confirmée. */
   expiryEstimated: integer('expiry_estimated', { mode: 'boolean' }).notNull().default(false),
   openedAt: integer('opened_at', { mode: 'timestamp_ms' }),
+  /** Sorti du congélateur (ne se recongèle pas). */
+  thawedAt: integer('thawed_at', { mode: 'timestamp_ms' }),
   status: text('status', { enum: ['en_stock', 'consomme', 'jete'] }).notNull(),
   price: real('price'),
   addedBy: text('added_by'),

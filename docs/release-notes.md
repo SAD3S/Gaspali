@@ -10,6 +10,9 @@
 ## Nouveautés à tester
 
 - **Congèle-le !** : Pépin propose de congeler un produit qui arrive à sa date (accueil et fiche produit).
+- **Décongélation sûre** : sortir un produit du congélateur lui donne une date courte (24 h pour la viande, le
+  poisson, les plats et les restes ; 2 jours sinon), avec l'étiquette « Décongelé » ; pas de recongélation proposée,
+  et un produit à la date dépassée n'est plus prolongé en le congelant.
 - **Restes** : après « J'ai cuisiné ça », « Il en reste ? » les note au frigo (3 j) ou au congélateur (3 mois).
 - **Accueil allégé** : à consommer vite, le repas de ce midi ou ce soir (ou une idée à prévoir en un geste),
   les défis ; les chiffres sont repliés dans « Mon frigo en chiffres ».

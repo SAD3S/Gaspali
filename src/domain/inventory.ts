@@ -18,6 +18,8 @@ export interface Item {
   addedAt: Date;
   openedAt: Date | null;
   status: ItemStatus;
+  /** Sorti du congélateur : ne se recongèle pas (cru décongelé). */
+  thawedAt?: Date | null;
 }
 
 export type SortKey = 'date' | 'nom' | 'ajout';
@@ -88,6 +90,10 @@ export function openItem(item: Item, today: Date = new Date()): Pick<Item, 'open
 /** Proposition de prolongation quand on passe un produit au congélateur. */
 export function freezerExtension(item: Item, today: Date = new Date()): { expiresAt: Date; days: number } | null {
   if (item.location === 'congelo') return null;
+  // Un produit décongelé ne se recongèle pas : la date reste courte.
+  if (item.thawedAt) return null;
+  // DLC dépassée : congeler ne rend pas un produit à nouveau consommable.
+  if (item.dateType === 'DLC' && item.expiresAt < startOfDay(today)) return null;
   const days = getCategory(item.category).freezerDays;
   if (!days) return null;
   const expiresAt = addDays(today, days);
@@ -106,6 +112,21 @@ export function freezeCandidates<T extends Item>(items: T[], today: Date = new D
     .filter(({ ext, f }) => ext && f.state === 'urgent' && f.daysLeft >= 0)
     .sort((a, b) => a.f.daysLeft - b.f.daysLeft)
     .map(({ item, ext, f }) => ({ item, days: ext!.days, daysLeft: f.daysLeft }));
+}
+
+/** Catégories périssables à manger dans les 24 h après décongélation (au frigo). */
+const THAW_ONE_DAY = new Set(['viande', 'poisson', 'restes', 'traiteur', 'surgeles']);
+
+/**
+ * Sortie du congélateur : nouvelle date courte (1 jour pour la viande, le poisson, les plats et
+ * les restes ; 2 jours sinon), en DLC, et jamais plus loin que la date qu'avait le produit.
+ * null si le produit n'est pas au congélateur.
+ */
+export function thawPlan(item: Pick<Item, 'location' | 'category' | 'expiresAt'>, today: Date = new Date()): { expiresAt: Date; days: number } | null {
+  if (item.location !== 'congelo') return null;
+  const days = THAW_ONE_DAY.has(item.category) ? 1 : 2;
+  const target = addDays(startOfDay(today), days);
+  return { expiresAt: target < item.expiresAt ? target : item.expiresAt, days };
 }
 
 /** « 4 mois », « 2 sem. », « 10 j » */

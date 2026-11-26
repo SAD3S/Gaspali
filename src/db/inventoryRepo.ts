@@ -2,7 +2,7 @@ import { and, desc, eq, gte, isNotNull, isNull } from 'drizzle-orm';
 import { addDays } from '@/domain/dates';
 import type { DateType } from '@/domain/freshness';
 import { getCategory, type Location } from '@/domain/categories';
-import { consumePartially, freezerExtension, normalizeText, openItem, type Item, type ItemStatus } from '@/domain/inventory';
+import { consumePartially, freezerExtension, normalizeText, openItem, thawPlan, type Item, type ItemStatus } from '@/domain/inventory';
 import { maybeRestock } from '@/features/shopping/restock';
 import { ownership, trackInsert, trackPatch } from '@/sync/outbox';
 import { db } from './client';
@@ -25,6 +25,7 @@ export function rowToItem(r: InventoryRow): Item & { row: InventoryRow } {
     addedAt: r.createdAt,
     openedAt: r.openedAt,
     status: r.status,
+    thawedAt: r.thawedAt,
     row: r,
   };
 }
@@ -117,7 +118,7 @@ export function addItem(input: NewItemInput): string {
   return id;
 }
 
-export type ItemPatch = Partial<Pick<InventoryRow, 'name' | 'category' | 'quantity' | 'unit' | 'location' | 'dateType' | 'expiresAt' | 'expiryEstimated' | 'openedAt' | 'price' | 'status'>>;
+export type ItemPatch = Partial<Pick<InventoryRow, 'name' | 'category' | 'quantity' | 'unit' | 'location' | 'dateType' | 'expiresAt' | 'expiryEstimated' | 'openedAt' | 'price' | 'status' | 'thawedAt'>>;
 
 export function updateItem(id: string, patch: ItemPatch): void {
   const full = { ...patch, updatedAt: new Date() };
@@ -165,19 +166,26 @@ export function markOpened(id: string): void {
   logEvent(before, 'entame', null);
 }
 
-export function moveTo(id: string, location: Location, extendForFreezer: boolean): void {
+export function moveTo(id: string, location: Location, extendForFreezer: boolean): () => void {
   const before = getItem(id);
-  if (!before) return;
-  const ext = extendForFreezer && location === 'congelo' ? freezerExtension(rowToItem(before)) : null;
-  updateItem(id, { location, ...(ext ? { expiresAt: ext.expiresAt, dateType: 'DDM' as const } : {}) });
+  if (!before) return () => {};
+  const item = rowToItem(before);
+  const ext = extendForFreezer && location === 'congelo' ? freezerExtension(item) : null;
+  // Sortie du congélateur : date courte, marqué décongelé (pas de recongélation).
+  const thaw = location !== 'congelo' ? thawPlan(item) : null;
+  updateItem(id, {
+    location,
+    ...(ext ? { expiresAt: ext.expiresAt, dateType: 'DDM' as const } : {}),
+    ...(thaw ? { expiresAt: thaw.expiresAt, dateType: 'DLC' as const, thawedAt: new Date() } : {}),
+  });
+  return () => updateItem(id, { location: before.location, expiresAt: before.expiresAt, dateType: before.dateType, thawedAt: before.thawedAt });
 }
 
 /** « Congèle-le ! » : au congélateur avec sa nouvelle date. Renvoie l'annulation. */
 export function freezeItem(id: string): () => void {
   const before = getItem(id);
   if (!before) return () => {};
-  moveTo(id, 'congelo', true);
-  return () => updateItem(id, { location: before.location, expiresAt: before.expiresAt, dateType: before.dateType });
+  return moveTo(id, 'congelo', true);
 }
 
 export function historyQuery(itemId: string) {

@@ -155,4 +155,7 @@ CREATE INDEX receipt_aliases_key_idx ON receipt_aliases (key);`,
   items TEXT NOT NULL,
   position INTEGER NOT NULL
 );`,
+
+  // v8 — produits décongelés (ne se recongèlent pas)
+  `ALTER TABLE inventory_items ADD COLUMN thawed_at INTEGER;`,
 ];

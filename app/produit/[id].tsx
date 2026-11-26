@@ -3,13 +3,13 @@ import { CalendarDays, Check, ChevronLeft, ChevronRight, PackageOpen, Pencil, Sn
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BottomSheet, Button, Card, Chip, Field, FreshnessBadge, ProductAvatar, Stepper, Text, useSnackbar } from '@/components/ui';
+import { BottomSheet, Button, Card, Chip, Field, FreshnessBadge, ProductAvatar, showDialog, Stepper, Text, useSnackbar } from '@/components/ui';
 import { consumePart, markOpened, moveTo, setStatus, updateItem } from '@/db/inventoryRepo';
 import type { EventRow } from '@/db/schema';
 import { CATEGORY_LIST, getCategory, type CategoryId, type Location } from '@/domain/categories';
 import { formatLongDate, relativeDayLabel, daysBetween } from '@/domain/dates';
 import { computeFreshness } from '@/domain/freshness';
-import { formatDuration, freezerExtension, remainingOptions } from '@/domain/inventory';
+import { formatDuration, freezerExtension, remainingOptions, thawPlan } from '@/domain/inventory';
 import { formatQuantity, roundQuarter, stepFor } from '@/domain/quantity';
 import { roundForDisplay } from '@/domain/units';
 import { FreezeTip } from '@/features/inventory/FreezeTip';
@@ -59,6 +59,36 @@ export default function Produit() {
 
   const changeLocation = (loc: Location) => {
     if (loc === item.location) return;
+    // Sortie du congélateur : date courte et pas de recongélation, avec confirmation.
+    const thaw = thawPlan(item);
+    if (thaw) {
+      showDialog(
+        'Le sortir du congélateur ?',
+        `Une fois décongelé, ce produit se garde au frigo et se mange sous ${thaw.days === 1 ? '24 h' : '2 jours'}. Il ne faudra pas le recongeler cru.`,
+        [
+          { text: 'Annuler', style: 'cancel' },
+          {
+            text: 'Décongeler',
+            onPress: () => {
+              const undo = moveTo(item.id, loc, false);
+              snackbar.show(`Décongelé : à manger ${thaw.days === 1 ? 'd’ici demain' : 'sous 2 jours'}`, undo);
+            },
+          },
+        ],
+      );
+      return;
+    }
+    if (loc === 'congelo' && item.thawedAt) {
+      showDialog(
+        'Déjà décongelé',
+        'Un produit cru décongelé ne se recongèle pas : mieux vaut le cuisiner aujourd’hui. Une fois cuisiné, tu pourras congeler le plat (en restes).',
+        [
+          { text: 'D’accord', style: 'cancel' },
+          { text: 'Quand même', style: 'destructive', onPress: () => moveTo(item.id, loc, false) },
+        ],
+      );
+      return;
+    }
     const ext = loc === 'congelo' ? freezerExtension(item) : null;
     if (ext) setFreezeAsk({ days: ext.days });
     else moveTo(item.id, loc, false);
@@ -129,6 +159,7 @@ export default function Produit() {
             <FreshnessBadge state={item.status === 'consomme' ? 'frais' : 'perime'} label={item.status === 'consomme' ? 'Consommé' : 'Jeté'} />
           )}
           {item.openedAt && <FreshnessBadge state="bientot" label="Entamé" showDot={false} />}
+          {item.thawedAt && item.location !== 'congelo' && <FreshnessBadge state="urgent" label="Décongelé" showDot={false} />}
           {item.row.expiryEstimated && <FreshnessBadge state="a_verifier" label="Date estimée" showDot={false} />}
         </View>
         {inStock && (

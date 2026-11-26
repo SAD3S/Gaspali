@@ -951,3 +951,8 @@ language sql immutable as $$
   select array['products', 'inventory_items', 'events', 'recipes', 'recipe_folders', 'recipe_links',
                'dietary_profiles', 'shopping_items', 'meal_plan', 'receipt_aliases', 'shopping_lists'];
 $$;
+
+-- ═══ 20261126120000_decongelation.sql ═══
+
+-- Gaspalli — produits sortis du congélateur : ils ne se recongèlent pas.
+alter table public.inventory_items add column if not exists thawed_at bigint;

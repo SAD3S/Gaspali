@@ -39,7 +39,7 @@ export const CATEGORIES: Record<CategoryId, Category> = {
   legumes: { id: 'legumes', label: 'Légumes', location: 'frigo', dateType: 'DDM', shelfDays: 6, freezerDays: 8 * M, aisle: 'Fruits et légumes' },
   boulangerie: { id: 'boulangerie', label: 'Boulangerie', location: 'placard', dateType: 'DDM', shelfDays: 3, freezerDays: 2 * M, aisle: 'Boulangerie' },
   traiteur: { id: 'traiteur', label: 'Traiteur', location: 'frigo', dateType: 'DLC', shelfDays: 4, openedDays: 2, freezerDays: 2 * M, aisle: 'Traiteur' },
-  restes: { id: 'restes', label: 'Restes maison', location: 'frigo', dateType: 'DLC', shelfDays: 3, freezerDays: 3 * M, aisle: 'Autre' },
+  restes: { id: 'restes', label: 'Restes maison', location: 'frigo', dateType: 'DLC', shelfDays: 3, freezerDays: 2 * M, aisle: 'Autre' },
   surgeles: { id: 'surgeles', label: 'Surgelés', location: 'congelo', dateType: 'DDM', shelfDays: 6 * M, aisle: 'Surgelés' },
   epicerie_salee: { id: 'epicerie_salee', label: 'Épicerie salée', location: 'placard', dateType: 'DDM', shelfDays: 12 * M, openedDays: 3 * M, aisle: 'Épicerie' },
   epicerie_sucree: { id: 'epicerie_sucree', label: 'Épicerie sucrée', location: 'placard', dateType: 'DDM', shelfDays: 9 * M, openedDays: 2 * M, aisle: 'Épicerie' },
