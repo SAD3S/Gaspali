@@ -3,13 +3,14 @@ import { Download, FolderPlus, Plus, Search, Sparkles } from 'lucide-react-nativ
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BottomSheet, Button, Chip, Field, showDialog, Text, useSnackbar } from '@/components/ui';
+import { BottomSheet, Button, Chip, Field, SegmentedControl, showDialog, Text, useSnackbar } from '@/components/ui';
 import { createFolder, deleteFolder, renameFolder } from '@/db/recipesRepo';
 import { isNoCook, missingEquipment } from '@/domain/equipment';
 import { normalizeText } from '@/domain/inventory';
 import { recipeTags, type Suggestion } from '@/domain/recipeEngine';
 import { AI_RECIPES } from '@/config';
 import { AddRecipeSheet } from '@/features/recipes/AddRecipeSheet';
+import { WeekPlanner } from '@/features/planning/WeekPlanner';
 import { RecipeCard } from '@/features/recipes/RecipeCard';
 import { useAllRecipes, useRecipeOrganization, useSuggestions } from '@/features/recipes/hooks';
 import { useSettings } from '@/features/settings/settings';
@@ -18,6 +19,7 @@ import { EmptyState } from '@/components/brand/EmptyState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH, radius } from '@/theme/tokens';
 
+type Vue = 'idees' | 'semaine';
 type Quick = 'pour-toi' | 'favoris' | 'mes-recettes' | 'rapide' | 'sans-cuisson' | 'vegetarien' | 'sans-gluten';
 const QUICK: { key: Quick; label: string }[] = [
   { key: 'pour-toi', label: 'Pour toi' },
@@ -35,7 +37,8 @@ const FOLDERS_INLINE = 3;
 export default function Recettes() {
   const { colors } = useTheme();
   const snackbar = useSnackbar();
-  const params = useLocalSearchParams<{ filtre?: Quick }>();
+  const params = useLocalSearchParams<{ filtre?: Quick; vue?: Vue }>();
+  const [view, setView] = useState<Vue>(params.vue === 'semaine' ? 'semaine' : 'idees');
   const all = useAllRecipes();
   const suggestions = useSuggestions();
   const org = useRecipeOrganization();
@@ -89,12 +92,7 @@ export default function Recettes() {
 
   const header = (
     <View style={{ gap: 12, marginBottom: 12 }}>
-      <View style={styles.head}>
-        <Text variant="title1" accessibilityRole="header" style={{ flex: 1 }}>Recettes</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Ajouter une recette" onPress={() => setAdding(true)} style={[styles.round, { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }]}>
-          <Plus size={22} color={colors.primaryText} />
-        </Pressable>
-      </View>
+
 
       <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Search size={20} color={colors.textSecondary} />
@@ -209,6 +207,26 @@ export default function Recettes() {
   return (
     <SafeAreaView edges={['top']} style={[styles.flex, { backgroundColor: colors.background }]}>
       <ThreadBackground variant={4} />
+      <View style={styles.fixed}>
+        <View style={styles.head}>
+          <Text variant="title1" accessibilityRole="header" style={{ flex: 1 }}>Recettes</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Ajouter une recette" onPress={() => setAdding(true)} style={[styles.round, { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }]}>
+            <Plus size={22} color={colors.primaryText} />
+          </Pressable>
+        </View>
+        <SegmentedControl<Vue>
+          accessibilityLabel="Recettes ou planning de la semaine"
+          value={view}
+          onChange={(v) => setView(v)}
+          options={[
+            { value: 'idees', label: 'Idées de recettes' },
+            { value: 'semaine', label: 'Ma semaine' },
+          ]}
+        />
+      </View>
+      {view === 'semaine' ? (
+        <WeekPlanner />
+      ) : (
       <FlatList
         data={list}
         keyExtractor={(r) => r.recipe.id}
@@ -240,6 +258,7 @@ export default function Recettes() {
           </View>
         }
       />
+      )}
 
       <BottomSheet visible={newFolder !== null} onClose={() => setNewFolder(null)}>
         <View style={{ gap: 14 }}>
@@ -307,7 +326,8 @@ export default function Recettes() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: 20, paddingBottom: 60 },
+  fixed: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8, gap: 12 },
+  content: { padding: 20, paddingTop: 4, paddingBottom: 60 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   round: { width: MIN_TOUCH, height: MIN_TOUCH, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   search: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, minHeight: 50 },

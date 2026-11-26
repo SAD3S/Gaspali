@@ -23,6 +23,8 @@ export interface AppSettings {
   seenBadges: string[] | null;
   /** Dernier défi de la semaine réussi déjà fêté (« lundi-id »). */
   celebratedChallenge: string | null;
+  /** Planning : idées anti-gaspi affichées dans les créneaux libres. */
+  planIdeas: boolean;
 }
 
 const KEY = 'gaspalli.settings';
@@ -36,6 +38,7 @@ const DEFAULTS: AppSettings = {
   equipment: ALL_EQUIPMENT,
   seenBadges: null,
   celebratedChallenge: null,
+  planIdeas: true,
 };
 
 let current: AppSettings = DEFAULTS;

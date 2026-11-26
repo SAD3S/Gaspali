@@ -284,3 +284,27 @@ export function subtractShoppingList<T extends { label: string; ingredientId: st
   }
   return out;
 }
+
+// ─── Repas sans recette (« Restes », « Resto », « Pizza du vendredi ») ───────
+
+export const NOTE_PREFIX = 'note:';
+
+/** Identifiant stocké pour un repas libre. */
+export function noteMeal(text: string): string {
+  return NOTE_PREFIX + text.trim().replace(/\s+/g, ' ').slice(0, 60);
+}
+
+/** Texte d'un repas libre, ou null si c'est une recette. */
+export function noteText(recipeId: string): string | null {
+  return recipeId.startsWith(NOTE_PREFIX) ? recipeId.slice(NOTE_PREFIX.length) : null;
+}
+
+/** Repas d'un créneau, dans l'ordre d'ajout (un créneau peut avoir entrée, plat, dessert…). */
+export function mealsBySlot(entries: PlanEntry[]): Map<string, PlanEntry[]> {
+  const out = new Map<string, PlanEntry[]>();
+  for (const e of entries) {
+    const k = `${e.date}:${e.slot}`;
+    out.set(k, [...(out.get(k) ?? []), e]);
+  }
+  return out;
+}

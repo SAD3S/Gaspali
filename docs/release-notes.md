@@ -9,6 +9,10 @@
 
 ## Nouveautés à tester
 
+- **Planning libre** (onglet Recettes › « Ma semaine ») : « + » sur chaque repas pour chercher la recette voulue
+  (favoris, mes recettes, dossiers, rapide, sans cuisson, desserts), plusieurs plats par repas, repas sans recette
+  (« Restes », « Resto »). Appui long sur un plat puis toucher l'endroit voulu pour le déplacer. Les idées
+  anti-gaspi s'affichent dans les créneaux libres : ✓ pour accepter, « Tout ajouter », ou les masquer.
 - **Nouveau thème sombre « Graphite »** : gris neutre au lieu du fond verdâtre, cartes bien détachées, texte
   blanc cassé et couleurs adoucies ; contrastes vérifiés (norme AA).
 - **Prix des produits** : champ « Prix payé » au scan, à l'ajout et sur la fiche produit, avec en suggestion ton

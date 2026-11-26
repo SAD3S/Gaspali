@@ -222,3 +222,22 @@ describe('liste de courses', () => {
     expect(weekRangeLabel(new Date(2026, 10, 30))).toBe('30 nov. – 6 déc.');
   });
 });
+
+describe('repas libres et plusieurs plats par repas', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { mealsBySlot, noteMeal, noteText } = require('@/domain/planner');
+  it('stocke et relit un repas sans recette', () => {
+    expect(noteMeal('  Restes   du midi ')).toBe('note:Restes du midi');
+    expect(noteText('note:Resto')).toBe('Resto');
+    expect(noteText('gratin-dauphinois')).toBeNull();
+  });
+  it('regroupe les plats d’un même créneau', () => {
+    const g = mealsBySlot([
+      { id: 'a', date: '2026-11-26', slot: 'soir', recipeId: 'x', servings: 2, done: false },
+      { id: 'b', date: '2026-11-26', slot: 'soir', recipeId: 'y', servings: 2, done: false },
+      { id: 'c', date: '2026-11-26', slot: 'midi', recipeId: 'z', servings: 2, done: false },
+    ]);
+    expect(g.get('2026-11-26:soir').map((e: { id: string }) => e.id)).toEqual(['a', 'b']);
+    expect(g.get('2026-11-26:midi')).toHaveLength(1);
+  });
+});
