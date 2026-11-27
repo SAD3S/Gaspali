@@ -1,9 +1,12 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { ProductCard, Screen, Text } from '@/components/ui';
-import { queryInventory } from '@/domain/inventory';
+import { expiryForecast, queryInventory } from '@/domain/inventory';
+import { WeekStrip } from '@/features/inventory/WeekStrip';
+import { computeFreshness } from '@/domain/freshness';
+import { formatLongDate } from '@/domain/dates';
 import { itemSubtitle } from '@/features/inventory/format';
 import { useInventory } from '@/features/inventory/hooks';
 import { EmptyState } from '@/components/brand/EmptyState';
@@ -14,6 +17,10 @@ import { MIN_TOUCH } from '@/theme/tokens';
 export default function Alertes() {
   const { colors } = useTheme();
   const items = useInventory();
+  const { jour } = useLocalSearchParams<{ jour?: string }>();
+  const [day, setDay] = useState<string | null>(jour ?? null);
+  const forecast = useMemo(() => expiryForecast(items), [items]);
+  const selected = forecast.find((d) => d.key === day) ?? null;
   const groups = useMemo(() => {
     const all = queryInventory(items);
     return [
@@ -33,6 +40,39 @@ export default function Alertes() {
         <Text variant="title1" accessibilityRole="header">Alertes</Text>
       </View>
 
+      <WeekStrip days={forecast} selected={day} onSelect={(k) => setDay(day === k ? null : k)} />
+
+      {selected ? (
+        <View style={{ gap: 10 }}>
+          <View style={styles.header}>
+            <Text variant="overline" tone="secondary" accessibilityRole="header" style={{ flex: 1 }}>
+              {selected.short === 'Auj.' ? 'Aujourd’hui (et déjà dépassés)' : selected.short === 'Dem.' ? 'Demain' : formatLongDate(selected.date)} · {selected.items.length}
+            </Text>
+            <Pressable accessibilityRole="button" onPress={() => setDay(null)} hitSlop={8}>
+              <Text variant="label" tone="primary" style={{ fontFamily: 'DMSans_700Bold' }}>Tout voir</Text>
+            </Pressable>
+          </View>
+          {selected.items.length === 0 ? (
+            <EmptyState mood="joie" size={90} title="Rien ce jour-là" />
+          ) : (
+            selected.items.map((item) => {
+              const f = computeFreshness(item.expiresAt, item.dateType);
+              return (
+                <ProductCard
+                  key={item.id}
+                  name={item.name}
+                  imageUri={item.row.imageUrl ?? undefined}
+                  subtitle={itemSubtitle(item)}
+                  state={f.state}
+                  badgeLabel={item.row.expiryEstimated ? `≈ ${f.label}` : f.label}
+                  onPress={() => router.push({ pathname: '/produit/[id]', params: { id: item.id } })}
+                />
+              );
+            })
+          )}
+        </View>
+      ) : (
+        <>
       {groups.length === 0 && (
         <EmptyState mood="joie" title="Rien d’urgent" text="Aucun produit à consommer dans les 5 prochains jours. Bravo !" />
       )}
@@ -45,7 +85,7 @@ export default function Alertes() {
             <ProductCard
               key={item.id}
               name={item.name}
-            imageUri={item.row.imageUrl ?? undefined}
+              imageUri={item.row.imageUrl ?? undefined}
               subtitle={itemSubtitle(item)}
               state={freshness.state}
               badgeLabel={freshness.label}
@@ -54,6 +94,8 @@ export default function Alertes() {
           ))}
         </View>
       ))}
+        </>
+      )}
     </Screen>
   );
 }

@@ -11,7 +11,9 @@ import { LOCATION_LABELS } from '@/domain/categories';
 import { SavedListsSheet } from '@/features/shopping/SavedListsSheet';
 import { categoryOf, defaultForm, StoreSheet } from '@/features/shopping/StoreSheet';
 import { resolveIngredient } from '@/domain/ingredientMatch';
+import { alreadyInStock, alreadyMessage } from '@/domain/duplicates';
 import { categoryFromKeywords } from '@/domain/receiptMatch';
+import { useInventory } from '@/features/inventory/hooks';
 import { parseShoppingInput } from '@/domain/shoppingInput';
 import { formatQuantity } from '@/domain/quantity';
 import { EmptyState } from '@/components/brand/EmptyState';
@@ -41,6 +43,7 @@ export default function Courses() {
   const total = (data ?? []).length;
 
   const input = useRef<TextInputInstance>(null);
+  const stock = useInventory();
   // Articles saisis avant que l'app lise les quantités (« 5 jus de pomme ») : remis en ordre une fois.
   useEffect(() => {
     repairNumberedItems();
@@ -55,7 +58,7 @@ export default function Courses() {
     // « 5 jus de pomme » → 5 × « Jus de pomme », rangé en Boissons (ingrédient connu, sinon mots-clés).
     const parsed = parseShoppingInput(name);
     const ingredient = resolveIngredient(parsed.name);
-    addShopping([
+    const ids = addShopping([
       {
         name: parsed.name,
         quantity: parsed.quantity,
@@ -64,6 +67,9 @@ export default function Courses() {
         category: ingredient ? undefined : (categoryFromKeywords(parsed.name) ?? undefined),
       },
     ]);
+    // « Déjà au frigo ! » : on prévient, avec « Annuler » pour retirer l'article.
+    const already = alreadyMessage(alreadyInStock(stock, { name: parsed.name, ingredientId: ingredient?.id ?? null }));
+    if (already && ids.length) snackbar.show(already, () => ids.forEach(removeShopping));
     setText('');
     input.current?.focus();
   };

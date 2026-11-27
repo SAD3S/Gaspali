@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, ProductCard, Screen, Text, useSnackbar } from '@/components/ui';
 import type { Location } from '@/domain/categories';
 import { formatHeaderDate } from '@/domain/dates';
-import { countByLocation, queryInventory } from '@/domain/inventory';
+import { countByLocation, expiryForecast, queryInventory } from '@/domain/inventory';
 import { formatTime } from '@/domain/notifications';
 import { addMeal, removeMeal } from '@/db/mealPlanRepo';
 import { dayKey, type Slot } from '@/domain/planner';
@@ -16,6 +16,7 @@ import { usePlan, useRecipesById, useReservations, useSuggestions } from '@/feat
 import { suggestionSummary, type Suggestion } from '@/domain/recipeEngine';
 import { useMembers } from '@/features/account/hooks';
 import { FreezeTip } from '@/features/inventory/FreezeTip';
+import { WeekStrip } from '@/features/inventory/WeekStrip';
 import { updateSettings, useSettings } from '@/features/settings/settings';
 import { getPermission, notificationsSupported, requestPermission, type PermissionState } from '@/services/notifications';
 import { RecipeVisual } from '@/features/recipes/RecipeCard';
@@ -23,6 +24,8 @@ import { Pepin } from '@/components/brand/Pepin';
 import { ChallengeCard } from '@/features/achievements/ChallengeCard';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius } from '@/theme/tokens';
+
+const MONTHS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
 const TILES: { loc: Location; label: string; Icon: LucideIcon }[] = [
   { loc: 'frigo', label: 'Frigo', Icon: Refrigerator },
@@ -220,9 +223,14 @@ function Numbers({ counts }: { counts: Record<Location, number> }) {
               </Text>
             </View>
           )}
-          <Pressable accessibilityRole="link" onPress={() => router.push('/statistiques')} hitSlop={8}>
-            <Text variant="label" tone="primary" style={styles.bold}>Toutes les statistiques</Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 18 }}>
+            <Pressable accessibilityRole="link" onPress={() => router.push('/bilan')} hitSlop={8}>
+              <Text variant="label" tone="primary" style={styles.bold}>Mon bilan du mois</Text>
+            </Pressable>
+            <Pressable accessibilityRole="link" onPress={() => router.push('/statistiques')} hitSlop={8}>
+              <Text variant="label" tone="primary" style={styles.bold}>Toutes les statistiques</Text>
+            </Pressable>
+          </View>
         </>
       )}
     </Card>
@@ -243,6 +251,7 @@ export default function Accueil() {
   const sorted = queryInventory(items, { today });
   const urgent = sorted.filter(({ freshness: f }) => f.state === 'urgent' || f.state === 'bientot').slice(0, 3);
   const counts = countByLocation(items);
+  const forecast = expiryForecast(items, today);
   const toCheck = items.filter((i) => i.status === 'en_stock' && i.row.expiryEstimated).length;
   const alerts = sorted.filter(({ freshness: f }) => f.state === 'urgent' || f.state === 'perime').length;
 
@@ -289,6 +298,7 @@ export default function Accueil() {
             <Text variant="label" tone="primary" style={styles.bold}>Tout voir</Text>
           </Pressable>
         </View>
+        <WeekStrip days={forecast} onSelect={(jour) => router.push({ pathname: '/alertes', params: { jour } })} />
         <FreezeTip items={items} />
         {urgent.map(({ item, freshness: f }) => (
           <ProductCard
@@ -322,6 +332,19 @@ export default function Accueil() {
       <NotificationPrompt hasItems={items.length > 0} />
 
       <TodayCard idea={idea} />
+
+      {today.getDate() <= 5 && (
+        <Pressable accessibilityRole="button" onPress={() => router.push('/bilan')}>
+          <Card tone="primary" style={styles.menuRow}>
+            <Pepin size={48} mood="joie" />
+            <View style={{ flex: 1 }}>
+              <Text variant="bodyStrong" tone="onPrimary">Ton bilan de {MONTHS_FR[(today.getMonth() + 11) % 12]} est prêt</Text>
+              <Text variant="label" tone="onPrimary">Produits sauvés, euros économisés, CO₂ évité</Text>
+            </View>
+            <ChevronRight size={20} color={colors.onPrimary} />
+          </Card>
+        </Pressable>
+      )}
 
       <ChallengeCard />
 

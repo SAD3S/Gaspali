@@ -168,3 +168,22 @@ describe('décongélation', () => {
     expect(freezerExtension({ ...thawed, thawedAt: null, expiresAt: new Date(2026, 10, 24) }, today)).toBeNull();
   });
 });
+
+describe('frise des 7 jours', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { expiryForecast } = require('@/domain/inventory');
+  const today = new Date(2026, 10, 27, 10); // vendredi
+  const mk = (name: string, days: number, location = 'frigo') => ({
+    id: name, name, category: 'laitier', quantity: 1, unit: 'pièce', location, dateType: 'DLC', status: 'en_stock',
+    expiresAt: new Date(2026, 10, 27 + days, 12), addedAt: today, openedAt: null,
+  });
+  it('range chaque produit le jour de sa date ; les dates dépassées tombent aujourd’hui', () => {
+    const f = expiryForecast([mk('Lait', 0), mk('Jambon', -2), mk('Yaourt', 1), mk('Comté', 6), mk('Riz', 30), mk('Poisson', 2, 'congelo')], today);
+    expect(f.map((d: { short: string }) => d.short)).toEqual(['Auj.', 'Dem.', 'Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.']);
+    expect(f[0].items.map((i: { name: string }) => i.name)).toEqual(['Lait', 'Jambon']);
+    expect(f[1].items).toHaveLength(1);
+    expect(f[2].items).toHaveLength(0); // le poisson est au congélateur
+    expect(f[6].items[0].name).toBe('Comté');
+    expect(f[0].key).toBe('2026-11-27');
+  });
+});

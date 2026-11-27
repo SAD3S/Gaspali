@@ -9,6 +9,12 @@
 
 ## Nouveautés à tester
 
+- **Déjà au frigo !** : au scan et quand tu ajoutes un article aux courses, Pépin prévient si tu en as déjà
+  (« Tu as déjà : Crème fraîche (périme demain), à finir d'abord »), avec « Annuler » dans les courses.
+- **Météo du frigo** : sur l'accueil, les 7 prochains jours et le nombre de produits qui arrivent à date chaque jour ;
+  touche un jour pour voir lesquels (écran Alertes).
+- **Bilan du mois** (« Mon frigo en chiffres » › Mon bilan du mois, et sur l'accueil en début de mois) : produits sauvés,
+  euros économisés, jours sans gâchis, CO₂ évité, à partager en image.
 - **Dates fiables** : au scan, « Date estimée · Lire la date » bien visible ; l'accueil signale les dates estimées,
   et l'écran « Dates à vérifier » les confirme ou les corrige d'un geste.
 - **Finir un produit au scan** : bouton central › onglet « Finir », scanne, puis « Consommé » ou « Jeté » (le glissement

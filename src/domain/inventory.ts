@@ -164,3 +164,32 @@ export function addedLabel(addedAt: Date, today: Date = new Date()): string {
   if (d === 1) return 'ajouté hier';
   return `ajouté il y a ${d} j`;
 }
+
+export interface DayForecast<T extends Item = Item> {
+  /** « 2026-11-27 » */
+  key: string;
+  date: Date;
+  /** « Auj. », « Dem. », « Dim. » */
+  short: string;
+  /** Produits qui arrivent à date ce jour-là (aujourd'hui : aussi ceux déjà dépassés). */
+  items: T[];
+}
+
+const WEEKDAYS_SHORT = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'];
+
+/** « Météo du frigo » : ce qui arrive à date chacun des `days` prochains jours (hors congélateur). */
+export function expiryForecast<T extends Item>(items: T[], today: Date = new Date(), days = 7): DayForecast<T>[] {
+  const start = startOfDay(today);
+  const out = Array.from({ length: days }, (_, i) => {
+    const date = addDays(start, i);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return { key, date, short: i === 0 ? 'Auj.' : i === 1 ? 'Dem.' : WEEKDAYS_SHORT[date.getDay()]!, items: [] as T[] };
+  });
+  for (const item of items) {
+    if (item.status !== 'en_stock' || item.location === 'congelo') continue;
+    const d = daysBetween(start, item.expiresAt);
+    if (d >= days) continue;
+    out[Math.max(0, d)]!.items.push(item);
+  }
+  return out;
+}

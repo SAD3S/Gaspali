@@ -1,4 +1,5 @@
 import { Camera } from 'lucide-react-native';
+import { Pepin } from '@/components/brand/Pepin';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Chip, ProductAvatar, Sheet, Text } from '@/components/ui';
@@ -34,6 +35,8 @@ interface Props {
   onReadDate: () => void;
   /** La date n'a pas encore été lue ni choisie : c'est une estimation selon la catégorie. */
   dateEstimated: boolean;
+  /** « Déjà au frigo ! » : ce produit est déjà en stock (message prêt), sinon null. */
+  already: string | null;
   /** Nom, catégorie et contenance, modifiables (pré-remplis par Open Food Facts). */
   details: ProductDetails;
   onDetails: (patch: Partial<ProductDetails>) => void;
@@ -79,6 +82,16 @@ export function ConfirmSheet(p: Props) {
             </Text>
           </View>
         </View>
+
+        {p.already && (
+          <View style={[styles.already, { backgroundColor: colors.primarySoft }]} accessibilityRole="alert">
+            <Pepin size={40} mood="clin" />
+            <View style={styles.flex}>
+              <Text variant="bodyStrong" tone="primary">Déjà au frigo !</Text>
+              <Text variant="label" tone="primary">{p.already}</Text>
+            </View>
+          </View>
+        )}
 
         <View style={{ gap: 6 }}>
           <Text variant="label" tone="secondary">Nom</Text>
@@ -205,6 +218,7 @@ function convertPack(q: number, from: string, to: string): number {
 }
 
 const styles = StyleSheet.create({
+  already: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 16, padding: 10 },
   estimate: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 16, padding: 12 },
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   bold: { fontFamily: 'DMSans_700Bold' },

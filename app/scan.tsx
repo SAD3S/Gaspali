@@ -2,7 +2,7 @@ import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'ex
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Image as ImageIcon, Keyboard, Leaf, Type, X, Zap, ZapOff } from 'lucide-react-native';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text, useSnackbar } from '@/components/ui';
@@ -18,6 +18,8 @@ import type { PriceHint } from '@/domain/prices';
 import type { ItemFormValue } from '@/features/inventory/ItemForm';
 import { ConfirmSheet, type ProductDetails, type SheetProduct } from '@/features/scan/ConfirmSheet';
 import { DateResultSheet } from '@/features/scan/DateResultSheet';
+import { alreadyInStock, alreadyMessage } from '@/domain/duplicates';
+import { useInventory } from '@/features/inventory/hooks';
 import { FinishSheet, type FinishTarget } from '@/features/scan/FinishSheet';
 import { finishMessage } from '@/domain/prices';
 import { ManualCodeSheet } from '@/features/scan/ManualCodeSheet';
@@ -90,6 +92,12 @@ export default function Scan() {
   const busy = useRef(false);
 
   const currentCategory: CategoryId = details.category;
+  // « Déjà au frigo ! » pour le produit scanné (même fiche, même ingrédient ou même nom).
+  const stock = useInventory();
+  const already = useMemo(() => {
+    if (!target || !details.name.trim()) return null;
+    return alreadyMessage(alreadyInStock(stock, { name: details.name, productId: target.kind === 'found' ? target.productId : null }));
+  }, [target, details.name, stock]);
 
   const handleCode = useCallback(async (raw: string) => {
     const code = normalizeBarcode(raw);
@@ -428,6 +436,7 @@ export default function Scan() {
             burst={burst}
             priceHints={priceHints}
             dateEstimated={!dateTouched}
+            already={already}
             onAdd={add}
             onCancel={reset}
           />
