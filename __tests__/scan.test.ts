@@ -28,6 +28,11 @@ describe('Open Food Facts', () => {
   it('déduit la catégorie', () => {
     expect(mapCategory(['en:dairies', 'en:creams', 'en:fresh-creams'])).toBe('laitier');
     expect(mapCategory(['en:dairies', 'en:cheeses'])).toBe('fromage');
+    // Yaourt à boire (Yop) : produit laitier, pas boisson à 9 mois.
+    expect(mapCategory(['en:beverages', 'en:dairies', 'en:fermented-foods', 'en:yogurts', 'en:drinkable-yogurts'])).toBe('laitier');
+    // Thon en boîte : conserve, pas poisson frais.
+    expect(mapCategory(['en:seafood', 'en:fishes', 'en:canned-foods', 'en:canned-fishes'])).toBe('conserves');
+    expect(mapCategory(['en:beverages', 'en:fruit-juices'])).toBe('boissons');
     expect(mapCategory(['en:frozen-foods', 'en:fishes'])).toBe('surgeles');
     expect(mapCategory(['en:plant-based-foods', 'en:canned-foods', 'en:vegetables'])).toBe('conserves');
     expect(mapCategory(['en:beverages', 'en:fruit-juices', 'en:fruits'])).toBe('boissons');

@@ -9,6 +9,8 @@
 
 ## Nouveautés à tester
 
+- **Catégories au scan** : un yaourt à boire (Yop…) est classé en produit laitier, plus en boisson à 9 mois ;
+  changer la catégorie d'un produit recalcule sa date estimée et est retenu pour ce code-barres.
 - **« Entamé » annulable** : « Annuler » juste après, ou « Pas entamé » plus tard sur la fiche (la date d'origine revient).
 - **Congèle-le !** : Pépin propose de congeler un produit qui arrive à sa date (accueil et fiche produit).
 - **Décongélation sûre** : sortir un produit du congélateur lui donne une date courte (24 h pour la viande, le

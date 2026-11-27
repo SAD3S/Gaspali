@@ -5,11 +5,12 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheet, Button, Card, Chip, Field, FreshnessBadge, ProductAvatar, showDialog, Stepper, Text, useSnackbar } from '@/components/ui';
 import { consumePart, markOpened, moveTo, setStatus, unmarkOpened, updateItem } from '@/db/inventoryRepo';
+import { updateProductDetails } from '@/db/productsRepo';
 import type { EventRow } from '@/db/schema';
 import { CATEGORY_LIST, getCategory, type CategoryId, type Location } from '@/domain/categories';
 import { formatLongDate, relativeDayLabel, daysBetween } from '@/domain/dates';
 import { computeFreshness } from '@/domain/freshness';
-import { formatDuration, freezerExtension, remainingOptions, thawPlan } from '@/domain/inventory';
+import { defaultExpiry, formatDuration, freezerExtension, remainingOptions, thawPlan } from '@/domain/inventory';
 import { formatQuantity, roundQuarter, stepFor } from '@/domain/quantity';
 import { roundForDisplay } from '@/domain/units';
 import { FreezeTip } from '@/features/inventory/FreezeTip';
@@ -142,10 +143,18 @@ export default function Produit() {
                 label="Enregistrer"
                 disabled={!renaming.name.trim()}
                 onPress={() => {
-                  const before = { name: item.name, category: item.category };
-                  updateItem(item.id, { name: renaming.name.trim(), category: renaming.category });
+                  const before = { name: item.name, category: item.category, expiresAt: item.expiresAt, dateType: item.dateType };
+                  const changedCategory = renaming.category !== item.category;
+                  // Date estimée : elle suit la nouvelle catégorie (un yaourt n'a pas la date d'une boisson).
+                  const redate =
+                    changedCategory && item.row.expiryEstimated
+                      ? { expiresAt: defaultExpiry(renaming.category, item.location), dateType: getCategory(renaming.category).dateType }
+                      : {};
+                  updateItem(item.id, { name: renaming.name.trim(), category: renaming.category, ...redate });
+                  // Retenu pour ce code-barres (prochains scans).
+                  if (changedCategory && item.row.productId) updateProductDetails(item.row.productId, { category: renaming.category });
                   setRenaming(null);
-                  snackbar.show('Produit modifié', () => updateItem(item.id, before));
+                  snackbar.show(redate.expiresAt ? 'Produit modifié, date estimée recalculée' : 'Produit modifié', () => updateItem(item.id, before));
                 }}
                 style={styles.flex}
               />

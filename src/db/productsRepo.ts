@@ -72,6 +72,15 @@ export function saveManualProduct(
 /** Cache local d'abord (hors ligne), puis Open Food Facts. */
 export async function lookupBarcode(barcode: string): Promise<LookupResult> {
   const cached = findByBarcode(barcode);
+  // Ancien classement « boissons » d'Open Food Facts (yaourts à boire…) : on relit la fiche pour
+  // corriger la catégorie, sauf si l'utilisateur l'a déjà choisie lui-même (source « manuel »).
+  if (cached && cached.source === 'off' && cached.category === 'boissons') {
+    const off = await fetchOffProduct(barcode);
+    if (off.kind === 'found' && off.product.category !== 'boissons') {
+      updateProductDetails(cached.id, { category: off.product.category });
+      return { status: 'found', product: { ...rowToScanned(cached), category: off.product.category }, productId: cached.id, source: 'off' };
+    }
+  }
   if (cached) return { status: 'found', product: rowToScanned(cached), productId: cached.id, source: cached.source };
   const off = await fetchOffProduct(barcode);
   if (off.kind === 'found') return { status: 'found', product: off.product, productId: upsert(off.product, 'off'), source: 'off' };

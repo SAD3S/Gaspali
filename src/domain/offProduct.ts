@@ -34,17 +34,22 @@ export interface ScannedProduct {
   allergens: string[];
 }
 
-/** Ordre important : du plus spécifique au plus général. */
+/**
+ * Ordre important : du plus spécifique au plus général, et les produits frais (date courte) avant
+ * les catégories à longue conservation. Un yaourt à boire est « boisson » ET « produit laitier » pour
+ * Open Food Facts : c'est la date du produit laitier (quelques semaines) qui compte, pas 9 mois.
+ * Les conserves restent avant : du thon en boîte se garde des années, pas 2 jours.
+ */
 const CATEGORY_RULES: [CategoryId, string[]][] = [
   ['surgeles', ['en:frozen-foods']],
-  ['boissons', ['en:beverages', 'en:waters', 'en:fruit-juices']],
   ['conserves', ['en:canned-foods']],
   ['fromage', ['en:cheeses']],
   ['oeufs', ['en:eggs', 'en:chicken-eggs']],
   ['poisson', ['en:fishes', 'en:seafood', 'en:smoked-fishes', 'en:fish-and-seafood']],
   ['viande', ['en:meats', 'en:poultries', 'en:hams', 'en:sausages', 'en:prepared-meats', 'en:meat']],
-  ['laitier', ['en:dairies', 'en:yogurts', 'en:creams', 'en:milks', 'en:butters', 'en:fermented-milk-products', 'en:dairy-desserts']],
+  ['laitier', ['en:dairies', 'en:yogurts', 'en:drinkable-yogurts', 'en:creams', 'en:milks', 'en:butters', 'en:fermented-milk-products', 'en:dairy-desserts', 'en:dairy-drinks']],
   ['traiteur', ['en:meals', 'en:prepared-meals', 'en:pizzas', 'en:sandwiches', 'en:prepared-salads', 'en:fresh-pastas']],
+  ['boissons', ['en:beverages', 'en:waters', 'en:fruit-juices']],
   ['boulangerie', ['en:breads', 'en:viennoiseries', 'en:sliced-breads']],
   ['fruits', ['en:fresh-fruits', 'en:fruits']],
   ['legumes', ['en:fresh-vegetables', 'en:vegetables']],
