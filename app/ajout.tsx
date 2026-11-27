@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ChevronLeft, Plus, Search, X } from 'lucide-react-native';
+import { Camera, ChevronLeft, Plus, Search, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import { addDays, formatShortDate } from '@/domain/dates';
 import { defaultExpiry, normalizeText } from '@/domain/inventory';
 import type { PriceHint } from '@/domain/prices';
 import { ItemForm, type ItemFormValue } from '@/features/inventory/ItemForm';
+import { pickProductPhoto } from '@/services/photos';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
@@ -20,6 +21,8 @@ interface Draft {
   form: ItemFormValue;
   /** La date vient d'une durée par défaut, pas de l'emballage. */
   estimated: boolean;
+  /** Photo prise à l'ajout (fruits, légumes, restes…). */
+  imageUrl?: string | null;
 }
 
 function draftFromPreset(p: FreshPreset): Draft {
@@ -55,7 +58,7 @@ export default function Ajout() {
 
   const save = (another: boolean) => {
     if (!draft || !draft.name.trim()) return;
-    addItem({ name: draft.name, category: draft.category, ...draft.form, expiryEstimated: draft.estimated });
+    addItem({ name: draft.name, category: draft.category, ...draft.form, expiryEstimated: draft.estimated, imageUrl: draft.imageUrl ?? null });
     snackbar.show(`Ajouté au ${LOCATION_LABELS[draft.form.location].toLowerCase()} : ${draft.name}`);
     if (another) {
       setDraft(null);
@@ -151,7 +154,19 @@ export default function Ajout() {
         ) : (
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <View style={styles.nameRow}>
-              <ProductAvatar name={draft.name || '?'} state="frais" size={56} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={draft.imageUrl ? 'Changer la photo' : 'Prendre une photo du produit'}
+                onPress={async () => {
+                  const uri = await pickProductPhoto('camera').catch(() => null);
+                  if (uri) setDraft((d) => (d ? { ...d, imageUrl: uri } : d));
+                }}
+              >
+                <ProductAvatar name={draft.name || '?'} state="frais" size={56} imageUri={draft.imageUrl ?? undefined} />
+                <View style={[styles.photoBadge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <Camera size={14} color={colors.text} />
+                </View>
+              </Pressable>
               <TextInput
                 value={draft.name}
                 onChangeText={(name) => setDraft({ ...draft, name })}
@@ -190,6 +205,7 @@ export default function Ajout() {
 }
 
 const styles = StyleSheet.create({
+  photoBadge: { position: 'absolute', right: -4, bottom: -4, width: 24, height: 24, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   flex: { flex: 1 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 8 },
   round: { width: MIN_TOUCH, height: MIN_TOUCH, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

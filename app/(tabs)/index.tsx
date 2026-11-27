@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Bell, BellRing, CalendarDays, ChevronDown, ChevronRight, ChevronUp, Package, Refrigerator, Settings, Snowflake, type LucideIcon } from 'lucide-react-native';
+import { Bell, BellRing, CalendarDays, ChevronDown, ChevronRight, ChevronUp, Package, Refrigerator, Search, Settings, Snowflake, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, ProductCard, Screen, Text, useSnackbar } from '@/components/ui';
@@ -243,6 +243,7 @@ export default function Accueil() {
   const sorted = queryInventory(items, { today });
   const urgent = sorted.filter(({ freshness: f }) => f.state === 'urgent' || f.state === 'bientot').slice(0, 3);
   const counts = countByLocation(items);
+  const toCheck = items.filter((i) => i.status === 'en_stock' && i.row.expiryEstimated).length;
   const alerts = sorted.filter(({ freshness: f }) => f.state === 'urgent' || f.state === 'perime').length;
 
   return (
@@ -253,6 +254,14 @@ export default function Accueil() {
           <Text variant="title1" accessibilityRole="header">Bonjour !</Text>
         </View>
         <View style={styles.headerActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Rechercher un produit, une recette ou un article"
+            onPress={() => router.push('/recherche')}
+            style={[styles.bell, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
+            <Search size={22} color={colors.text} />
+          </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={alerts ? `Alertes : ${alerts} produit${alerts > 1 ? 's' : ''} à traiter` : 'Alertes'}
@@ -286,12 +295,20 @@ export default function Accueil() {
             key={item.id}
             variant="row"
             name={item.name}
+            imageUri={item.row.imageUrl ?? undefined}
             subtitle={itemSubtitle(item, reservations.get(item.id))}
             state={f.state}
             badgeLabel={item.row.expiryEstimated ? `≈ ${f.label}` : f.label}
             onPress={() => router.push({ pathname: '/produit/[id]', params: { id: item.id } })}
           />
         ))}
+        {toCheck > 0 && (
+          <Pressable accessibilityRole="link" onPress={() => router.push('/verifier')} hitSlop={6} style={styles.toCheck}>
+            <Text variant="label" tone="primary" style={styles.bold}>
+              {toCheck} date{toCheck > 1 ? 's' : ''} estimée{toCheck > 1 ? 's' : ''} à vérifier ›
+            </Text>
+          </Pressable>
+        )}
         {urgent.length === 0 && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 }}>
             <Pepin size={64} mood={items.length === 0 ? 'sourire' : 'joie'} />
@@ -320,6 +337,7 @@ const styles = StyleSheet.create({
   dot: { position: 'absolute', top: 10, right: 11, width: 10, height: 10, borderRadius: 5, borderWidth: 2 },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   bold: { fontFamily: 'DMSans_700Bold' },
+  toCheck: { minHeight: 36, justifyContent: 'center' },
   tiles: { flexDirection: 'row', gap: 10 },
   tile: { flex: 1, borderWidth: 1, borderRadius: radius.tile, padding: 14, gap: 4 },
   tileCount: { marginTop: 8 },

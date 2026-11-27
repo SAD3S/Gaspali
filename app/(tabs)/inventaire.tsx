@@ -103,6 +103,7 @@ export default function Inventaire() {
         renderItem={({ item: { item, freshness } }) => (
           <SwipeableItem
             name={item.name}
+            imageUri={item.row.imageUrl ?? undefined}
             subtitle={itemSubtitle(item, reservations.get(item.id))}
             state={freshness.state}
             badgeLabel={item.row.expiryEstimated ? `≈ ${freshness.label}` : freshness.label}

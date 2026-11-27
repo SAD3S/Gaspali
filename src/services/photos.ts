@@ -7,8 +7,8 @@ import { newId } from '@/db/ids';
  * Photo de recette : galerie ou appareil photo, recadrée en 4:3, copiée dans les documents de l'app
  * (le fichier temporaire du sélecteur peut disparaître). Envoi vers Supabase Storage : plus tard.
  */
-export async function pickRecipePhoto(source: 'galerie' | 'camera'): Promise<string | null> {
-  const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.7 };
+export async function pickRecipePhoto(source: 'galerie' | 'camera', aspect: [number, number] = [4, 3]): Promise<string | null> {
+  const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], allowsEditing: true, aspect, quality: 0.7 };
   let result: ImagePicker.ImagePickerResult;
   if (source === 'camera') {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
@@ -25,6 +25,11 @@ export async function pickRecipePhoto(source: 'galerie' | 'camera'): Promise<str
   const dest = new File(dir, `${newId()}.jpg`);
   await new File(asset.uri).copy(dest);
   return dest.uri;
+}
+
+/** Photo d'un produit (fruits, légumes, restes…) : carrée, gardée sur ce téléphone. */
+export function pickProductPhoto(source: 'galerie' | 'camera'): Promise<string | null> {
+  return pickRecipePhoto(source, [1, 1]);
 }
 
 /** Photo de ticket de caisse : galerie ou appareil photo du téléphone, sans recadrage. */

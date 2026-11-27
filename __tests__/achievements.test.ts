@@ -56,3 +56,25 @@ describe('badges', () => {
     expect(get('chef')).toMatchObject({ unlocked: false, current: 2 });
   });
 });
+
+describe('résumé par jour', () => {
+  it('donne les mêmes badges et le même défi qu’un événement par action', () => {
+    const events: AchievementEvent[] = [ev('ajout', at(2026, 10, 1))];
+    for (let i = 0; i < 12; i++) events.push(ev('consomme', at(2026, 10, 5 + (i % 5))));
+    events.push(ev('jete', at(2026, 11, 3)));
+    // Même historique résumé : une ligne par jour et par type, avec le nombre et la valeur totale.
+    const byDay = new Map<string, AchievementEvent>();
+    for (const e of events) {
+      const k = `${e.createdAt.toDateString()}|${e.type}`;
+      const cur = byDay.get(k);
+      byDay.set(k, cur ? { ...cur, count: (cur.count ?? 1) + 1, value: (cur.value ?? 0) + (e.value ?? 0) } : { ...e, count: 1 });
+    }
+    const summary = [...byDay.values()];
+    const now = at(2026, 11, 25);
+    const a = computeBadges({ events, meals: [], personalRecipes: 0, now });
+    const b = computeBadges({ events: summary, meals: [], personalRecipes: 0, now });
+    expect(b).toEqual(a);
+    expect(wasteFreeStreak(summary, now)).toEqual(wasteFreeStreak(events, now));
+    expect(weeklyChallenge({ events: summary, meals: [], personalRecipes: 0, now })).toEqual(weeklyChallenge({ events, meals: [], personalRecipes: 0, now }));
+  });
+});

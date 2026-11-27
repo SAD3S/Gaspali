@@ -1,5 +1,6 @@
-import { and, desc, eq, gte, isNotNull, isNull } from 'drizzle-orm';
+import { and, desc, eq, gte, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
 import { addDays } from '@/domain/dates';
+import { AVERAGE_PRICE } from '@/domain/stats';
 import type { DateType } from '@/domain/freshness';
 import { getCategory, type Location } from '@/domain/categories';
 import { consumePartially, freezerExtension, normalizeText, openItem, thawPlan, type Item, type ItemStatus } from '@/domain/inventory';
@@ -118,7 +119,7 @@ export function addItem(input: NewItemInput): string {
   return id;
 }
 
-export type ItemPatch = Partial<Pick<InventoryRow, 'name' | 'category' | 'quantity' | 'unit' | 'location' | 'dateType' | 'expiresAt' | 'expiryEstimated' | 'openedAt' | 'price' | 'status' | 'thawedAt'>>;
+export type ItemPatch = Partial<Pick<InventoryRow, 'name' | 'category' | 'quantity' | 'unit' | 'location' | 'dateType' | 'expiresAt' | 'expiryEstimated' | 'openedAt' | 'price' | 'status' | 'thawedAt' | 'imageUrl'>>;
 
 export function updateItem(id: string, patch: ItemPatch): void {
   const full = { ...patch, updatedAt: new Date() };
@@ -303,4 +304,42 @@ export function lastPaidPrice(productId: string | null, name: string): { value: 
   const key = normalizeText(name);
   const hit = (productId && rows.find((r) => r.productId === productId)) || rows.find((r) => normalizeText(r.productName) === key);
   return hit && hit.value != null ? { value: hit.value, quantity: hit.quantity, at: hit.at } : null;
+}
+
+/**
+ * Historique résumé par jour et par type d'action (défis et badges) : quelques centaines de lignes
+ * par an au lieu de tous les événements. La valeur d'une action sans prix est estimée par catégorie,
+ * comme dans les statistiques. Les données de démonstration sont ignorées.
+ */
+export function dailyActivityQuery() {
+  const estimate = sql.raw(
+    `CASE category ${Object.entries(AVERAGE_PRICE).map(([c, v]) => `WHEN '${c}' THEN ${v}`).join(' ')} ELSE ${AVERAGE_PRICE.autre} END`,
+  );
+  const day = sql<string>`date(${events.createdAt} / 1000, 'unixepoch', 'localtime')`;
+  return db
+    .select({
+      day,
+      type: events.type,
+      count: sql<number>`count(*)`,
+      value: sql<number>`sum(coalesce(${events.value}, ${estimate}))`,
+    })
+    .from(events)
+    .where(and(isNull(events.deletedAt), or(isNull(events.detail), ne(events.detail, 'demo'))))
+    .groupBy(day, events.type);
+}
+
+/**
+ * « Finir un produit » au scan : les articles en stock qui correspondent à ce code-barres (même fiche
+ * produit, sinon même nom), du plus pressé au moins pressé.
+ */
+export function inStockForBarcode(barcode: string): { name: string | null; items: (Item & { row: InventoryRow })[] } {
+  const product = db.select().from(products).where(and(eq(products.barcode, barcode), isNull(products.deletedAt))).get();
+  if (!product) return { name: null, items: [] };
+  const stock = inStockQuery().all().map(rowToItem);
+  const byProduct = stock.filter((i) => i.row.productId === product.id);
+  const key = normalizeText(product.name);
+  const items = (byProduct.length ? byProduct : stock.filter((i) => normalizeText(i.name) === key)).sort(
+    (a, b) => a.expiresAt.getTime() - b.expiresAt.getTime(),
+  );
+  return { name: product.name, items };
 }

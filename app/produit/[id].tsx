@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { CalendarDays, Check, ChevronLeft, ChevronRight, PackageOpen, Pencil, Snowflake, Trash2, Undo2 } from 'lucide-react-native';
+import { CalendarDays, Camera, Check, ChevronLeft, ChevronRight, PackageOpen, Pencil, Snowflake, Trash2, Undo2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import { ItemForm } from '@/features/inventory/ItemForm';
 import { finishMessage, itemWorth } from '@/domain/prices';
 import { formatEuros } from '@/domain/stats';
 import { useItem, useItemHistory } from '@/features/inventory/hooks';
+import { pickProductPhoto } from '@/services/photos';
 import { useAuthorName } from '@/features/account/hooks';
 import { useReservations } from '@/features/recipes/hooks';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -97,6 +98,14 @@ export default function Produit() {
 
   const worth = itemWorth(item.row);
 
+  const setPhoto = async (source: 'galerie' | 'camera') => {
+    const uri = await pickProductPhoto(source).catch(() => null);
+    if (uri) {
+      updateItem(item.id, { imageUrl: uri });
+      snackbar.show('Photo ajoutée');
+    }
+  };
+
   const finish = (status: 'consomme' | 'jete') => {
     const undo = setStatus(item.id, status);
     snackbar.show(finishMessage(item.name, status, item.row), undo);
@@ -112,7 +121,23 @@ export default function Produit() {
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.hero}>
-          <ProductAvatar name={item.name} state={f.state} size={64} imageUri={item.row.imageUrl ?? undefined} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={item.row.imageUrl ? 'Changer la photo du produit' : 'Ajouter une photo du produit'}
+            onPress={() =>
+              showDialog(item.row.imageUrl ? 'Photo du produit' : 'Ajouter une photo', 'Pratique pour les fruits, légumes et restes sans code-barres.', [
+                { text: 'Annuler', style: 'cancel' },
+                ...(item.row.imageUrl ? [{ text: 'Retirer la photo', style: 'destructive' as const, onPress: () => updateItem(item.id, { imageUrl: null }) }] : []),
+                { text: 'Choisir dans la galerie', onPress: () => void setPhoto('galerie') },
+                { text: 'Prendre une photo', onPress: () => void setPhoto('camera') },
+              ])
+            }
+          >
+            <ProductAvatar name={item.name} state={f.state} size={64} imageUri={item.row.imageUrl ?? undefined} />
+            <View style={[styles.photoBadge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Camera size={14} color={colors.text} />
+            </View>
+          </Pressable>
           <View style={styles.flex}>
             <Text variant="title2" accessibilityRole="header">{item.name}</Text>
             <Text variant="body" tone="secondary">
@@ -345,6 +370,7 @@ const styles = StyleSheet.create({
   hero: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   badges: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   actions: { flexDirection: 'row', gap: 10 },
+  photoBadge: { position: 'absolute', right: -4, bottom: -4, width: 26, height: 26, borderRadius: 13, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   openedBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 52, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1 },
   bold: { fontFamily: 'DMSans_700Bold' },
   iconBtn: { width: 52, height: 52, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

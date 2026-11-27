@@ -12,6 +12,11 @@ export interface AchievementEvent {
   createdAt: Date;
   deletedAt?: Date | null;
   detail?: string | null;
+  /**
+   * Nombre d'actions représentées (résumé par jour calculé par la base : un seul enregistrement
+   * pour « 3 produits consommés le 26 »). `value` est alors leur valeur totale. Absent = 1.
+   */
+  count?: number;
 }
 
 export interface AchievementInput {
@@ -25,6 +30,9 @@ export interface AchievementInput {
 /** Produit utilisé (en entier ou en partie) : un geste anti-gaspi. */
 const isUse = (e: AchievementEvent) => e.type === 'consomme' || e.type === 'partiel';
 const live = (events: AchievementEvent[]) => events.filter((e) => !e.deletedAt && e.detail !== 'demo');
+/** Nombre d'actions (un résumé par jour en compte plusieurs). */
+const weight = (e: AchievementEvent) => e.count ?? 1;
+const countOf = (list: AchievementEvent[]) => list.reduce((n, e) => n + weight(e), 0);
 
 /** Lundi 0 h de la semaine de `d`. */
 export function startOfWeek(d: Date): Date {
@@ -116,7 +124,7 @@ export function weeklyChallenge(input: AchievementInput): Challenge {
     };
   }
   if (id === 'utilise-10') {
-    const n = week.filter(isUse).length;
+    const n = countOf(week.filter(isUse));
     return { ...base, title: 'Finis 10 produits', description: 'Consomme 10 produits de ton inventaire cette semaine.', current: Math.min(n, 10), target: 10, done: n >= 10, progressLabel: `${Math.min(n, 10)} / 10 produits` };
   }
   if (id === 'cuisine-3') {
@@ -149,8 +157,8 @@ function perfectWeeks(events: AchievementEvent[], now: Date): number {
   for (const e of events) {
     const k = startOfWeek(e.createdAt).getTime();
     const w = weeks.get(k) ?? { use: 0, waste: 0 };
-    if (isUse(e)) w.use++;
-    if (e.type === 'jete') w.waste++;
+    if (isUse(e)) w.use += weight(e);
+    if (e.type === 'jete') w.waste += weight(e);
     weeks.set(k, w);
   }
   const thisWeek = startOfWeek(now).getTime();
@@ -163,8 +171,8 @@ function bestMonthPct(events: AchievementEvent[]): number {
   for (const e of events) {
     const k = `${e.createdAt.getFullYear()}-${e.createdAt.getMonth()}`;
     const m = months.get(k) ?? { use: 0, waste: 0 };
-    if (e.type === 'consomme') m.use++;
-    if (e.type === 'jete') m.waste++;
+    if (e.type === 'consomme') m.use += weight(e);
+    if (e.type === 'jete') m.waste += weight(e);
     months.set(k, m);
   }
   let best = 0;
@@ -175,8 +183,8 @@ function bestMonthPct(events: AchievementEvent[]): number {
 export function computeBadges(input: AchievementInput): Badge[] {
   const now = input.now ?? new Date();
   const events = live(input.events);
-  const added = events.filter((e) => e.type === 'ajout').length;
-  const used = events.filter(isUse).length;
+  const added = countOf(events.filter((e) => e.type === 'ajout'));
+  const used = countOf(events.filter(isUse));
   const savedValue = Math.round(events.filter(isUse).reduce((s, e) => s + eventValue(e), 0));
   const cooked = input.meals.filter((m) => m.done).length;
   const streak = wasteFreeStreak(input.events, now);

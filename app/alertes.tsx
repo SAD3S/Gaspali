@@ -45,6 +45,7 @@ export default function Alertes() {
             <ProductCard
               key={item.id}
               name={item.name}
+            imageUri={item.row.imageUrl ?? undefined}
               subtitle={itemSubtitle(item)}
               state={freshness.state}
               badgeLabel={freshness.label}

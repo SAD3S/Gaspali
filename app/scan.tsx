@@ -6,7 +6,7 @@ import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text, useSnackbar } from '@/components/ui';
-import { addItem, lastPaidPrice } from '@/db/inventoryRepo';
+import { addItem, inStockForBarcode, lastPaidPrice, setStatus } from '@/db/inventoryRepo';
 import { lookupBarcode, saveManualProduct, updateProductDetails } from '@/db/productsRepo';
 import { normalizeBarcode } from '@/domain/barcode';
 import { getCategory, LOCATION_LABELS, type CategoryId, type Location } from '@/domain/categories';
@@ -18,6 +18,8 @@ import type { PriceHint } from '@/domain/prices';
 import type { ItemFormValue } from '@/features/inventory/ItemForm';
 import { ConfirmSheet, type ProductDetails, type SheetProduct } from '@/features/scan/ConfirmSheet';
 import { DateResultSheet } from '@/features/scan/DateResultSheet';
+import { FinishSheet, type FinishTarget } from '@/features/scan/FinishSheet';
+import { finishMessage } from '@/domain/prices';
 import { ManualCodeSheet } from '@/features/scan/ManualCodeSheet';
 import { fetchOpenPrice } from '@/services/openPrices';
 import { pickReceiptPhotos } from '@/services/photos';
@@ -25,8 +27,8 @@ import { ocrAvailable, recognizeText } from '@/services/textRecognition';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH } from '@/theme/tokens';
 
-type Mode = 'scanning' | 'loading' | 'confirm' | 'date' | 'reading';
-type Tab = 'code' | 'ticket';
+type Mode = 'scanning' | 'loading' | 'confirm' | 'date' | 'reading' | 'finish';
+type Tab = 'code' | 'ticket' | 'finir';
 
 const SCAN_GREEN = '#4CC38A';
 const ON_DARK = '#FFFFFF';
@@ -46,7 +48,11 @@ export default function Scan() {
   const [permission, requestPermission] = useCameraPermissions();
   const camera = useRef<CameraView>(null);
   const { onglet } = useLocalSearchParams<{ onglet?: string }>();
-  const [tab, setTab] = useState<Tab>(onglet === 'ticket' ? 'ticket' : 'code');
+  const [tab, setTab] = useState<Tab>(onglet === 'ticket' ? 'ticket' : onglet === 'finir' ? 'finir' : 'code');
+  // Lu par handleCode (mémorisé) : l'onglet en cours sans recréer le callback.
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+  const [finish, setFinish] = useState<FinishTarget | null>(null);
 
   const [mode, setMode] = useState<Mode>('scanning');
   const [burst, setBurst] = useState(true);
@@ -95,6 +101,17 @@ export default function Scan() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setMode('loading');
     try {
+      if (tabRef.current === 'finir') {
+        let found = inStockForBarcode(code);
+        // Jamais scanné sur ce téléphone : on cherche le nom du produit (Open Food Facts) pour le retrouver.
+        if (!found.name) {
+          const r = await lookupBarcode(code);
+          if (r.status === 'found') found = inStockForBarcode(code);
+        }
+        setFinish({ code, ...found });
+        setMode('finish');
+        return;
+      }
       const r = await lookupBarcode(code);
       if (r.status === 'found') {
         setTarget({ kind: 'found', product: r.product, source: r.source, productId: r.productId });
@@ -119,6 +136,7 @@ export default function Scan() {
 
   const reset = () => {
     setTarget(null);
+    setFinish(null);
     setMode('scanning');
     // Le même produit reste souvent dans le champ : on repart du cooldown.
     if (lastCode.current) lastCode.current.at = Date.now();
@@ -222,7 +240,9 @@ export default function Scan() {
   };
 
   const cameraReady = permission?.granted && Platform.OS !== 'web';
-  const showSheet = mode === 'confirm' && target;
+  const confirmOpen = mode === 'confirm' && !!target;
+  // Une feuille occupe le bas de l'écran (ajout ou « Finir ») : le cadre de visée se réduit.
+  const showSheet = confirmOpen || (mode === 'finish' && !!finish);
   const ticket = tab === 'ticket';
   const frame = ticket ? styles.frameTicket : mode === 'date' || mode === 'reading' ? styles.frameDate : styles.frame;
 
@@ -275,7 +295,7 @@ export default function Scan() {
 
         {mode === 'scanning' && (
           <View style={styles.tabs} accessibilityRole="tablist">
-            {(['code', 'ticket'] as const).map((t) => (
+            {(['code', 'finir', 'ticket'] as const).map((t) => (
               <Pressable
                 key={t}
                 accessibilityRole="tab"
@@ -284,7 +304,7 @@ export default function Scan() {
                 style={[styles.tab, { backgroundColor: tab === t ? ON_DARK : GLASS }]}
               >
                 <Text variant="label" color={tab === t ? '#0B1F15' : ON_DARK} style={styles.bold}>
-                  {t === 'code' ? 'Code-barres' : 'Ticket'}
+                  {t === 'code' ? 'Ajouter' : t === 'finir' ? 'Finir' : 'Ticket'}
                 </Text>
               </Pressable>
             ))}
@@ -311,7 +331,9 @@ export default function Scan() {
                     ? 'Cadre la date imprimée sur l’emballage'
                     : mode === 'reading'
                       ? 'Lecture de la date…'
-                      : 'Vise le code-barres'}
+                      : tab === 'finir'
+                        ? 'Scanne le produit que tu as fini'
+                        : 'Vise le code-barres'}
             </Text>
           )}
         </View>
@@ -391,7 +413,7 @@ export default function Scan() {
         )}
       </SafeAreaView>
 
-      {showSheet && (
+      {confirmOpen && target && (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.sheetWrap}>
           <ConfirmSheet
             target={target}
@@ -405,10 +427,39 @@ export default function Scan() {
             onCategory={onCategory}
             burst={burst}
             priceHints={priceHints}
+            dateEstimated={!dateTouched}
             onAdd={add}
             onCancel={reset}
           />
         </KeyboardAvoidingView>
+      )}
+
+      {mode === 'finish' && finish && (
+        <View style={styles.finishWrap}>
+          <FinishSheet
+            target={finish}
+            onFinish={(item, status) => {
+              const undo = setStatus(item.id, status);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+              snackbar.show(finishMessage(item.name, status, item.row), undo, 'top');
+              if (burst) reset();
+              else router.back();
+            }}
+            onOpen={(id) => {
+              reset();
+              router.push({ pathname: '/produit/[id]', params: { id } });
+            }}
+            onAddInstead={() => {
+              const code = finish.code;
+              setTab('code');
+              tabRef.current = 'code';
+              lastCode.current = null;
+              setMode('scanning');
+              void handleCode(code);
+            }}
+            onCancel={reset}
+          />
+        </View>
       )}
 
       <ManualCodeSheet
@@ -459,6 +510,7 @@ const styles = StyleSheet.create({
   alt: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, minHeight: MIN_TOUCH + 4, borderRadius: 999 },
   shutter: { width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: ON_DARK, alignItems: 'center', justifyContent: 'center' },
   shutterInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: ON_DARK },
+  finishWrap: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   sheetWrap: { flex: 1 },
   bold: { fontFamily: 'DMSans_700Bold' },
 });

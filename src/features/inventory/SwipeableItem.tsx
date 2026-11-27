@@ -10,6 +10,7 @@ import { radius } from '@/theme/tokens';
 
 interface Props {
   name: string;
+  imageUri?: string;
   subtitle: string;
   state: FreshnessState;
   badgeLabel: string;
@@ -19,7 +20,7 @@ interface Props {
 }
 
 /** Carte d'inventaire : glisser à droite = Consommé (vert), à gauche = Jeté (rouge). */
-export function SwipeableItem({ name, subtitle, state, badgeLabel, onPress, onConsumed, onDiscarded }: Props) {
+export function SwipeableItem({ name, imageUri, subtitle, state, badgeLabel, onPress, onConsumed, onDiscarded }: Props) {
   const { colors, freshness } = useTheme();
   const ref = useRef<SwipeableMethods>(null);
 
@@ -47,7 +48,7 @@ export function SwipeableItem({ name, subtitle, state, badgeLabel, onPress, onCo
       <View accessibilityActions={[{ name: 'consumed', label: 'Marquer consommé' }, { name: 'discarded', label: 'Marquer jeté' }]}
         onAccessibilityAction={(e) => (e.nativeEvent.actionName === 'consumed' ? onConsumed() : onDiscarded())}
       >
-        <ProductCard name={name} subtitle={subtitle} state={state} badgeLabel={badgeLabel} onPress={onPress} />
+        <ProductCard name={name} subtitle={subtitle} state={state} badgeLabel={badgeLabel} imageUri={imageUri} onPress={onPress} />
       </View>
     </Swipeable>
   );

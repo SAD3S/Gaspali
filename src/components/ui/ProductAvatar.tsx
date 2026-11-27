@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { FreshnessState } from '@/theme/tokens';
@@ -21,7 +22,11 @@ export function ProductAvatar({ name, initials, imageUri, state, size = 46 }: Pr
   const { freshness } = useTheme();
   const s = freshness[state];
   const box = { width: size, height: size, borderRadius: size * 0.3 };
-  if (imageUri) return <Image source={{ uri: imageUri }} style={box} accessibilityIgnoresInvertColors />;
+  // Photo absente (prise sur l'autre téléphone du foyer, supprimée…) : on revient aux initiales.
+  const [failed, setFailed] = useState<string | null>(null);
+  if (imageUri && failed !== imageUri) {
+    return <Image source={{ uri: imageUri }} style={box} accessibilityIgnoresInvertColors onError={() => setFailed(imageUri)} />;
+  }
   return (
     <View style={[styles.box, box, { backgroundColor: s.bg }]} importantForAccessibility="no-hide-descendants">
       <Text variant="bodyStrong" color={s.fg} style={{ fontFamily: 'BricolageGrotesque_700Bold', fontSize: size * 0.4 }}>

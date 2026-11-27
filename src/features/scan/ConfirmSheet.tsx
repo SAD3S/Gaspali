@@ -1,3 +1,4 @@
+import { Camera } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Chip, ProductAvatar, Sheet, Text } from '@/components/ui';
@@ -31,6 +32,8 @@ interface Props {
   onFormChange: (v: ItemFormValue) => void;
   onLocationChange: (l: Location) => void;
   onReadDate: () => void;
+  /** La date n'a pas encore été lue ni choisie : c'est une estimation selon la catégorie. */
+  dateEstimated: boolean;
   /** Nom, catégorie et contenance, modifiables (pré-remplis par Open Food Facts). */
   details: ProductDetails;
   onDetails: (patch: Partial<ProductDetails>) => void;
@@ -155,6 +158,18 @@ export function ConfirmSheet(p: Props) {
           </View>
         )}
 
+        {p.dateEstimated && (
+          <View style={[styles.estimate, { backgroundColor: freshness.a_verifier.bg }]}>
+            <View style={styles.flex}>
+              <Text variant="bodyStrong" color={freshness.a_verifier.fg}>Date estimée</Text>
+              <Text variant="label" color={freshness.a_verifier.fg}>
+                Selon le type de produit ({getCategory(p.details.category).label.toLowerCase()}). Lis la vraie date sur l’emballage pour des alertes justes.
+              </Text>
+            </View>
+            <Button label="Lire la date" size="md" icon={<Camera size={18} color={colors.onPrimary} />} onPress={p.onReadDate} />
+          </View>
+        )}
+
         <ItemForm
           value={p.form}
           onChange={p.onFormChange}
@@ -190,6 +205,7 @@ function convertPack(q: number, from: string, to: string): number {
 }
 
 const styles = StyleSheet.create({
+  estimate: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 16, padding: 12 },
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   bold: { fontFamily: 'DMSans_700Bold' },
   packRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },

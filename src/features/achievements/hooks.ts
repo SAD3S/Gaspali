@@ -1,10 +1,14 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useMemo } from 'react';
-import { eventsSinceQuery } from '@/db/inventoryRepo';
+import { dailyActivityQuery } from '@/db/inventoryRepo';
 import { computeBadges, wasteFreeStreak, weeklyChallenge, type Badge, type Challenge, type Streak } from '@/domain/achievements';
 import { useAllRecipes, usePlan } from '@/features/recipes/hooks';
 
-const SINCE_ALWAYS = new Date(0);
+/** « 2026-11-26 » → midi ce jour-là (heure locale), pour rester dans le bon jour. */
+const noonOf = (day: string) => {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(y!, m! - 1, d!, 12);
+};
 
 export interface Achievements {
   streak: Streak;
@@ -17,14 +21,16 @@ export interface Achievements {
 
 /** Série, défi de la semaine et badges du foyer, à jour en direct. */
 export function useAchievements(): Achievements {
-  const { data, updatedAt } = useLiveQuery(eventsSinceQuery(SINCE_ALWAYS));
+  // Résumé par jour calculé par la base : léger même après des mois d'utilisation.
+  const { data, updatedAt } = useLiveQuery(dailyActivityQuery());
   const plan = usePlan();
   const recipes = useAllRecipes();
   const personal = recipes.filter((r) => r.source !== 'base').length;
   // Change de jour : recalcul au moins une fois par heure via la clé.
   const hour = Math.floor(Date.now() / 3600000);
   return useMemo(() => {
-    const input = { events: data ?? [], meals: plan, personalRecipes: personal, now: new Date() };
+    const events = (data ?? []).map((r) => ({ type: r.type, category: 'autre', value: Number(r.value), count: Number(r.count), createdAt: noonOf(r.day) }));
+    const input = { events, meals: plan, personalRecipes: personal, now: new Date() };
     const badges = computeBadges(input);
     return { streak: wasteFreeStreak(input.events, input.now), challenge: weeklyChallenge(input), badges, unlocked: badges.filter((b) => b.unlocked).length, ready: updatedAt !== undefined };
   }, [data, plan, personal, hour, updatedAt]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -9,6 +9,13 @@
 
 ## Nouveautés à tester
 
+- **Dates fiables** : au scan, « Date estimée · Lire la date » bien visible ; l'accueil signale les dates estimées,
+  et l'écran « Dates à vérifier » les confirme ou les corrige d'un geste.
+- **Finir un produit au scan** : bouton central › onglet « Finir », scanne, puis « Consommé » ou « Jeté » (le glissement
+  dans l'inventaire reste).
+- **Recherche** : la loupe de l'accueil cherche dans le stock, les recettes et la liste de courses.
+- **Photos** : touche l'image d'un produit (ou à l'ajout manuel) pour le prendre en photo.
+- Défis et badges plus légers (calculés à partir d'un résumé par jour).
 - **Catégories au scan** : un yaourt à boire (Yop…) est classé en produit laitier, plus en boisson à 9 mois ;
   changer la catégorie d'un produit recalcule sa date estimée et est retenu pour ce code-barres.
 - **« Entamé » annulable** : « Annuler » juste après, ou « Pas entamé » plus tard sur la fiche (la date d'origine revient).
